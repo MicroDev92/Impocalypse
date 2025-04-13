@@ -5,6 +5,9 @@ public class GridGenerator : MonoBehaviour
     public GameObject tilePrefab;
     public Sprite grassSprite;
     public Sprite waterSprite;
+    public GameObject labelPrefab;
+    public float labelOffset = 0.5f;
+
 
     private char[] rowLabels = "ABCDEFGHIJ".ToCharArray();
     private const int width = 10;
@@ -14,6 +17,7 @@ public class GridGenerator : MonoBehaviour
     void Start()
     {
         GenerateGrid();
+        CreateCoordinateLabels();
     }
 
     void GenerateGrid()
@@ -33,4 +37,51 @@ public class GridGenerator : MonoBehaviour
             }
         }
     }
+    
+    private void CreateCoordinateLabels()
+    {
+        char[] rowLabels = "JIHGFEDCBA".ToCharArray();
+        float margin = 0.5f; // distance away from edge of board
+
+        for (int x = 0; x < width; x++)
+        {
+            string colLabel = (x + 1).ToString();
+
+            // X position is the center of the tile: x
+            // Y positions are just above and below the grid without offset
+            Vector3 topPos = new Vector3(x, height + margin, 0);
+            Vector3 bottomPos = new Vector3(x, -1f - margin, 0);
+
+            CreateLabel(colLabel, topPos);
+            CreateLabel(colLabel, bottomPos);
+        }
+
+        for (int y = 0; y < height; y++)
+        {
+            string rowLabel = rowLabels[y].ToString();
+
+            // Y is center of row tile
+            // X is just to the left and right of grid
+            Vector3 leftPos = new Vector3(-1f - margin, y, 0);
+            Vector3 rightPos = new Vector3(width + margin, y, 0);
+
+            CreateLabel(rowLabel, leftPos);
+            CreateLabel(rowLabel, rightPos);
+        }
+    }
+
+
+
+    private void CreateLabel(string text, Vector3 position)
+    {
+        GameObject labelObj = Instantiate(labelPrefab, position, Quaternion.identity, transform);
+        var label = labelObj.GetComponent<TMPro.TextMeshPro>();
+
+        label.text = text;
+        label.alignment = TMPro.TextAlignmentOptions.Center;
+        label.fontSize = 1.5f;
+    }
+
+
+
 }

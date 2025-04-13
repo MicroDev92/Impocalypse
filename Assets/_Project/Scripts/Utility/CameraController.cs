@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Camera))]
 public class CameraController : MonoBehaviour
@@ -11,17 +12,13 @@ public class CameraController : MonoBehaviour
 
     [Header("Zoom Settings")]
     public float zoomSpeedTouch = 0.01f;
-    public float zoomSpeedMouse = 5f;
+    public float zoomSpeedMouse = 0.05f;
     public float minZoom = 3f;
     public float maxZoom = 12f;
 
-    [Header("Pan Settings")]
-    public float panSpeed = 0.01f;
-
     private Camera cam;
     private Vector3 lastPanPosition;
-    private int panFingerId;
-    private bool isPanning;
+    private bool isPanning = false;
 
     private void Awake()
     {
@@ -46,34 +43,51 @@ public class CameraController : MonoBehaviour
         float gridWorldWidth = gridWidth * tileSize;
         float gridWorldHeight = gridHeight * tileSize;
 
-        float requiredHeight = Mathf.Max(gridWorldHeight, gridWorldWidth / aspect);
+        // Add margin (recommended: 1 extra tile)
+        float margin = tileSize * 0.5f;
+
+        float requiredHeight = Mathf.Max(
+            (gridWorldWidth + margin * 2) / aspect,
+            (gridWorldHeight + margin * 2)
+        );
+
         cam.orthographicSize = Mathf.Clamp(requiredHeight / 2f, minZoom, maxZoom);
 
         float centerX = (gridWidth * tileSize) / 2f - tileSize / 2f + gridOffset.x;
         float centerY = (gridHeight * tileSize) / 2f - tileSize / 2f + gridOffset.y;
+
         cam.transform.position = new Vector3(centerX, centerY, -10f);
     }
 
+
     private void HandleZoom()
     {
-        // Mouse scroll
-        float scroll = Input.GetAxis("Mouse ScrollWheel");
-        if (Mathf.Abs(scroll) > 0.01f)
+        // Mouse Scroll
+        if (Mouse.current != null)
         {
+            float scroll = Mouse.current.scroll.ReadValue().y;
             cam.orthographicSize -= scroll * zoomSpeedMouse;
         }
 
-        // Touch pinch
-        if (Input.touchCount == 2)
+        // Touch Pinch
+        if (Touchscreen.current != null && Touchscreen.current.touches.Count >= 2)
         {
-            Touch t0 = Input.GetTouch(0);
-            Touch t1 = Input.GetTouch(1);
+            var t0 = Touchscreen.current.touches[0];
+            var t1 = Touchscreen.current.touches[1];
 
-            float prevDistance = (t0.position - t0.deltaPosition - (t1.position - t1.deltaPosition)).magnitude;
-            float currentDistance = (t0.position - t1.position).magnitude;
-            float delta = prevDistance - currentDistance;
+            if (t0.isInProgress && t1.isInProgress)
+            {
+                Vector2 prevT0 = t0.startPosition.ReadValue();
+                Vector2 prevT1 = t1.startPosition.ReadValue();
+                Vector2 currentT0 = t0.position.ReadValue();
+                Vector2 currentT1 = t1.position.ReadValue();
 
-            cam.orthographicSize += delta * zoomSpeedTouch;
+                float prevDist = Vector2.Distance(prevT0, prevT1);
+                float currentDist = Vector2.Distance(currentT0, currentT1);
+                float delta = prevDist - currentDist;
+
+                cam.orthographicSize += delta * zoomSpeedTouch;
+            }
         }
 
         cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, minZoom, maxZoom);
@@ -81,39 +95,56 @@ public class CameraController : MonoBehaviour
 
     private void HandlePan()
     {
-#if UNITY_EDITOR || UNITY_STANDALONE
-        if (Input.GetMouseButtonDown(0))
-        {
-            lastPanPosition = cam.ScreenToWorldPoint(Input.mousePosition);
-        }
-        else if (Input.GetMouseButton(0))
-        {
-            Vector3 currentPanPosition = cam.ScreenToWorldPoint(Input.mousePosition);
-            Vector3 difference = lastPanPosition - currentPanPosition;
-            cam.transform.position += difference;
-        }
-#elif UNITY_ANDROID || UNITY_IOS
-        if (Input.touchCount == 1)
-        {
-            Touch touch = Input.GetTouch(0);
+        Vector3 panDelta = Vector3.zero;
 
-            if (touch.phase == TouchPhase.Began)
+        // Mouse drag
+        if (Mouse.current != null)
+        {
+            if (Mouse.current.leftButton.wasPressedThisFrame)
             {
+                lastPanPosition = cam.ScreenToWorldPoint(Mouse.current.position.ReadValue());
                 isPanning = true;
-                panFingerId = touch.fingerId;
-                lastPanPosition = cam.ScreenToWorldPoint(touch.position);
             }
-            else if (touch.phase == TouchPhase.Moved && touch.fingerId == panFingerId && isPanning)
+            else if (Mouse.current.leftButton.isPressed && isPanning)
             {
-                Vector3 currentPanPosition = cam.ScreenToWorldPoint(touch.position);
-                Vector3 difference = lastPanPosition - currentPanPosition;
-                cam.transform.position += difference;
+                Vector3 currentPos = cam.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+                panDelta = lastPanPosition - currentPos;
+                cam.transform.position += panDelta;
             }
-            else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+            else if (Mouse.current.leftButton.wasReleasedThisFrame)
             {
                 isPanning = false;
             }
         }
-#endif
+
+        // Touch drag (1 finger)
+        if (Touchscreen.current != null && Touchscreen.current.touches.Count == 1)
+        {
+            var touch = Touchscreen.current.touches[0];
+
+            if (touch.isInProgress)
+            {
+                Vector2 screenPos = touch.position.ReadValue();
+                Vector3 worldPos = cam.ScreenToWorldPoint(screenPos);
+
+                if (!isPanning)
+                {
+                    lastPanPosition = worldPos;
+                    isPanning = true;
+                }
+                else
+                {
+                    panDelta = lastPanPosition - worldPos;
+                    cam.transform.position += panDelta;
+                    lastPanPosition = worldPos;
+                }
+            }
+
+            if (touch.phase.ReadValue() == UnityEngine.InputSystem.TouchPhase.Ended ||
+                touch.phase.ReadValue() == UnityEngine.InputSystem.TouchPhase.Canceled)
+            {
+                isPanning = false;
+            }
+        }
     }
 }

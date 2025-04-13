@@ -151,6 +151,8 @@ MonoBehaviour:
   tilePrefab: {fileID: 4775329531427824515, guid: 22bb46e6ffa27af4cb3bf19e9f26202d, type: 3}
   grassSprite: {fileID: 7932798033344189819, guid: 5053a5073fe533c439a058bdabcaf0bf, type: 3}
   waterSprite: {fileID: 8509550459451208454, guid: fee089676f2450d42b7d4bab18c8a4f7, type: 3}
+  labelPrefab: {fileID: 4086708475120976228, guid: c0e104eb8fb7b1d47b68fe9e22554df1, type: 3}
+  labelOffset: 0.5
 --- !u!4 &528464300
 Transform:
   m_ObjectHideFlags: 0
@@ -279,7 +281,6 @@ MonoBehaviour:
   zoomSpeedMouse: 5
   minZoom: 3
   maxZoom: 12
-  panSpeed: 0.01
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

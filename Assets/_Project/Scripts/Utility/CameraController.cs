@@ -1,12 +1,17 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 [RequireComponent(typeof(Camera))]
+[ExecuteAlways]
 public class CameraController : MonoBehaviour
 {
     [Header("Grid Settings")]
-    public int gridWidth = 10;
-    public int gridHeight = 10;
+    public int gridWidth = 12;
+    public int gridHeight = 12;
     public float tileSize = 1f;
     public Vector2 gridOffset = Vector2.zero;
 
@@ -14,11 +19,14 @@ public class CameraController : MonoBehaviour
     public float zoomSpeedTouch = 0.01f;
     public float zoomSpeedMouse = 0.05f;
     public float minZoom = 3f;
-    public float maxZoom = 12f;
+    public float maxZoom = 14f;
 
     private Camera cam;
     private Vector3 lastPanPosition;
     private bool isPanning = false;
+    
+    private int _lastScreenWidth;
+    private int _lastScreenHeight;
 
     private void Awake()
     {
@@ -28,38 +36,82 @@ public class CameraController : MonoBehaviour
     private void Start()
     {
         FitGridToScreen();
+        Debug.Log("Delayed ortho size applied: " + cam.orthographicSize);
     }
-
+    
     private void Update()
     {
         HandleZoom();
         HandlePan();
+        
+        if (Screen.width != _lastScreenWidth || Screen.height != _lastScreenHeight)
+        {
+            _lastScreenWidth = Screen.width;
+            _lastScreenHeight = Screen.height;
+
+            FitGridToScreen(); // Recalculate camera on resolution/orientation change
+        }
+
     }
+    
+    private void OnDrawGizmos()
+    {
+        if (cam == null) cam = GetComponent<Camera>();
+
+        // Current camera bounds (yellow)
+        float camHeight = cam.orthographicSize * 2f;
+        float camWidth = camHeight * cam.aspect;
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(cam.transform.position, new Vector3(camWidth, camHeight, 0));
+
+        // Suggested fixed bounds (green preview)
+        float aspect = (float)Screen.width / Screen.height;
+        float boardWorldWidth = gridWidth * tileSize;
+        float boardWorldHeight = gridHeight * tileSize;
+
+        float halfBoardHeight = boardWorldHeight / 2f;
+        float halfBoardWidth = boardWorldWidth / 2f;
+
+        float suggestedOrthoSize = Mathf.Max(halfBoardHeight, halfBoardWidth / aspect);
+        float previewHeight = suggestedOrthoSize * 2f;
+        float previewWidth = previewHeight * aspect;
+
+        float centerX = (gridWidth - 1) * tileSize / 2f + gridOffset.x;
+        float centerY = (gridHeight - 1) * tileSize / 2f + gridOffset.y;
+        Vector3 previewCenter = new Vector3(centerX, centerY, -10f);
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireCube(previewCenter, new Vector3(previewWidth, previewHeight, 0));
+    }
+
+
 
     private void FitGridToScreen()
     {
         float aspect = (float)Screen.width / Screen.height;
 
-        float gridWorldWidth = gridWidth * tileSize;
-        float gridWorldHeight = gridHeight * tileSize;
+        float boardWorldWidth = gridWidth * tileSize;
+        float boardWorldHeight = gridHeight * tileSize;
 
-        // Add margin (recommended: 1 extra tile)
-        float margin = tileSize * 0.5f;
+        float halfBoardHeight = boardWorldHeight / 2f;
+        float halfBoardWidth = boardWorldWidth / 2f;
 
-        float requiredHeight = Mathf.Max(
-            (gridWorldWidth + margin * 2) / aspect,
-            (gridWorldHeight + margin * 2)
-        );
+        // ✅ Proper size that fits the entire board, even on tall/narrow screens
+        float requiredOrthoSize = Mathf.Max(halfBoardHeight, halfBoardWidth / aspect);
 
-        cam.orthographicSize = Mathf.Clamp(requiredHeight / 2f, minZoom, maxZoom);
+        // ✅ This ensures no tiles get clipped due to rounding
+        cam.orthographicSize = requiredOrthoSize + 0.01f;
 
-        float centerX = (gridWidth * tileSize) / 2f - tileSize / 2f + gridOffset.x;
-        float centerY = (gridHeight * tileSize) / 2f - tileSize / 2f + gridOffset.y;
-
+        // ✅ Center the camera over the entire grid
+        float centerX = (gridWidth - 1) * tileSize / 2f + gridOffset.x;
+        float centerY = (gridHeight - 1) * tileSize / 2f + gridOffset.y;
         cam.transform.position = new Vector3(centerX, centerY, -10f);
     }
 
 
+
+
+    
     private void HandleZoom()
     {
         // Mouse Scroll

@@ -19,20 +19,34 @@ public class GameManager : MonoBehaviour
     private Dictionary<int, GameObject> playerEntries = new();
     private Room currentRoom;
     private Player localPlayer;
+    
+    [Header("Game Logic")]
+    public GameRules rules;
+    public int currentRound = 1;
+
+    public int CardsPerPlayer => rules.GetCardsPerPlayer();
+    public bool IsClockwise => rules.IsClockwise(currentRound);
+
 
     private void Awake()
+{
+    if (Instance == null)
     {
-        if (Instance == null)
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+        SceneManager.sceneLoaded += OnSceneLoaded;
+
+        if (rules == null)
         {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-            SceneManager.sceneLoaded += OnSceneLoaded;
-        }
-        else
-        {
-            Destroy(gameObject);
+            rules = Resources.Load<GameRules>("DevRules");
         }
     }
+    else
+    {
+        Destroy(gameObject);
+    }
+}
+
 
     /// <summary>
     /// Called by NetworkManager after joining room and before loading GameRoom scene.

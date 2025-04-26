@@ -1,87 +1,110 @@
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class GridGenerator : MonoBehaviour
 {
+    public static GridGenerator Instance { get; private set; }
+    
     public GameObject tilePrefab;
     public Sprite grassSprite;
     public Sprite waterSprite;
-    public GameObject labelPrefab;
-    public float labelOffset = 0.5f;
+    
+    [Header("Coordinate Sprites")]
+    public Sprite[] letterSprites;     // A–J in order
+    public Sprite[] numberSprites;     // 1–10 in order
+    public Sprite emptyBorderSprite;
+    
+    public GameObject impPrefab;
+    public List<TileData> allTiles = new(); // populated as tiles spawn
 
+    
+    private void Awake()
+    {
+        if (Instance == null)
+            Instance = this;
+        else
+            Destroy(gameObject);
+    }
 
-    private char[] rowLabels = "ABCDEFGHIJ".ToCharArray();
-    private const int width = 10;
-    private const int height = 10;
-    private const float spacing = 1f;
 
     void Start()
     {
         GenerateGrid();
-        CreateCoordinateLabels();
     }
+    
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.cyan;
+
+        // Draw 12x12 grid tile bounds
+        for (int x = 0; x < 12; x++)
+        {
+            for (int y = 0; y < 12; y++)
+            {
+                Vector3 pos = new Vector3(x, y, 0);
+                Gizmos.DrawWireCube(pos, Vector3.one);
+            }
+        }
+    }
+
 
     void GenerateGrid()
     {
-        for (int x = 0; x < width; x++)
+        var reversedLetters = letterSprites.Reverse().ToArray();
+        allTiles.Clear(); // clear in case we're regenerating the board
+
+        for (int x = 0; x < 12; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < 12; y++)
             {
-                var pos = new Vector3(x * spacing, y * spacing, 0f);
-                var tile = Instantiate(tilePrefab, pos, Quaternion.identity, transform);
+                Vector3 position = new Vector3(x, y, 0);
+                GameObject tile = Instantiate(tilePrefab, position, Quaternion.identity, transform);
+                TileData tileData = tile.GetComponent<TileData>();
 
-                var tileType = Random.value < 0.5f ? TileData.TileType.Grass : TileData.TileType.Water;
-                var chosenSprite = tileType == TileData.TileType.Grass ? grassSprite : waterSprite;
-                var coord = $"{rowLabels[y]}{x + 1}";
+                // 🔹 Add the tile to the global list
+                allTiles.Add(tileData);
 
-                tile.GetComponent<TileData>().Init(tileType, coord, new Vector2Int(x, y), chosenSprite);
+                // 🔹 Coordinate label tiles
+                if ((x == 0 || x == 11) && (y >= 1 && y <= 10))
+                {
+                    Sprite letter = reversedLetters[y - 1];
+                    tileData.Init(TileData.TileType.Coordinate, $"Letter_{y}", new Vector2Int(x, y), letter);
+                }
+                else if ((y == 0 || y == 11) && (x >= 1 && x <= 10))
+                {
+                    Sprite number = numberSprites[x - 1];
+                    tileData.Init(TileData.TileType.Coordinate, $"Number_{x}", new Vector2Int(x, y), number);
+                }
+                else if ((x == 0 || x == 11) && (y == 0 || y == 11))
+                {
+                    tileData.Init(TileData.TileType.EmptyCorner, "Corner", new Vector2Int(x, y), emptyBorderSprite);
+                }
+                else
+                {
+                    // 🔹 Playable tile (grass or water)
+                    TileData.TileType tileType = Random.value < 0.5f ? TileData.TileType.Grass : TileData.TileType.Water;
+                    Sprite tileSprite = tileType == TileData.TileType.Grass ? grassSprite : waterSprite;
+                    string coord = $"{(char)('A' + (10 - (y - 1)) - 1)}{x}";
+                    tileData.Init(tileType, coord, new Vector2Int(x, y), tileSprite);
+                }
             }
         }
     }
     
-    private void CreateCoordinateLabels()
+    public TileData GetTileByCoord(string coord)
     {
-        char[] rowLabels = "JIHGFEDCBA".ToCharArray();
-        float margin = 0.5f; // distance away from edge of board
-
-        for (int x = 0; x < width; x++)
-        {
-            string colLabel = (x + 1).ToString();
-
-            // X position is the center of the tile: x
-            // Y positions are just above and below the grid without offset
-            Vector3 topPos = new Vector3(x, height + margin, 0);
-            Vector3 bottomPos = new Vector3(x, -1f - margin, 0);
-
-            CreateLabel(colLabel, topPos);
-            CreateLabel(colLabel, bottomPos);
-        }
-
-        for (int y = 0; y < height; y++)
-        {
-            string rowLabel = rowLabels[y].ToString();
-
-            // Y is center of row tile
-            // X is just to the left and right of grid
-            Vector3 leftPos = new Vector3(-1f - margin, y, 0);
-            Vector3 rightPos = new Vector3(width + margin, y, 0);
-
-            CreateLabel(rowLabel, leftPos);
-            CreateLabel(rowLabel, rightPos);
-        }
+        return allTiles.FirstOrDefault(t => t.coord == coord);
     }
-
-
-
-    private void CreateLabel(string text, Vector3 position)
+    
+    public string[] GetRandomCoords(int count)
     {
-        GameObject labelObj = Instantiate(labelPrefab, position, Quaternion.identity, transform);
-        var label = labelObj.GetComponent<TMPro.TextMeshPro>();
-
-        label.text = text;
-        label.alignment = TMPro.TextAlignmentOptions.Center;
-        label.fontSize = 1.5f;
+        return allTiles
+            .Where(t => t.type == TileData.TileType.Grass || t.type == TileData.TileType.Water)
+            .OrderBy(x => Random.value)
+            .Take(count)
+            .Select(t => t.coord)
+            .ToArray();
     }
-
-
 
 }

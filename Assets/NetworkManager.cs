@@ -1,16 +1,12 @@
-using System.Collections.Generic;
+// ✅ NetworkManager.cs
 using UnityEngine;
+using Photon.Pun;
 using Photon.Realtime;
-using ExitGames.Client.Photon;
 using UnityEngine.SceneManagement;
 
-public class NetworkManager : MonoBehaviour, IConnectionCallbacks, IMatchmakingCallbacks, ILobbyCallbacks
+public class NetworkManager : MonoBehaviourPunCallbacks
 {
     public static NetworkManager Instance;
-    private LoadBalancingClient _client;
-
-    private string _gameVersion = "1.0";
-    private string _region = "eu";
 
     private void Awake()
     {
@@ -25,82 +21,50 @@ public class NetworkManager : MonoBehaviour, IConnectionCallbacks, IMatchmakingC
         }
     }
 
-    public void ConnectToPhoton()
+    private void Start()
     {
-        _client = new LoadBalancingClient();
-        _client.AppId = "1e6c098d-5fbb-42e7-bebe-67943264ae46"; // Replace with your App ID
-        _client.AppVersion = _gameVersion;
-        _client.NickName = "Aleksa";
-        _client.LoadBalancingPeer.DisconnectTimeout = 100000;
-        _client.AddCallbackTarget(this);
-        _client.ConnectToRegionMaster(_region);
+        PhotonNetwork.AutomaticallySyncScene = true;
+        PhotonNetwork.NickName = "Player_" + Random.Range(1000, 9999);
+        PhotonNetwork.GameVersion = "1.0";
+        PhotonNetwork.ConnectUsingSettings();
     }
 
-    private void Update()
+    public override void OnConnectedToMaster()
     {
-        _client?.Service();
-    }
+        Debug.Log("✅ Connected to Photon Master Server.");
 
-    public void OnConnectedToMaster()
-    {
-        Debug.Log("Connected to Photon Master.");
-        _client.OpJoinRandomRoom();
-    }
-
-    public void OnJoinRoomFailed(short returnCode, string message)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void OnJoinRandomFailed(short returnCode, string message)
-    {
-        Debug.Log("No rooms found. Creating one.");
-        _client.OpCreateRoom(new EnterRoomParams
+        PhotonNetwork.JoinOrCreateRoom("LocalTestRoom", new RoomOptions
         {
-            RoomName = "Room_" + Random.Range(1000, 9999),
-            RoomOptions = new RoomOptions { MaxPlayers = 4, IsOpen = true, IsVisible = true }
-        });
+            MaxPlayers = 4,
+            IsOpen = true,
+            IsVisible = true
+        }, TypedLobby.Default);
     }
 
-    public void OnJoinedRoom()
+    public override void OnJoinedRoom()
     {
-        Debug.Log("Joined Room: " + _client.CurrentRoom.Name);
+        Debug.Log($"✅ Joined Room: {PhotonNetwork.CurrentRoom.Name}");
 
-        // Set the current room in GameManager
-        GameManager.Instance?.SetRoom(_client.CurrentRoom, _client.LocalPlayer);
+        foreach (var player in PhotonNetwork.PlayerList)
+        {
+            Debug.Log($"🧍 Player {player.NickName} - Actor {player.ActorNumber}");
+        }
 
-        // Load GameRoom scene (don't call GameManager.OnJoinedRoom directly here)
         SceneManager.LoadScene("GameRoom");
     }
 
-
-    public void OnConnected() => Debug.Log("Connected to Photon.");
-    public void OnDisconnected(DisconnectCause cause) => Debug.LogWarning("Disconnected: " + cause);
-    public void OnRegionListReceived(RegionHandler regionHandler)
+    public override void OnJoinRoomFailed(short returnCode, string message)
     {
-        throw new System.NotImplementedException();
+        Debug.LogError($"❌ Failed to join room: {message}");
     }
 
-    public void OnCustomAuthenticationResponse(Dictionary<string, object> data)
+    public override void OnCreateRoomFailed(short returnCode, string message)
     {
-        throw new System.NotImplementedException();
+        Debug.LogError($"❌ Failed to create room: {message}");
     }
 
-    public void OnCustomAuthenticationFailed(string debugMessage)
+    public override void OnDisconnected(DisconnectCause cause)
     {
-        throw new System.NotImplementedException();
+        Debug.LogWarning($"⚠ Disconnected from Photon: {cause}");
     }
-
-    public void OnFriendListUpdate(List<FriendInfo> friendList)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void OnCreatedRoom() => Debug.Log("Room created.");
-    public void OnCreateRoomFailed(short returnCode, string message) => Debug.LogWarning("Create Room Failed: " + message);
-    public void OnLeftRoom() => Debug.Log("Left Room");
-    public void OnRoomListUpdate(System.Collections.Generic.List<RoomInfo> roomList) { }
-    public void OnLobbyStatisticsUpdate(System.Collections.Generic.List<TypedLobbyInfo> lobbyStats) { }
-    public void OnJoinedLobby() { }
-    public void OnLeftLobby() { }
 }

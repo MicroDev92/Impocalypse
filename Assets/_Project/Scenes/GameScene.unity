@@ -648,6 +648,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cardPrefab: {fileID: 730347159401646627, guid: 422f1261b08cbc44d8af5b73b169204d, type: 3}
   cardPanel: {fileID: 1014284977}
+  impSprite: {fileID: 1704136824156536098, guid: 099a75e0a9928864f87fb7ced78d6ee4, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

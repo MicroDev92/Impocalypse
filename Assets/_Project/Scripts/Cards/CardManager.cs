@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
+using _Project.Scripts.Data;
+using _Project.Scripts.Visuals;
 using UnityEngine;
 using ExitGames.Client.Photon;
 using Photon.Pun;
@@ -9,19 +11,18 @@ public class CardManager : MonoBehaviour, IOnEventCallback
 {
     public GameObject cardPrefab;
     public Transform cardPanel;
-    private const byte Event_CardDeal = 1;
+    [SerializeField] private ImpVisuals impVisuals;
+
     private List<Card> activeCards = new();
-    private int confirmedCount = 0;
-    [SerializeField] private Sprite impSprite;
+    private List<Card> selectedCards = new();
+    private Dictionary<int, PlayerData> playerDataByActor = new();
 
     private void Start()
     {
         Card.OnCardConfirmed += OnCardConfirmed;
-
-        if (PhotonNetwork.IsMasterClient)
-            DealInitialCards();
-
         PhotonNetwork.AddCallbackTarget(this);
+        
+        FindFirstObjectByType<DraftHUD>()?.UpdateHUD();
     }
 
     private void OnDestroy()
@@ -30,40 +31,62 @@ public class CardManager : MonoBehaviour, IOnEventCallback
         Card.OnCardConfirmed -= OnCardConfirmed;
     }
 
-    private void DealInitialCards()
-    {
-        int count = GameManager.Instance.CardsPerPlayer;
-
-        // Get enough coords to give each player a unique hand
-        var players = PhotonNetwork.CurrentRoom.Players.Values.ToList();
-        var allCoords = GridGenerator.Instance.GetRandomCoords(count * players.Count);
-
-        for (int i = 0; i < players.Count; i++)
-        {
-            string[] playerCoords = allCoords.Skip(i * count).Take(count).ToArray();
-
-            object[] data = new object[] { playerCoords };
-
-            PhotonNetwork.RaiseEvent(Event_CardDeal, data,
-                new RaiseEventOptions { TargetActors = new int[] { players[i].ActorNumber } },
-                new SendOptions { Reliability = true });
-        }
-    }
-
-
     public void OnEvent(EventData photonEvent)
     {
-        if (photonEvent.Code == Event_CardDeal)
+        switch (photonEvent.Code)
         {
-            object[] data = (object[])photonEvent.CustomData;
-            string[] coords = ((object[])data[0]).Cast<string>().ToArray();
-            SpawnCards(coords);
-        }
+            case NetworkEvents.DealCards:
+                string[] coords = ((object[])photonEvent.CustomData).Cast<string>().ToArray();
+                SpawnCards(coords);
+                break;
 
-        if (photonEvent.Code == 2)
-        {
-            var coord = (string)photonEvent.CustomData;
-            SpawnImpRemote(coord);
+            case NetworkEvents.AssignPlayerIdentities:
+            {
+                object[] rawData = (object[])photonEvent.CustomData;
+                playerDataByActor.Clear();
+
+                foreach (object[] entry in rawData)
+                {
+                    int actor = (int)entry[0];
+                    string nick = (string)entry[1];
+                    string color = (string)entry[2];
+
+                    playerDataByActor[actor] = new PlayerData
+                    {
+                        ActorNumber = actor,
+                        Nickname = nick,
+                        ImpColor = color
+                    };
+                }
+                break;
+            }
+
+            case NetworkEvents.SpawnImps:
+            {
+                object[] raw = (object[])photonEvent.CustomData;
+                List<ImpSpawnData> impCoords = new();
+
+                foreach (object[] entry in raw)
+                {
+                    string coord = (string)entry[0];
+                    int actor = (int)entry[1];
+                    impCoords.Add(new ImpSpawnData { Coord = coord, OwnerActor = actor });
+                }
+
+                foreach (var data in impCoords)
+                {
+                    if (playerDataByActor.TryGetValue(data.OwnerActor, out var owner))
+                    {
+                        var sprite = impVisuals.GetSprite(owner.ImpColor);
+                        SpawnImp(data.Coord, sprite);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"Missing PlayerData for actor {data.OwnerActor}");
+                    }
+                }
+                break;
+            }
         }
     }
 
@@ -73,7 +96,7 @@ public class CardManager : MonoBehaviour, IOnEventCallback
             Destroy(child.gameObject);
 
         activeCards.Clear();
-        confirmedCount = 0;
+        selectedCards.Clear();
 
         foreach (var coord in coordinates)
         {
@@ -84,9 +107,8 @@ public class CardManager : MonoBehaviour, IOnEventCallback
             activeCards.Add(card);
         }
     }
-    
-    [PunRPC]
-    private void SpawnImpRemote(string coord)
+
+    private void SpawnImp(string coord, Sprite sprite)
     {
         TileData tile = GridGenerator.Instance.GetTileByCoord(coord);
         if (tile == null) return;
@@ -96,27 +118,37 @@ public class CardManager : MonoBehaviour, IOnEventCallback
         imp.transform.localScale = Vector3.one * 0.9f;
 
         var sr = imp.AddComponent<SpriteRenderer>();
-        sr.sprite = impSprite;
+        sr.sprite = sprite;
         sr.sortingOrder = 10;
     }
 
     private void OnCardConfirmed(Card selected)
     {
-        confirmedCount++;
+        if (selectedCards.Contains(selected)) return;
 
-        if (confirmedCount >= 2)
+        selectedCards.Add(selected);
+
+        // Spawn local preview for the current player's own imp
+        if (playerDataByActor.TryGetValue(PhotonNetwork.LocalPlayer.ActorNumber, out var self))
+        {
+            var sprite = impVisuals.GetSprite(self.ImpColor);
+            SpawnImp(selected.coordinate, sprite);
+        }
+
+        if (selectedCards.Count >= 2)
         {
             foreach (var card in activeCards)
             {
-                if (card != selected)
+                if (!selectedCards.Contains(card))
                     card.Disable();
             }
+            
+            FindFirstObjectByType<DraftHUD>()?.SetPhase("Waiting for others..."); 
 
-            GameManager.Instance.currentRound++;
-            Debug.Log($"➡ Round {GameManager.Instance.currentRound} - Direction: {(GameManager.Instance.IsClockwise ? "Clockwise" : "Counter-clockwise")}");
-
-            if (PhotonNetwork.IsMasterClient)
-                DealInitialCards();
+            string[] pickedCoords = selectedCards.Select(c => c.coordinate).ToArray();
+            PhotonNetwork.RaiseEvent(NetworkEvents.SubmitPicks, pickedCoords,
+                new RaiseEventOptions { Receivers = ReceiverGroup.MasterClient },
+                SendOptions.SendReliable);
         }
     }
 }

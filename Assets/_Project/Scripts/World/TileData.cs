@@ -12,6 +12,8 @@ public class TileData : MonoBehaviour
 
     public TileType type;
     public string coord;
+    
+    [Tooltip("Grid position in tile matrix (0–11 world grid)")]
     public Vector2Int gridPosition;
 
     public void Init(TileType tileType, string coordLabel, Vector2Int position, Sprite sprite)

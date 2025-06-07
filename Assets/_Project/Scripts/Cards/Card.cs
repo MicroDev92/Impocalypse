@@ -1,19 +1,16 @@
-using ExitGames.Client.Photon;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Photon.Pun;
-using Photon.Realtime;
 
-public class Card : MonoBehaviourPun
+public class Card : MonoBehaviour
 {
     public string coordinate;
     public TextMeshProUGUI label;
     public Button button;
-    [SerializeField] private Sprite impSprite;
 
-    private bool isSelected = false;
-    private bool impSpawned = false;
+    private bool isHighlighted = false;
+    private bool isConfirmed = false;
+    private TileData linkedTile;
 
     public static event System.Action<Card> OnCardConfirmed;
 
@@ -27,34 +24,32 @@ public class Card : MonoBehaviourPun
 
         label.text = coordinate;
         button.onClick.AddListener(OnCardClicked);
+        linkedTile = GridGenerator.Instance.GetTileByCoord(coordinate);
     }
 
     private void OnCardClicked()
     {
-        if (!isSelected)
+        if (!isHighlighted)
         {
-            isSelected = true;
-            HighlightTile();
+            SetHighlight(true);
+            isHighlighted = true;
         }
-        else if (!impSpawned)
+        else if (!isConfirmed)
         {
-            impSpawned = true;
-            
-            PhotonNetwork.RaiseEvent(
-                eventCode: 2, // or some other event code for imp spawning
-                eventContent: coordinate,
-                new RaiseEventOptions { Receivers = ReceiverGroup.All },
-                new SendOptions { Reliability = true }
-            );
-
+            isConfirmed = true;
+            SetHighlight(false);
             OnCardConfirmed?.Invoke(this);
         }
     }
 
-    private void HighlightTile()
+    private void SetHighlight(bool state)
     {
-        TileData tile = GridGenerator.Instance.GetTileByCoord(coordinate);
-        tile?.Highlight(true);
+        linkedTile?.Highlight(state);
     }
-    public void Disable() => button.interactable = false;
+
+    public void Disable()
+    {
+        button.interactable = false;
+        SetHighlight(false);
+    }
 }

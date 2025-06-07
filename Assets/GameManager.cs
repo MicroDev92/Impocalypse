@@ -5,6 +5,7 @@ using Photon.Realtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviourPunCallbacks
@@ -17,12 +18,12 @@ public class GameManager : MonoBehaviourPunCallbacks
     public Button startGameButton;
     public TMP_Text statusText;
 
-    [Header("Game Logic")]
-    public GameRules rules;
+    [FormerlySerializedAs("rules")] [Header("Game Logic")]
+    public GameRules Rules;
     public int currentRound = 1;
 
-    public int CardsPerPlayer => rules.GetCardsPerPlayer(TotalPlayers);
-    public bool IsClockwise => rules.IsClockwise(currentRound);
+    public int CardsPerPlayer => Rules.GetCardsPerPlayer(TotalPlayers);
+    public bool IsClockwise => Rules.IsClockwise(currentRound);
     public int TotalPlayers => PhotonNetwork.CurrentRoom?.PlayerCount ?? 1;
 
     private Dictionary<int, GameObject> playerEntries = new();
@@ -36,8 +37,8 @@ public class GameManager : MonoBehaviourPunCallbacks
             SceneManager.sceneLoaded += OnSceneLoaded;
             PhotonNetwork.AddCallbackTarget(this);
 
-            if (rules == null)
-                rules = Resources.Load<GameRules>("DevRules");
+            if (!Rules)
+                Rules = Resources.Load<GameRules>("DevRules");
         }
         else
         {

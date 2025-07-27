@@ -1,14 +1,28 @@
-// File: _Project/Scripts/UI/DraftHUD.cs
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
+
+public enum GamePhase
+{
+    Draft,
+    Build
+}
 
 public class DraftHUD : MonoBehaviour
 {
+    public static DraftHUD Instance { get; private set; }
+
     [Header("UI References")]
     public TMP_Text roundText;
-    public TMP_Text playerTurnText;
-    public TMP_Text phaseLabel;
+    public TMP_Text phaseText;
+    public TMP_Text statusText;
+
+    private void Awake()
+    {
+        if (Instance == null)
+            Instance = this;
+        else
+            Destroy(gameObject);
+    }
 
     public void SetRound(int round)
     {
@@ -16,22 +30,22 @@ public class DraftHUD : MonoBehaviour
             roundText.text = $"Round {round}";
     }
 
-    public void SetPlayerName(string name)
+    public void SetPhase(GamePhase phase)
     {
-        if (playerTurnText != null)
-            playerTurnText.text = $"You are: {name}";
+        if (phaseText != null)
+            phaseText.text = $"Phase: {phase.ToString().ToUpper()}";
     }
 
-    public void SetPhase(string phase)
+    public void SetStatus(string status)
     {
-        if (phaseLabel != null)
-            phaseLabel.text = phase;
+        if (statusText != null)
+            statusText.text = status;
     }
 
-    public void UpdateHUD()
+    public void UpdateHUD(int round, GamePhase phase, string status)
     {
-        SetRound(GameManager.Instance.currentRound);
-        SetPlayerName(Photon.Pun.PhotonNetwork.LocalPlayer.NickName);
-        SetPhase("Pick 2 cards");
+        SetRound(round);
+        SetPhase(phase);
+        SetStatus(status);
     }
 }

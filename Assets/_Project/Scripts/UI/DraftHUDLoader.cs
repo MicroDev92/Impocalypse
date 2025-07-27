@@ -8,7 +8,11 @@ public class DraftHUDLoader : MonoBehaviour
     {
         if (FindFirstObjectByType<DraftHUD>() == null && draftHudPrefab != null)
         {
-            GameObject hud = Instantiate(draftHudPrefab, transform);
+            var canvas = FindFirstObjectByType<Canvas>();
+            if (canvas != null)
+            {
+                Instantiate(draftHudPrefab, canvas.transform);
+            }
         }
     }
 }

@@ -22,7 +22,7 @@ public class CardManager : MonoBehaviour, IOnEventCallback
         Card.OnCardConfirmed += OnCardConfirmed;
         PhotonNetwork.AddCallbackTarget(this);
         
-        FindFirstObjectByType<DraftHUD>()?.UpdateHUD();
+        FindFirstObjectByType<DraftHUD>()?.UpdateHUD(GameManager.Instance.currentRound, GameManager.Instance.CurrentPhase, "Pick 2 cards...");
     }
 
     private void OnDestroy()
@@ -143,7 +143,7 @@ public class CardManager : MonoBehaviour, IOnEventCallback
                     card.Disable();
             }
             
-            FindFirstObjectByType<DraftHUD>()?.SetPhase("Waiting for others..."); 
+            FindFirstObjectByType<DraftHUD>()?.UpdateHUD(GameManager.Instance.currentRound, GameManager.Instance.CurrentPhase, "Waiting for others..."); 
 
             string[] pickedCoords = selectedCards.Select(c => c.coordinate).ToArray();
             PhotonNetwork.RaiseEvent(NetworkEvents.SubmitPicks, pickedCoords,

@@ -80,7 +80,7 @@ public class GameOrchestrator : MonoBehaviour, IOnEventCallback
             GameManager.Instance.currentRound++;
             
             FindFirstObjectByType<DraftHUD>()?.SetRound(GameManager.Instance.currentRound);
-            FindFirstObjectByType<DraftHUD>()?.SetPhase("Pick 2 cards"); // for the new turn
+            FindFirstObjectByType<DraftHUD>()?.SetPhase(GamePhase.Draft); // for the new turn
 
 
             PassHandsToNextPlayer();

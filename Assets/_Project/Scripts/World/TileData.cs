@@ -6,6 +6,10 @@ public class TileData : MonoBehaviour
     {
         Grass,
         Water,
+        Wood,
+        Fish,
+        Farm,
+        PresetVillage,
         Coordinate,
         EmptyCorner
     }

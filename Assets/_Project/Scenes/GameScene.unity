@@ -230,6 +230,10 @@ MonoBehaviour:
   tilePrefab: {fileID: 4775329531427824515, guid: 22bb46e6ffa27af4cb3bf19e9f26202d, type: 3}
   grassSprite: {fileID: 7932798033344189819, guid: 5053a5073fe533c439a058bdabcaf0bf, type: 3}
   waterSprite: {fileID: 8509550459451208454, guid: fee089676f2450d42b7d4bab18c8a4f7, type: 3}
+  woodSprite: {fileID: 9085546173938197295, guid: 9980d2bedc3c81946a9341918743d7a8, type: 3}
+  fishSprite: {fileID: -420248917960818929, guid: c689f87118ba3644fb4c6bb27ec40ec6, type: 3}
+  farmSprite: {fileID: -4944002875320901219, guid: ea939bf7356094944ba6ae121c14b183, type: 3}
+  presetVillageSprite: {fileID: 3566122568552877362, guid: 5fa093d352fe71f4d95c4d8f4d0edaa2, type: 3}
   letterSprites:
   - {fileID: 5025966274132807050, guid: d0a006db80b8f304aa09178e17edf014, type: 3}
   - {fileID: 4956902142949935247, guid: 7575af0bd4539f7479ddcc4be656626c, type: 3}
@@ -700,6 +704,51 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 2
   m_VerticalFit: 0
+--- !u!1 &1192875919
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1192875920}
+  - component: {fileID: 1192875921}
+  m_Layer: 0
+  m_Name: CardRegistry
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1192875920
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1192875919}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1192875921
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1192875919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0bb273d3f604c0fb99194cfac254b98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  allCards: []
 --- !u!1 &1298875133
 GameObject:
   m_ObjectHideFlags: 0
@@ -802,3 +851,4 @@ SceneRoots:
   - {fileID: 1298875134}
   - {fileID: 1588800339}
   - {fileID: 552307299}
+  - {fileID: 1192875920}

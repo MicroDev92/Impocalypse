@@ -25,6 +25,9 @@ public class GameManager : MonoBehaviourPunCallbacks
     public int CardsPerPlayer => Rules.GetCardsPerPlayer(TotalPlayers);
     public bool IsClockwise => Rules.IsClockwise(currentRound);
     public int TotalPlayers => PhotonNetwork.CurrentRoom?.PlayerCount ?? 1;
+    
+    public GamePhase CurrentPhase = GamePhase.Draft;
+    public const int MaxRounds = 4;
 
     private Dictionary<int, GameObject> playerEntries = new();
 
@@ -102,6 +105,29 @@ public class GameManager : MonoBehaviourPunCallbacks
         if (PhotonNetwork.IsMasterClient)
         {
             PhotonNetwork.LoadLevel("GameScene");
+        }
+    }
+    
+    public void AdvancePhase()
+    {
+        if (CurrentPhase == GamePhase.Draft)
+        {
+            CurrentPhase = GamePhase.Build;
+            DraftHUD.Instance.UpdateHUD(currentRound, CurrentPhase, "Place buildings...");
+        }
+        else if (CurrentPhase == GamePhase.Build)
+        {
+            if (currentRound >= MaxRounds)
+            {
+                DraftHUD.Instance.UpdateHUD(currentRound, CurrentPhase, "Game Over!");
+                // TODO: Implement game end logic here
+            }
+            else
+            {
+                currentRound++;
+                CurrentPhase = GamePhase.Draft;
+                DraftHUD.Instance.UpdateHUD(currentRound, CurrentPhase, "Pick 2 cards");
+            }
         }
     }
 

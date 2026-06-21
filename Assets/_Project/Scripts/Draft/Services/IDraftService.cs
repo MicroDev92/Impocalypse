@@ -97,5 +97,11 @@ namespace Draft.Services
         /// Gets city cards picked by a player during the draft (for construction phase).
         /// </summary>
         IReadOnlyList<CardData> GetPlayerCityCards(int actorNumber);
+
+        /// <summary>
+        /// Removes a city card from a player's stock once it has been built, so it is not
+        /// re-offered in later rounds' construction phases.
+        /// </summary>
+        void ConsumeCityCard(int actorNumber, CardData cityCard);
     }
 }

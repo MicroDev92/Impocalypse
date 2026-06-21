@@ -514,6 +514,98 @@ public static class GameSceneUISetup
     }
 
     // ==========================================
+    // FOCUSED: add the Game Over results screen
+    // ==========================================
+
+    [MenuItem("GameObject/UI/Impocalypse - Add Game Over Screen", false, 23)]
+    private static void AddGameOverScreen()
+    {
+        var canvas = FindExistingCanvas();
+        if (canvas == null)
+        {
+            Debug.LogError("[GameSceneUISetup] No Canvas found in the open scene. Open GameScene first.");
+            return;
+        }
+
+        // Always-active root holds the GameOverUI component so it keeps listening even
+        // while the visible panel is toggled off.
+        var root = new GameObject("GameOverScreen", typeof(RectTransform));
+        root.transform.SetParent(canvas.transform, false);
+        StretchFull(root.GetComponent<RectTransform>());
+
+        // Full-screen dark overlay panel (this is what gets shown/hidden).
+        var panel = CreatePanel(root.transform, "GameOverPanel");
+        StretchFull(panel.GetComponent<RectTransform>());
+        panel.GetComponent<Image>().color = new Color(0.05f, 0.02f, 0.02f, 0.92f);
+
+        var title = CreateTextObject(panel.transform, "Title", "GAME OVER", 40, FontStyles.Bold);
+        var titleRect = title.GetComponent<RectTransform>();
+        titleRect.anchorMin = titleRect.anchorMax = new Vector2(0.5f, 1f);
+        titleRect.pivot = new Vector2(0.5f, 1f);
+        titleRect.sizeDelta = new Vector2(700, 60);
+        titleRect.anchoredPosition = new Vector2(0, -60);
+        title.GetComponent<TMP_Text>().alignment = TextAlignmentOptions.Center;
+        title.GetComponent<TMP_Text>().color = TextAccent;
+        title.GetComponent<TMP_Text>().characterSpacing = 8f;
+
+        var winner = CreateTextObject(panel.transform, "WinnerText", "Player Wins!", 24, FontStyles.Bold);
+        var winnerRect = winner.GetComponent<RectTransform>();
+        winnerRect.anchorMin = winnerRect.anchorMax = new Vector2(0.5f, 1f);
+        winnerRect.pivot = new Vector2(0.5f, 1f);
+        winnerRect.sizeDelta = new Vector2(700, 40);
+        winnerRect.anchoredPosition = new Vector2(0, -135);
+        winner.GetComponent<TMP_Text>().alignment = TextAlignmentOptions.Center;
+        winner.GetComponent<TMP_Text>().color = TextPrimary;
+
+        var scoreContainer = new GameObject("ScoreContainer", typeof(RectTransform), typeof(VerticalLayoutGroup));
+        scoreContainer.transform.SetParent(panel.transform, false);
+        var scRect = scoreContainer.GetComponent<RectTransform>();
+        scRect.anchorMin = scRect.anchorMax = new Vector2(0.5f, 0.5f);
+        scRect.pivot = new Vector2(0.5f, 0.5f);
+        scRect.sizeDelta = new Vector2(620, 320);
+        scRect.anchoredPosition = new Vector2(0, -10);
+        var scVlg = scoreContainer.GetComponent<VerticalLayoutGroup>();
+        scVlg.spacing = 8;
+        scVlg.childAlignment = TextAnchor.UpperCenter;
+        scVlg.childForceExpandWidth = true;
+        scVlg.childForceExpandHeight = false;
+        scVlg.childControlWidth = true;
+        scVlg.childControlHeight = false;
+
+        var playAgain = CreateButton(panel.transform, "PlayAgainButton", "Play Again", 200f, 48f);
+        var paRect = playAgain.GetComponent<RectTransform>();
+        paRect.anchorMin = paRect.anchorMax = new Vector2(0.5f, 0f);
+        paRect.pivot = new Vector2(1f, 0f);
+        paRect.anchoredPosition = new Vector2(-10, 70);
+
+        var returnMenu = CreateButton(panel.transform, "ReturnToMenuButton", "Main Menu", 200f, 48f);
+        var rmRect = returnMenu.GetComponent<RectTransform>();
+        rmRect.anchorMin = rmRect.anchorMax = new Vector2(0.5f, 0f);
+        rmRect.pivot = new Vector2(0f, 0f);
+        rmRect.anchoredPosition = new Vector2(10, 70);
+
+        var ui = root.AddComponent<GameOverUI>();
+        var so = new SerializedObject(ui);
+        so.FindProperty("gameOverPanel").objectReferenceValue = panel;
+        so.FindProperty("winnerText").objectReferenceValue = winner.GetComponent<TMP_Text>();
+        so.FindProperty("scoreContainer").objectReferenceValue = scoreContainer.transform;
+        so.FindProperty("playAgainButton").objectReferenceValue = playAgain.GetComponent<Button>();
+        so.FindProperty("returnToMenuButton").objectReferenceValue = returnMenu.GetComponent<Button>();
+
+        var scoreEntryPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/ScoreEntry.prefab");
+        var fiefDetailPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/FiefDetail.prefab");
+        if (scoreEntryPrefab != null) so.FindProperty("scoreEntryPrefab").objectReferenceValue = scoreEntryPrefab;
+        if (fiefDetailPrefab != null) so.FindProperty("fiefDetailPrefab").objectReferenceValue = fiefDetailPrefab;
+        so.ApplyModifiedProperties();
+
+        Undo.RegisterCreatedObjectUndo(root, "Add Game Over Screen");
+        Selection.activeGameObject = root;
+        Debug.Log("[GameSceneUISetup] Game Over screen added." +
+                  (scoreEntryPrefab == null ? " NOTE: assign ScoreEntry prefab manually." : "") +
+                  (fiefDetailPrefab == null ? " NOTE: assign FiefDetail prefab manually." : ""));
+    }
+
+    // ==========================================
     // PREFAB CREATORS
     // ==========================================
 

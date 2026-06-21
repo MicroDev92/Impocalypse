@@ -336,6 +336,23 @@ namespace Draft.Services
             return new List<CardData>().AsReadOnly();
         }
 
+        public void ConsumeCityCard(int actorNumber, CardData cityCard)
+        {
+            if (cityCard == null) return;
+            if (!_playerCityCards.TryGetValue(actorNumber, out var cards) || cards.Count == 0)
+                return;
+
+            // Exact match first (local placement shares the same card object);
+            // fall back to any city of the same strength (network re-creates the card).
+            var match = cards.FirstOrDefault(c => c.Serialize() == cityCard.Serialize())
+                        ?? cards.FirstOrDefault(c => c.Strength == cityCard.Strength);
+            if (match != null)
+            {
+                cards.Remove(match);
+                Debug.Log($"[DraftService] Consumed Str{(int)cityCard.Strength} city for player {actorNumber}; {cards.Count} left in stock");
+            }
+        }
+
         private void HandleNetworkEvent(byte eventCode, object data, int senderActorId)
         {
             switch (eventCode)

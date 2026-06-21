@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 using Scoring;
 
@@ -36,17 +38,34 @@ public class ScoreEntry : MonoBehaviour
                 scoreText.text = $"{cumulative} pts (this round: +{roundScore})";
         }
 
-        if (fiefs != null && fiefs.Count > 0 && fiefDetailsContainer != null && fiefDetailPrefab != null)
+        if (fiefs != null && fiefDetailsContainer != null && fiefDetailPrefab != null)
         {
-            for (int i = 0; i < fiefs.Count; i++)
+            // Only list fiefs that actually score, biggest first, capped - a player can
+            // hold dozens of 0-point single-tile fiefs that would otherwise flood the panel.
+            var scoring = fiefs.Where(f => f.Score > 0)
+                               .OrderByDescending(f => f.Score)
+                               .Take(8)
+                               .ToList();
+
+            // Guarantee the lines stack instead of overlapping, even if the prefab's
+            // container has no layout group set up.
+            if (fiefDetailsContainer.GetComponent<VerticalLayoutGroup>() == null)
             {
-                var fief = fiefs[i];
+                var vlg = fiefDetailsContainer.gameObject.AddComponent<VerticalLayoutGroup>();
+                vlg.spacing = 2;
+                vlg.childForceExpandHeight = false;
+                vlg.childControlHeight = true;
+                vlg.childControlWidth = true;
+            }
+
+            int index = 1;
+            foreach (var fief in scoring)
+            {
                 var detailObj = Instantiate(fiefDetailPrefab, fiefDetailsContainer);
                 var detailText = detailObj.GetComponentInChildren<TMP_Text>();
                 if (detailText != null)
-                {
-                    detailText.text = $"Fief {i + 1}: {fief.Tiles.Count} tiles, Str {fief.Strength} x Wealth {fief.Wealth} = {fief.Score}";
-                }
+                    detailText.text = $"Fief {index}: {fief.Tiles.Count} tiles, Str {fief.Strength} x Wealth {fief.Wealth} = {fief.Score}";
+                index++;
             }
         }
     }

@@ -139,6 +139,10 @@ namespace Construction
                 if (toRemove != null) cards.Remove(toRemove);
             }
 
+            // Also consume it from the draft service's persistent stock so it isn't
+            // re-offered in a later round's construction phase (fixes cities multiplying).
+            _draftService?.ConsumeCityCard(actorNumber, cityCard);
+
             _eventBus?.Publish(new CityPlacedEvent(coordinate, (int)cityCard.Strength, actorNumber));
 
             Debug.Log($"[ConstructionService] Player {actorNumber} placed Str{(int)cityCard.Strength} city at {coordinate}");

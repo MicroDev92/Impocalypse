@@ -1,0 +1,56 @@
+# ----- Unity generated -----
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+.utmp/
+
+# Asset meta files MUST be kept (only ignored if their asset is ignored)
+!/[Aa]ssets/**/*.meta
+
+# ----- IDE / editor -----
+.vs/
+.vscode/
+.idea/
+.plastic/
+.vsconfig
+.claude/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# ----- OS -----
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# ----- Builds / packages -----
+*.apk
+*.aab
+*.unitypackage
+*.app
+sysinfo.txt
+
+# ----- Build artifacts -----
+*_BurstDebugInformation_DoNotShip/
+*_BackUpThisFolder_ButDontShipItWithYourGame/
+
+# ----- Stray -----
+nul
+clipboard.txt
+claude-chat-text-file.txt

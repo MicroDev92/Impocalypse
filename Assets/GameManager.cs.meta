@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: a488b935a2748dd4ab54bcbd56cd09ef
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - playerListParent: {instanceID: 0}
+  - playerEntryPrefab: {instanceID: 0}
+  - startGameButton: {instanceID: 0}
+  - statusText: {instanceID: 0}
+  - rules: {fileID: 11400000, guid: 2d28df4999d462a42b3eeaf1f29c5e1b, type: 2}
+  executionOrder: -100
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

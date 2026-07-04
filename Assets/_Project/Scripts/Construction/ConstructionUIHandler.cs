@@ -140,7 +140,7 @@ namespace Construction
             var label = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
             if (label != null)
             {
-                label.text = $"City Str {(int)card.Strength}";
+                label.text = BuildingLabel(card);
             }
             
             // If it has a Card script, disable it so it doesn't fight our UI logic
@@ -166,12 +166,12 @@ namespace Construction
             if (selectedImg != null) selectedImg.color = new Color(1f, 0.85f, 0.40f, 1f);
 
             if (instructionText != null)
-                instructionText.text = $"Selected City Str {(int)card.Strength}. Click an owned tile to place.";
+                instructionText.text = $"Selected {BuildingLabel(card)}. Click a highlighted tile to place.";
 
             HighlightValidTiles(card);
         }
 
-        private void HighlightValidTiles(CardData cityCard)
+        private void HighlightValidTiles(CardData card)
         {
             ClearHighlights();
 
@@ -183,14 +183,42 @@ namespace Construction
 
             foreach (var tile in ownedTiles)
             {
-                if (tile.CanPlaceCity(cityCard.Strength))
+                if (CanPlace(tile, card))
                 {
                     tile.Highlight(true);
                     _highlightedTiles.Add(tile);
                 }
             }
 
-            Debug.Log($"[ConstructionUI] Highlighted {_highlightedTiles.Count} valid tiles for Str {(int)cityCard.Strength}");
+            Debug.Log($"[ConstructionUI] Highlighted {_highlightedTiles.Count} valid tiles for {BuildingLabel(card)}");
+        }
+
+        /// <summary>Whether the given building card can be placed on this tile.</summary>
+        private static bool CanPlace(TileData tile, CardData card)
+        {
+            if (card.IsCity) return tile.CanPlaceCity(card.Strength);
+            if (card.IsFarm)
+            {
+                if (card.Farm == FarmKind.Special) return tile.CanPlaceSpecialFarm(card.AllowedTerrain);
+                return tile.CanPlaceCommonResource(); // common farm or market
+            }
+            return false;
+        }
+
+        /// <summary>Short label describing a building card.</summary>
+        private static string BuildingLabel(CardData card)
+        {
+            if (card.IsCity) return $"City Str {(int)card.Strength}";
+            if (card.IsFarm)
+            {
+                return card.Farm switch
+                {
+                    FarmKind.Market => "Market (wildcard)",
+                    FarmKind.Special => $"Luxury Farm: {card.Resource}",
+                    _ => $"Farm: {card.Resource}"
+                };
+            }
+            return "Building";
         }
 
         private void ClearHighlights()

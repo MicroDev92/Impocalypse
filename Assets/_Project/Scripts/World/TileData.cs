@@ -1,6 +1,9 @@
 using Cards;
 using UnityEngine;
 
+/// <summary>What kind of building occupies a tile (at most one per tile).</summary>
+public enum BuildingKind { None, City, CommonFarm, SpecialFarm, Market }
+
 public class TileData : MonoBehaviour
 {
     public enum TileType
@@ -32,14 +35,24 @@ public class TileData : MonoBehaviour
     private int _ownerActorNumber = -1;
     private Color _originalColor = Color.white;
 
-    // Building
-    private CityStrength _buildingStrength = CityStrength.None;
+    // Building (at most one per tile: a City, a Farm, or a Market)
+    private BuildingKind _building = BuildingKind.None;
+    private CityStrength _cityStrength = CityStrength.None;
+    private ResourceType _addedResource = ResourceType.None;
 
     // Properties
     public int OwnerActorNumber => _ownerActorNumber;
     public bool IsOwned => _ownerActorNumber >= 0;
-    public bool HasBuilding => _buildingStrength != CityStrength.None;
-    public CityStrength BuildingStrength => _buildingStrength;
+    public bool HasBuilding => _building != BuildingKind.None;
+    public BuildingKind Building => _building;
+    public CityStrength BuildingStrength => _building == BuildingKind.City ? _cityStrength : CityStrength.None;
+
+    /// <summary>The resource a Farm/Market on this tile adds (None for a city or empty tile).</summary>
+    public ResourceType AddedResource => _addedResource;
+    /// <summary>True if a Market (wildcard common) sits on this tile.</summary>
+    public bool ProducesWildcard => _building == BuildingKind.Market;
+    /// <summary>The resource this tile's terrain produces on its own (None for non-resource terrain).</summary>
+    public ResourceType BaseResource => ResourceTypes.FromTerrain(type);
 
     public bool IsOwnedBy(int actorNumber) => _ownerActorNumber == actorNumber;
 
@@ -53,6 +66,13 @@ public class TileData : MonoBehaviour
         if (strength == CityStrength.Strength3 && type != TileType.Mountain) return false;
         return true;
     }
+
+    /// <summary>A Common Farm or Market goes on an owned, building-free, resource-less tile.</summary>
+    public bool CanPlaceCommonResource() => IsOwned && !HasBuilding && BaseResource == ResourceType.None;
+
+    /// <summary>A Special Farm goes on an owned, building-free tile of the required terrain.</summary>
+    public bool CanPlaceSpecialFarm(TileType requiredTerrain) =>
+        IsOwned && !HasBuilding && type == requiredTerrain;
 
     /// <summary>
     /// Whether this tile type produces a resource for fief wealth calculation.
@@ -119,8 +139,23 @@ public class TileData : MonoBehaviour
     /// </summary>
     public void PlaceCity(CityStrength strength)
     {
-        _buildingStrength = strength;
+        _building = BuildingKind.City;
+        _cityStrength = strength;
         // Visual indicator will be handled by the construction system
+    }
+
+    /// <summary>Places a farm that adds the given resource (special = true for a luxury farm).</summary>
+    public void PlaceFarm(ResourceType resource, bool special)
+    {
+        _building = special ? BuildingKind.SpecialFarm : BuildingKind.CommonFarm;
+        _addedResource = resource;
+    }
+
+    /// <summary>Places a Market (wildcard common, resolved during scoring).</summary>
+    public void PlaceMarket()
+    {
+        _building = BuildingKind.Market;
+        _addedResource = ResourceType.WildcardCommon;
     }
 
     /// <summary>
@@ -129,7 +164,9 @@ public class TileData : MonoBehaviour
     public void ResetOwnership()
     {
         _ownerActorNumber = -1;
-        _buildingStrength = CityStrength.None;
+        _building = BuildingKind.None;
+        _cityStrength = CityStrength.None;
+        _addedResource = ResourceType.None;
 
         var sr = backgroundRenderer != null ? backgroundRenderer : GetComponent<SpriteRenderer>();
         if (sr != null) sr.color = _originalColor;

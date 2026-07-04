@@ -447,9 +447,9 @@ namespace Draft.Services
                 var card = CardData.Deserialize(serialized);
                 if (card == null) continue;
 
-                if (card.IsCity)
+                if (card.IsCity || card.IsFarm)
                 {
-                    // Store city card for construction phase
+                    // Store building card (city or farm) for the construction phase
                     if (!_playerCityCards.ContainsKey(senderActorId))
                         _playerCityCards[senderActorId] = new List<CardData>();
                     _playerCityCards[senderActorId].Add(card);

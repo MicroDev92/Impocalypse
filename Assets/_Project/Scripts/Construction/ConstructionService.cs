@@ -108,56 +108,79 @@ namespace Construction
             return new List<CardData>().AsReadOnly();
         }
 
-        public bool TryPlaceCity(int actorNumber, CardData cityCard, string coordinate)
+        public bool TryPlaceCity(int actorNumber, CardData card, string coordinate)
         {
-            if (cityCard == null || !cityCard.IsCity || string.IsNullOrEmpty(coordinate))
-                return false;
+            if (card == null || string.IsNullOrEmpty(coordinate)) return false;
+            if (!card.IsCity && !card.IsFarm) return false;
 
             var tile = _gridService?.GetTileByCoord(coordinate);
             if (tile == null) return false;
 
-            // Validate placement
             if (!tile.IsOwnedBy(actorNumber))
             {
                 Debug.LogWarning($"[ConstructionService] Tile {coordinate} not owned by player {actorNumber}");
                 return false;
             }
 
-            if (!tile.CanPlaceCity(cityCard.Strength))
+            // Validate + place by building kind
+            if (card.IsCity)
             {
-                Debug.LogWarning($"[ConstructionService] Cannot place {cityCard.Strength} city on {coordinate}");
-                return false;
+                if (!tile.CanPlaceCity(card.Strength))
+                {
+                    Debug.LogWarning($"[ConstructionService] Cannot place {card.Strength} city on {coordinate}");
+                    return false;
+                }
+                tile.PlaceCity(card.Strength);
+            }
+            else if (card.Farm == FarmKind.Special)
+            {
+                if (!tile.CanPlaceSpecialFarm(card.AllowedTerrain))
+                {
+                    Debug.LogWarning($"[ConstructionService] Cannot place luxury farm on {coordinate} (needs {card.AllowedTerrain})");
+                    return false;
+                }
+                tile.PlaceFarm(card.Resource, special: true);
+            }
+            else if (card.Farm == FarmKind.Market)
+            {
+                if (!tile.CanPlaceCommonResource())
+                {
+                    Debug.LogWarning($"[ConstructionService] Cannot place market on {coordinate} (needs a resource-less owned tile)");
+                    return false;
+                }
+                tile.PlaceMarket();
+            }
+            else // Common farm
+            {
+                if (!tile.CanPlaceCommonResource())
+                {
+                    Debug.LogWarning($"[ConstructionService] Cannot place common farm on {coordinate} (needs a resource-less owned tile)");
+                    return false;
+                }
+                tile.PlaceFarm(card.Resource, special: false);
             }
 
-            // Place the city
-            tile.PlaceCity(cityCard.Strength);
-
-            // Remove card from available
+            // Remove from this player's available stock + the draft's persistent stock.
             if (_availableCityCards.TryGetValue(actorNumber, out var cards))
             {
-                var toRemove = cards.FirstOrDefault(c => c.Serialize() == cityCard.Serialize());
+                var toRemove = cards.FirstOrDefault(c => c.Serialize() == card.Serialize());
                 if (toRemove != null) cards.Remove(toRemove);
             }
+            _draftService?.ConsumeCityCard(actorNumber, card);
 
-            // Also consume it from the draft service's persistent stock so it isn't
-            // re-offered in a later round's construction phase (fixes cities multiplying).
-            _draftService?.ConsumeCityCard(actorNumber, cityCard);
+            Debug.Log($"[ConstructionService] Player {actorNumber} placed {card} at {coordinate}");
 
-            _eventBus?.Publish(new CityPlacedEvent(coordinate, (int)cityCard.Strength, actorNumber));
-
-            Debug.Log($"[ConstructionService] Player {actorNumber} placed Str{(int)cityCard.Strength} city at {coordinate}");
-
-            // If master, broadcast to all
-            if (IsMasterClient)
+            // Cities sync over the network (existing path). Farm network sync is a TODO -
+            // single-player applies the placement locally above, which is enough for now.
+            if (card.IsCity)
             {
-                _networkService?.SendToAll(NetworkEventCodes.CityPlaced,
-                    new object[] { coordinate, (int)cityCard.Strength, actorNumber });
-            }
-            else
-            {
-                // Send request to master
-                _networkService?.SendToMaster(NetworkEventCodes.PlaceCity,
-                    new object[] { coordinate, (int)cityCard.Strength });
+                _eventBus?.Publish(new CityPlacedEvent(coordinate, (int)card.Strength, actorNumber));
+                if (IsMasterClient)
+                    _networkService?.SendToAll(NetworkEventCodes.CityPlaced,
+                        new object[] { coordinate, (int)card.Strength, actorNumber });
+                else
+                    _networkService?.SendToMaster(NetworkEventCodes.PlaceCity,
+                        new object[] { coordinate, (int)card.Strength });
             }
 
             return true;

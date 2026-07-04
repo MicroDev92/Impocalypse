@@ -79,6 +79,21 @@ public class PlayerCardUI : MonoBehaviour
         }
 
         UpdateStats(0, 0, 0, 0, 0);
+        HideEmptyIcons();
+    }
+
+    /// <summary>
+    /// Hides any icon Image that has no sprite — those render as solid boxes that cover
+    /// the score/stat text. Keeps the card background and the player-coloured left border.
+    /// Once real sprites are assigned in the prefab, the icons show automatically.
+    /// </summary>
+    private void HideEmptyIcons()
+    {
+        foreach (var img in GetComponentsInChildren<Image>(true))
+        {
+            if (img == cardBackground || img == leftBorder) continue;
+            img.enabled = img.sprite != null;
+        }
     }
 
     public void UpdateStats(int score, int territories, int wood, int carrot, int fish)

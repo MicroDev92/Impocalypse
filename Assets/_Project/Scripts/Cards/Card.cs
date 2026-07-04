@@ -182,13 +182,13 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         if (label != null)
         {
             if (data.IsTerritory)
-            {
                 label.text = data.Coordinate;
-            }
-            else
-            {
+            else if (data.IsCity)
                 label.text = $"City\nStr {(int)data.Strength}";
-            }
+            else if (data.IsFarm)
+                label.text = data.Farm == FarmKind.Market ? "Market" : $"{data.Farm}\n{data.Resource}";
+            else
+                label.text = data.ToString();
         }
 
         if (button != null) button.interactable = true;
@@ -197,13 +197,11 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         UpdateVisuals();
 
         if (data.IsTerritory)
-        {
             LinkToTile();
-        }
-        else
-        {
+        else if (data.IsCity)
             UpdateCityDisplay();
-        }
+        else
+            HideResourceDisplay();
     }
 
     private void ResetState()

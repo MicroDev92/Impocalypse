@@ -173,15 +173,22 @@ public class TileInfoPanel : MonoBehaviour
             };
         }
 
-        // City
+        // Building (city / farm / market)
         if (cityRow != null)
         {
-            bool hasCity = tile.HasBuilding;
-            cityRow.SetActive(hasCity);
+            bool hasBuilding = tile.HasBuilding;
+            cityRow.SetActive(hasBuilding);
 
-            if (hasCity && cityValue != null)
+            if (hasBuilding && cityValue != null)
             {
-                cityValue.text = $"Strength {(int)tile.BuildingStrength}";
+                cityValue.text = tile.Building switch
+                {
+                    BuildingKind.City => $"City (Str {(int)tile.BuildingStrength})",
+                    BuildingKind.Market => "Market",
+                    BuildingKind.SpecialFarm => $"Luxury Farm ({tile.AddedResource})",
+                    BuildingKind.CommonFarm => $"Farm ({tile.AddedResource})",
+                    _ => "—"
+                };
             }
         }
     }

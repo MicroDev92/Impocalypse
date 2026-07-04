@@ -30,9 +30,21 @@ namespace Cards
             for (int i = 0; i < 3; i++)
                 deck.Add(CardData.City(CityStrength.Strength3));
 
+            // Farm family
+            // Common Farms: add a basic resource to a resource-LESS tile
+            for (int i = 0; i < 4; i++) deck.Add(CardData.CommonFarm(ResourceType.Wood));
+            for (int i = 0; i < 4; i++) deck.Add(CardData.CommonFarm(ResourceType.Carrot));
+            for (int i = 0; i < 4; i++) deck.Add(CardData.CommonFarm(ResourceType.Fish));
+            // Special Farms: add a luxury resource on a matching RESOURCE tile
+            deck.Add(CardData.SpecialFarm(ResourceType.Special_A, TileData.TileType.Wood));
+            deck.Add(CardData.SpecialFarm(ResourceType.Special_B, TileData.TileType.Carrot));
+            deck.Add(CardData.SpecialFarm(ResourceType.Special_C, TileData.TileType.Fish));
+            // Markets: wildcard common (player's choice at scoring)
+            for (int i = 0; i < 3; i++) deck.Add(CardData.Market());
+
             Shuffle(deck);
 
-            Debug.Log($"[DeckBuilder] Built deck: {coords.Length} territory + 21 city = {deck.Count} total");
+            Debug.Log($"[DeckBuilder] Built deck: {coords.Length} territory + 21 city + 18 farm = {deck.Count} total");
             return deck;
         }
 

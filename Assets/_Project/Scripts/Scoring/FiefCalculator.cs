@@ -62,15 +62,25 @@ namespace Scoring
                     .Where(t => t.HasBuilding)
                     .Sum(t => (int)t.BuildingStrength);
 
-                // Calculate Wealth: count of unique resource types
-                var uniqueResources = new HashSet<TileData.TileType>();
+                // Calculate Wealth: number of DISTINCT resources produced in the fief.
+                // Counts terrain base resources + farm/special resources, then resolves each
+                // Market (wildcard) to a common resource the fief is still missing.
+                var resources = new HashSet<ResourceType>();
+                int markets = 0;
                 foreach (var t in fief.Tiles)
                 {
-                    if (t.type == TileData.TileType.Wood) uniqueResources.Add(TileData.TileType.Wood);
-                    else if (t.type == TileData.TileType.Carrot) uniqueResources.Add(TileData.TileType.Carrot);
-                    else if (t.type == TileData.TileType.Fish) uniqueResources.Add(TileData.TileType.Fish);
+                    var baseRes = t.BaseResource;
+                    if (baseRes != ResourceType.None) resources.Add(baseRes);
+
+                    if (t.ProducesWildcard) markets++;
+                    else if (t.AddedResource != ResourceType.None) resources.Add(t.AddedResource);
                 }
-                fief.Wealth = uniqueResources.Count;
+                foreach (var common in ResourceTypes.Commons)
+                {
+                    if (markets <= 0) break;
+                    if (!resources.Contains(common)) { resources.Add(common); markets--; }
+                }
+                fief.Wealth = resources.Count;
 
                 fiefs.Add(fief);
             }

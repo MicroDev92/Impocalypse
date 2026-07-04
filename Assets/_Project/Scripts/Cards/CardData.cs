@@ -50,10 +50,13 @@ namespace Cards
         public FarmKind Farm { get; }                     // Farm
         public ResourceType Resource { get; }             // Farm (common/special); WildcardCommon for Market
         public TileData.TileType AllowedTerrain { get; }  // Special Farm placement restriction
+        public ParchmentRule Rule { get; }                // Parchment scoring rule
+        public int Amount { get; }                        // Parchment points / per-unit value
         public int UniqueId { get; }
 
         private CardData(string id, CardType type, string coordinate, CityStrength strength,
-                         FarmKind farm, ResourceType resource, TileData.TileType allowedTerrain, int uniqueId)
+                         FarmKind farm, ResourceType resource, TileData.TileType allowedTerrain, int uniqueId,
+                         ParchmentRule rule = ParchmentRule.None, int amount = 0)
         {
             Id = id;
             Type = type;
@@ -63,6 +66,8 @@ namespace Cards
             Resource = resource;
             AllowedTerrain = allowedTerrain;
             UniqueId = uniqueId;
+            Rule = rule;
+            Amount = amount;
         }
 
         // ---- Factories ----
@@ -105,11 +110,38 @@ namespace Cards
                                 FarmKind.Market, ResourceType.WildcardCommon, TileData.TileType.Grass, uid);
         }
 
+        /// <summary>
+        /// Camp: claims any empty (unclaimed) territory during the build phase.
+        /// Priority (1 = highest) breaks ties when several players camp simultaneously;
+        /// stored in Amount. Resolution order is enforced at the multiplayer sync layer.
+        /// </summary>
+        public static CardData Camp(int priority)
+        {
+            int uid = _nextUniqueId++;
+            return new CardData($"K:{priority}#{uid}", CardType.Camp, null, CityStrength.None,
+                                FarmKind.None, ResourceType.None, TileData.TileType.Grass, uid,
+                                ParchmentRule.None, priority);
+        }
+
+        /// <summary>
+        /// Parchment: a secret end-game scoring card. Treasure = flat Amount; the Mission
+        /// rules score conditionally against the final board (see ParchmentRule).
+        /// </summary>
+        public static CardData Parchment(ParchmentRule rule, int amount, ResourceType resource = ResourceType.None)
+        {
+            int uid = _nextUniqueId++;
+            return new CardData($"P:{(int)rule}:{amount}:{(int)resource}#{uid}", CardType.Parchment, null,
+                                CityStrength.None, FarmKind.None, resource, TileData.TileType.Grass, uid, rule, amount);
+        }
+
         // ---- Queries ----
 
         public bool IsTerritory => Type == CardType.Territory;
         public bool IsCity => Type == CardType.City;
         public bool IsFarm => Type == CardType.Farm;
+        public bool IsParchment => Type == CardType.Parchment;
+        public bool IsTreasure => Type == CardType.Parchment && Rule == ParchmentRule.Treasure;
+        public bool IsCamp => Type == CardType.Camp;
 
         // ---- Serialization (network-safe strings) ----
 
@@ -129,6 +161,10 @@ namespace Cards
                         case FarmKind.Market:  return $"FM:#{UniqueId}";
                     }
                     break;
+                case CardType.Parchment:
+                    return $"P:{(int)Rule}:{Amount}:{(int)Resource}#{UniqueId}";
+                case CardType.Camp:
+                    return $"K:{Amount}#{UniqueId}";
             }
             return Id;
         }
@@ -182,6 +218,29 @@ namespace Cards
                     return new CardData($"FM:#{uid}", CardType.Farm, null, CityStrength.None,
                                         FarmKind.Market, ResourceType.WildcardCommon, TileData.TileType.Grass, uid);
                 }
+
+                case "K":
+                {
+                    SplitUid(rest, out string pv, out int uid);
+                    int.TryParse(pv, out int priority);
+                    return new CardData($"K:{priority}#{uid}", CardType.Camp, null, CityStrength.None,
+                                        FarmKind.None, ResourceType.None, TileData.TileType.Grass, uid,
+                                        ParchmentRule.None, priority);
+                }
+
+                case "P":
+                {
+                    SplitUid(rest, out string body, out int uid);
+                    var parts = body.Split(':');
+                    if (parts.Length == 3
+                        && int.TryParse(parts[0], out int rule)
+                        && int.TryParse(parts[1], out int amount)
+                        && int.TryParse(parts[2], out int res))
+                        return new CardData($"P:{rule}:{amount}:{res}#{uid}", CardType.Parchment, null,
+                                            CityStrength.None, FarmKind.None, (ResourceType)res,
+                                            TileData.TileType.Grass, uid, (ParchmentRule)rule, amount);
+                    return null;
+                }
             }
 
             return null;
@@ -210,6 +269,7 @@ namespace Cards
                 CardType.Territory => $"Territory({Coordinate})",
                 CardType.City => $"City(Str{(int)Strength})",
                 CardType.Farm => Farm == FarmKind.Market ? "Market" : $"Farm({Farm}:{Resource})",
+                CardType.Parchment => $"Parchment({Rule}:{Amount})",
                 _ => Type.ToString()
             };
         }

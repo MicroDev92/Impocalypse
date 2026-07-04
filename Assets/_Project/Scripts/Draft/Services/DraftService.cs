@@ -38,6 +38,9 @@ namespace Draft.Services
         // City cards collected during draft (per player, persists across rounds)
         private readonly Dictionary<int, List<CardData>> _playerCityCards = new();
 
+        // Parchment cards collected during draft (secret hand, scored at game end)
+        private readonly Dictionary<int, List<CardData>> _playerParchments = new();
+
         private int _currentRound = 1;
         private bool _hasSubmittedPicks;
         private List<int> _cachedPlayerIds = new();
@@ -120,6 +123,7 @@ namespace Draft.Services
             _pendingPicks.Clear();
             _playerHands.Clear();
             _playerCityCards.Clear();
+            _playerParchments.Clear();
 
             // Build deck once per game
             if (UseDeckDealing && IsMasterClient && _gridService != null)
@@ -336,6 +340,13 @@ namespace Draft.Services
             return new List<CardData>().AsReadOnly();
         }
 
+        public IReadOnlyList<CardData> GetPlayerParchments(int actorNumber)
+        {
+            if (_playerParchments.TryGetValue(actorNumber, out var cards))
+                return cards.AsReadOnly();
+            return new List<CardData>().AsReadOnly();
+        }
+
         public void ConsumeCityCard(int actorNumber, CardData cityCard)
         {
             if (cityCard == null) return;
@@ -447,12 +458,19 @@ namespace Draft.Services
                 var card = CardData.Deserialize(serialized);
                 if (card == null) continue;
 
-                if (card.IsCity || card.IsFarm)
+                if (card.IsCity || card.IsFarm || card.IsCamp)
                 {
-                    // Store building card (city or farm) for the construction phase
+                    // Store buildable card (city/farm/camp) for the construction phase
                     if (!_playerCityCards.ContainsKey(senderActorId))
                         _playerCityCards[senderActorId] = new List<CardData>();
                     _playerCityCards[senderActorId].Add(card);
+                }
+                else if (card.IsParchment)
+                {
+                    // Keep parchments in a secret hand; scored at game end
+                    if (!_playerParchments.ContainsKey(senderActorId))
+                        _playerParchments[senderActorId] = new List<CardData>();
+                    _playerParchments[senderActorId].Add(card);
                 }
             }
 

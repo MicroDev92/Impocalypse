@@ -61,6 +61,15 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     private void Awake()
     {
         _rectTransform = GetComponent<RectTransform>();
+
+        // Card text varies a lot (coordinates vs multi-line pact rules) - let TMP shrink
+        // it to fit the card instead of overflowing the edges.
+        if (label != null)
+        {
+            label.enableAutoSizing = true;
+            label.fontSizeMax = label.fontSize;
+            label.fontSizeMin = 8f;
+        }
         if (button != null)
         {
             button.onClick.RemoveAllListeners();
@@ -186,7 +195,11 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
             else if (data.IsCity)
                 label.text = $"City\nStr {(int)data.Strength}";
             else if (data.IsFarm)
-                label.text = data.Farm == FarmKind.Market ? "Market" : $"{data.Farm}\n{data.Resource}";
+                label.text = FarmCardLabel(data);
+            else if (data.IsCamp)
+                label.text = $"Camp #{data.Amount}\nclaim empty\ntile";
+            else if (data.IsParchment)
+                label.text = ParchmentCardLabel(data);
             else
                 label.text = data.ToString();
         }
@@ -203,6 +216,40 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         else
             HideResourceDisplay();
     }
+
+    /// <summary>Hand-card label for a farm: says what it adds and where it can go.</summary>
+    private static string FarmCardLabel(CardData data)
+    {
+        return data.Farm switch
+        {
+            FarmKind.Market => "Market\n(any common)",
+            FarmKind.Special => $"Luxury\n{data.Resource}\non {TerrainName(data.AllowedTerrain)}",
+            _ => $"Farm\n+{data.Resource}"
+        };
+    }
+
+    /// <summary>Hand-card label for a parchment: states its rule, resource, and points.</summary>
+    private static string ParchmentCardLabel(CardData data)
+    {
+        return data.Rule switch
+        {
+            Cards.ParchmentRule.Treasure => $"Treasure\n+{data.Amount}",
+            Cards.ParchmentRule.PerResource => $"Pact\n+{data.Amount}/{data.Resource}",
+            Cards.ParchmentRule.PerFief => $"Pact\n+{data.Amount}/fief",
+            Cards.ParchmentRule.LargestFief => $"Pact\n+{data.Amount}/tile\nbiggest fief",
+            Cards.ParchmentRule.PerCity => $"Pact\n+{data.Amount}/city",
+            _ => "Pact"
+        };
+    }
+
+    private static string TerrainName(TileData.TileType t) => t switch
+    {
+        TileData.TileType.Wood => "Wood",
+        TileData.TileType.Carrot => "Carrot",
+        TileData.TileType.Fish => "Fish",
+        TileData.TileType.Mountain => "Mountain",
+        _ => t.ToString()
+    };
 
     private void ResetState()
     {

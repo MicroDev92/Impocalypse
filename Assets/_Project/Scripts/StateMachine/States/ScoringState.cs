@@ -4,6 +4,7 @@ using UnityEngine;
 using _Project.Scripts.Utility;
 using Core;
 using Core.Events;
+using Draft.Services;
 using Scoring;
 
 namespace StateMachine.States
@@ -129,12 +130,34 @@ namespace StateMachine.States
             }
             else
             {
-                // Final round — game over
+                // Final round — score secret parchments, then game over
                 var cumulativeScores = _gameManager?.GetCumulativeScores() ?? _playerScores;
+                AddParchmentBonuses(cumulativeScores);
                 _eventBus?.Publish(new GameEndedEvent(cumulativeScores));
 
                 var stateMachine = ServiceLocator.GetService<GameStateMachine>();
                 stateMachine?.ChangeState<GameOverState>();
+            }
+        }
+
+        private void AddParchmentBonuses(Dictionary<int, int> scores)
+        {
+            var draft = ServiceLocator.GetService<IDraftService>();
+            var grid = ServiceLocator.GetService<IGridService>();
+            var network = ServiceLocator.GetService<INetworkService>();
+            if (draft == null || grid == null || network == null) return;
+
+            foreach (var pid in network.GetPlayerIds())
+            {
+                int bonus = 0;
+                foreach (var parchment in draft.GetPlayerParchments(pid))
+                    bonus += ParchmentEvaluator.Evaluate(parchment, pid, grid);
+
+                if (bonus != 0)
+                {
+                    scores[pid] = (scores.TryGetValue(pid, out int s) ? s : 0) + bonus;
+                    Debug.Log($"[ScoringState] Player {pid} parchment bonus: +{bonus}");
+                }
             }
         }
 

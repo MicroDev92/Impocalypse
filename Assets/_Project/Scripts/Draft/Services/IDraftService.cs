@@ -103,5 +103,10 @@ namespace Draft.Services
         /// re-offered in later rounds' construction phases.
         /// </summary>
         void ConsumeCityCard(int actorNumber, CardData cityCard);
+
+        /// <summary>
+        /// Gets the secret parchment cards a player has drafted (scored at game end).
+        /// </summary>
+        IReadOnlyList<CardData> GetPlayerParchments(int actorNumber);
     }
 }

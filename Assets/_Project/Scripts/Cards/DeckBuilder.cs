@@ -42,9 +42,23 @@ namespace Cards
             // Markets: wildcard common (player's choice at scoring)
             for (int i = 0; i < 3; i++) deck.Add(CardData.Market());
 
+            // Camps: claim any empty territory. Priority 1 (highest) to 6 (lowest)
+            // breaks ties when several players camp in the same build phase.
+            for (int p = 1; p <= 6; p++) deck.Add(CardData.Camp(p));
+
+            // Parchments (secret end-game scoring; greybox set)
+            deck.Add(CardData.Parchment(ParchmentRule.Treasure, 5));
+            deck.Add(CardData.Parchment(ParchmentRule.Treasure, 3));
+            deck.Add(CardData.Parchment(ParchmentRule.PerResource, 1, ResourceType.Wood));
+            deck.Add(CardData.Parchment(ParchmentRule.PerResource, 1, ResourceType.Carrot));
+            deck.Add(CardData.Parchment(ParchmentRule.PerResource, 1, ResourceType.Fish));
+            deck.Add(CardData.Parchment(ParchmentRule.PerFief, 2));
+            deck.Add(CardData.Parchment(ParchmentRule.LargestFief, 1));
+            deck.Add(CardData.Parchment(ParchmentRule.PerCity, 2));
+
             Shuffle(deck);
 
-            Debug.Log($"[DeckBuilder] Built deck: {coords.Length} territory + 21 city + 18 farm = {deck.Count} total");
+            Debug.Log($"[DeckBuilder] Built deck: {coords.Length} territory + 21 city + 18 farm + 6 camp + 8 parchment = {deck.Count} total");
             return deck;
         }
 

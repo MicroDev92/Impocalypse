@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -178,10 +179,22 @@ namespace Construction
             int localPlayer = _networkService?.LocalPlayerId ?? -1;
             if (localPlayer < 0) return;
 
-            var ownedTiles = _gridService?.GetOwnedTiles(localPlayer);
-            if (ownedTiles == null) return;
+            // Camps target EMPTY tiles; everything else targets your own tiles.
+            IEnumerable<TileData> candidates;
+            if (card.IsCamp)
+            {
+                var coords = _gridService?.GetAllPlayableCoords();
+                if (coords == null) return;
+                candidates = coords.Select(c => _gridService.GetTileByCoord(c)).Where(t => t != null);
+            }
+            else
+            {
+                var owned = _gridService?.GetOwnedTiles(localPlayer);
+                if (owned == null) return;
+                candidates = owned;
+            }
 
-            foreach (var tile in ownedTiles)
+            foreach (var tile in candidates)
             {
                 if (CanPlace(tile, card))
                 {
@@ -197,6 +210,7 @@ namespace Construction
         private static bool CanPlace(TileData tile, CardData card)
         {
             if (card.IsCity) return tile.CanPlaceCity(card.Strength);
+            if (card.IsCamp) return !tile.IsOwned;
             if (card.IsFarm)
             {
                 if (card.Farm == FarmKind.Special) return tile.CanPlaceSpecialFarm(card.AllowedTerrain);
@@ -209,13 +223,14 @@ namespace Construction
         private static string BuildingLabel(CardData card)
         {
             if (card.IsCity) return $"City Str {(int)card.Strength}";
+            if (card.IsCamp) return $"Camp #{card.Amount} (claim empty tile)";
             if (card.IsFarm)
             {
                 return card.Farm switch
                 {
                     FarmKind.Market => "Market (wildcard)",
-                    FarmKind.Special => $"Luxury Farm: {card.Resource}",
-                    _ => $"Farm: {card.Resource}"
+                    FarmKind.Special => $"Luxury: {card.Resource} (on {card.AllowedTerrain} tile)",
+                    _ => $"Farm: +{card.Resource}"
                 };
             }
             return "Building";

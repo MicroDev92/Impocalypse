@@ -111,10 +111,31 @@ namespace Construction
         public bool TryPlaceCity(int actorNumber, CardData card, string coordinate)
         {
             if (card == null || string.IsNullOrEmpty(coordinate)) return false;
-            if (!card.IsCity && !card.IsFarm) return false;
+            if (!card.IsCity && !card.IsFarm && !card.IsCamp) return false;
 
             var tile = _gridService?.GetTileByCoord(coordinate);
             if (tile == null) return false;
+
+            // Camps claim EMPTY territory, so they branch before the ownership check.
+            if (card.IsCamp)
+            {
+                if (tile.IsOwned)
+                {
+                    Debug.LogWarning($"[ConstructionService] Cannot camp on {coordinate} - already claimed");
+                    return false;
+                }
+
+                // Claim via the imp-spawn pipeline (sets owner, tint, fief recalculation).
+                string color = "red";
+                var playerService = ServiceLocator.GetService<Players.IPlayerService>();
+                var player = playerService?.GetPlayer(actorNumber);
+                if (player != null && !string.IsNullOrEmpty(player.ImpColor)) color = player.ImpColor;
+                _eventBus?.Publish(new SpawnImpEvent(coordinate, actorNumber, color));
+
+                ConsumeBuildingCard(actorNumber, card);
+                Debug.Log($"[ConstructionService] Player {actorNumber} camped {coordinate}");
+                return true;
+            }
 
             if (!tile.IsOwnedBy(actorNumber))
             {
@@ -160,13 +181,7 @@ namespace Construction
                 tile.PlaceFarm(card.Resource, special: false);
             }
 
-            // Remove from this player's available stock + the draft's persistent stock.
-            if (_availableCityCards.TryGetValue(actorNumber, out var cards))
-            {
-                var toRemove = cards.FirstOrDefault(c => c.Serialize() == card.Serialize());
-                if (toRemove != null) cards.Remove(toRemove);
-            }
-            _draftService?.ConsumeCityCard(actorNumber, card);
+            ConsumeBuildingCard(actorNumber, card);
 
             Debug.Log($"[ConstructionService] Player {actorNumber} placed {card} at {coordinate}");
 
@@ -184,6 +199,17 @@ namespace Construction
             }
 
             return true;
+        }
+
+        /// <summary>Removes a placed card from the round's stock and the draft's persistent stock.</summary>
+        private void ConsumeBuildingCard(int actorNumber, CardData card)
+        {
+            if (_availableCityCards.TryGetValue(actorNumber, out var cards))
+            {
+                var toRemove = cards.FirstOrDefault(c => c.Serialize() == card.Serialize());
+                if (toRemove != null) cards.Remove(toRemove);
+            }
+            _draftService?.ConsumeCityCard(actorNumber, card);
         }
 
         public void MarkPlayerDone(int actorNumber)

@@ -514,6 +514,52 @@ public static class GameSceneUISetup
     }
 
     // ==========================================
+    // FOCUSED: add the "Your Pacts" (secret parchment hand) panel
+    // ==========================================
+
+    [MenuItem("GameObject/UI/Impocalypse - Add Pacts Panel", false, 24)]
+    private static void AddPactsPanel()
+    {
+        var leftSidebar = GameObject.Find("LeftSidebar");
+        if (leftSidebar == null)
+        {
+            Debug.LogError("[GameSceneUISetup] LeftSidebar not found. Add the sidebars first.");
+            return;
+        }
+
+        var panel = CreateBorderedPanel(leftSidebar.transform, "PactsPanel");
+        var rect = panel.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0, 0);
+        rect.anchorMax = new Vector2(1, 0);
+        rect.pivot = new Vector2(0.5f, 0);
+        rect.sizeDelta = new Vector2(-PanelPadding * 2, 150);
+        rect.anchoredPosition = new Vector2(0, PanelPadding);
+
+        var header = CreateTextObject(panel.transform, "PactsHeader", "Your Pacts", 14, FontStyles.Bold);
+        SetAnchored(header, new Vector2(0, 1), new Vector2(1, 1), new Vector2(8, -6), new Vector2(-8, -6), 22f);
+        header.GetComponent<TMP_Text>().color = TextAccent;
+
+        var list = CreateTextObject(panel.transform, "PactsList", "none yet", 12, FontStyles.Normal);
+        var listRect = list.GetComponent<RectTransform>();
+        listRect.anchorMin = new Vector2(0, 0);
+        listRect.anchorMax = new Vector2(1, 1);
+        listRect.offsetMin = new Vector2(8, 6);
+        listRect.offsetMax = new Vector2(-8, -30);
+        var listTmp = list.GetComponent<TMP_Text>();
+        listTmp.color = TextSecondary;
+        listTmp.alignment = TextAlignmentOptions.TopLeft;
+
+        var ui = panel.AddComponent<UI.ParchmentHandUI>();
+        var so = new SerializedObject(ui);
+        so.FindProperty("listText").objectReferenceValue = listTmp;
+        so.ApplyModifiedProperties();
+
+        Undo.RegisterCreatedObjectUndo(panel, "Add Pacts Panel");
+        Selection.activeGameObject = panel;
+        Debug.Log("[GameSceneUISetup] Pacts panel added to LeftSidebar (bottom). If it overlaps the player list, shorten PlayerListContainer's bottom offset.");
+    }
+
+    // ==========================================
     // FOCUSED: add the Game Over results screen
     // ==========================================
 

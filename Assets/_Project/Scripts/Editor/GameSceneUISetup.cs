@@ -514,6 +514,125 @@ public static class GameSceneUISetup
     }
 
     // ==========================================
+    // FOCUSED: rebuild the top bar (replaces the legacy overlapping HUD)
+    // ==========================================
+
+    [MenuItem("GameObject/UI/Impocalypse - Rebuild Top Bar", false, 25)]
+    private static void RebuildTopBar()
+    {
+        var canvas = FindExistingCanvas();
+        if (canvas == null)
+        {
+            Debug.LogError("[GameSceneUISetup] No Canvas found in the open scene. Open GameScene first.");
+            return;
+        }
+
+        // Remove the legacy HUD (the old top bar with overlapping counters).
+        var oldHud = Object.FindFirstObjectByType<UI.ModernDraftHUD>(FindObjectsInactive.Include);
+        if (oldHud != null)
+        {
+            Debug.Log($"[GameSceneUISetup] Removing legacy HUD object '{oldHud.gameObject.name}'.");
+            Undo.DestroyObjectImmediate(oldHud.gameObject);
+        }
+
+        var topBar = CreatePanel(canvas.transform, "TopBar");
+        var barRect = topBar.GetComponent<RectTransform>();
+        barRect.anchorMin = new Vector2(0, 1);
+        barRect.anchorMax = new Vector2(1, 1);
+        barRect.pivot = new Vector2(0.5f, 1f);
+        barRect.sizeDelta = new Vector2(0, TopBarHeight);
+        topBar.GetComponent<Image>().color = new Color(BgColor.r, BgColor.g, BgColor.b, 0.95f);
+
+        // Left zone: round | phase | draft info (auto-spaced, can never overlap)
+        var left = new GameObject("LeftGroup", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+        left.transform.SetParent(topBar.transform, false);
+        var leftRect = left.GetComponent<RectTransform>();
+        leftRect.anchorMin = new Vector2(0, 0);
+        leftRect.anchorMax = new Vector2(0.32f, 1);
+        leftRect.offsetMin = new Vector2(14, 0);
+        leftRect.offsetMax = Vector2.zero;
+        var leftHlg = left.GetComponent<HorizontalLayoutGroup>();
+        leftHlg.spacing = 18;
+        leftHlg.childAlignment = TextAnchor.MiddleLeft;
+        leftHlg.childForceExpandWidth = false;
+        leftHlg.childForceExpandHeight = false;
+        leftHlg.childControlWidth = true;   // size each text to its content
+        leftHlg.childControlHeight = true;
+
+        var roundText = CreateTextObject(left.transform, "RoundText", "Round 1 / 4", 18, FontStyles.Normal);
+        roundText.GetComponent<TMP_Text>().color = TextSecondary;
+
+        var phaseText = CreateTextObject(left.transform, "PhaseText", "DRAFT PHASE", 18, FontStyles.Bold);
+        phaseText.GetComponent<TMP_Text>().color = TextAccent;
+
+        var draftInfo = CreateTextObject(left.transform, "DraftInfoText", "Cards: 0 | Picks: 0", 15, FontStyles.Normal);
+        draftInfo.GetComponent<TMP_Text>().color = TextSecondary;
+
+        // Center zone: status messages (Provisions results, harvest notes, etc.)
+        var status = CreateTextObject(topBar.transform, "StatusText", "", 16, FontStyles.Italic);
+        var statusRect = status.GetComponent<RectTransform>();
+        statusRect.anchorMin = new Vector2(0.32f, 0);
+        statusRect.anchorMax = new Vector2(0.72f, 1);
+        statusRect.offsetMin = Vector2.zero;
+        statusRect.offsetMax = Vector2.zero;
+        var statusTmp = status.GetComponent<TMP_Text>();
+        statusTmp.alignment = TextAlignmentOptions.Center;
+        statusTmp.color = TextPrimary;
+        statusTmp.enableAutoSizing = true;
+        statusTmp.fontSizeMax = 16;
+        statusTmp.fontSizeMin = 11;
+
+        // Right zone: text-only resource counters (no icon squares in greybox)
+        var right = new GameObject("ResourceGroup", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+        right.transform.SetParent(topBar.transform, false);
+        var rightRect = right.GetComponent<RectTransform>();
+        rightRect.anchorMin = new Vector2(0.72f, 0);
+        rightRect.anchorMax = new Vector2(1, 1);
+        rightRect.offsetMin = Vector2.zero;
+        rightRect.offsetMax = new Vector2(-14, 0);
+        var rightHlg = right.GetComponent<HorizontalLayoutGroup>();
+        rightHlg.spacing = 6;
+        rightHlg.childAlignment = TextAnchor.MiddleRight;
+        rightHlg.childForceExpandWidth = false;
+        rightHlg.childForceExpandHeight = false;
+        rightHlg.childControlWidth = true;  // size each text to its content
+        rightHlg.childControlHeight = true;
+
+        var woodAmount = CreateResourceCounter(right.transform, "Wood");
+        var carrotAmount = CreateResourceCounter(right.transform, "Carrot");
+        var fishAmount = CreateResourceCounter(right.transform, "Fish");
+
+        // Wire the HUD component
+        var hud = topBar.AddComponent<UI.ModernDraftHUD>();
+        var so = new SerializedObject(hud);
+        so.FindProperty("roundText").objectReferenceValue = roundText.GetComponent<TMP_Text>();
+        so.FindProperty("phaseText").objectReferenceValue = phaseText.GetComponent<TMP_Text>();
+        so.FindProperty("statusText").objectReferenceValue = statusTmp;
+        so.FindProperty("draftInfoText").objectReferenceValue = draftInfo.GetComponent<TMP_Text>();
+        so.FindProperty("woodAmount").objectReferenceValue = woodAmount;
+        so.FindProperty("carrotAmount").objectReferenceValue = carrotAmount;
+        so.FindProperty("fishAmount").objectReferenceValue = fishAmount;
+        so.ApplyModifiedProperties();
+
+        Undo.RegisterCreatedObjectUndo(topBar, "Rebuild Top Bar");
+        Selection.activeGameObject = topBar;
+        Debug.Log("[GameSceneUISetup] Top bar rebuilt (left: round/phase/draft info, center: status, right: resource counters). " +
+                  "If any stray pieces of the old bar remain in the Hierarchy, delete them manually.");
+    }
+
+    /// <summary>Creates a "Label 0" counter pair and returns the amount text (for HUD wiring).</summary>
+    private static TMP_Text CreateResourceCounter(Transform parent, string label)
+    {
+        var labelObj = CreateTextObject(parent, $"{label}Label", label, 16, FontStyles.Normal);
+        labelObj.GetComponent<TMP_Text>().color = TextSecondary;
+
+        var amountObj = CreateTextObject(parent, $"{label}Amount", "0", 18, FontStyles.Bold);
+        var amountTmp = amountObj.GetComponent<TMP_Text>();
+        amountTmp.color = TextAccent;
+        return amountTmp;
+    }
+
+    // ==========================================
     // FOCUSED: add the "Your Pacts" (secret parchment hand) panel
     // ==========================================
 
@@ -703,6 +822,8 @@ public static class GameSceneUISetup
         hlg.childAlignment = TextAnchor.MiddleLeft;
         hlg.childForceExpandWidth = false;
         hlg.childForceExpandHeight = false;
+        hlg.childControlWidth = true;   // size stats to content so they never spill out
+        hlg.childControlHeight = true;
 
         // Stat items: territory, wood, carrot, fish
         var terrStat = CreateMiniStat(statsRow.transform, "TerritoryStat", "0");
@@ -853,6 +974,8 @@ public static class GameSceneUISetup
         hlg.childAlignment = TextAnchor.MiddleLeft;
         hlg.childForceExpandWidth = false;
         hlg.childForceExpandHeight = false;
+        hlg.childControlWidth = true;   // without this, the LayoutElement sizes below are ignored
+        hlg.childControlHeight = true;
 
         // Icon placeholder
         var icon = new GameObject("Icon", typeof(RectTransform), typeof(Image), typeof(LayoutElement));

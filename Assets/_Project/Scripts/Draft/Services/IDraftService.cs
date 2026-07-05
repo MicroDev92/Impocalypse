@@ -99,6 +99,12 @@ namespace Draft.Services
         IReadOnlyList<CardData> GetPlayerCityCards(int actorNumber);
 
         /// <summary>
+        /// Master broadcasts every player's secret parchments so all clients can compute
+        /// identical final scores (call when final-round scoring begins).
+        /// </summary>
+        void BroadcastParchmentsForReveal();
+
+        /// <summary>
         /// Removes a city card from a player's stock once it has been built, so it is not
         /// re-offered in later rounds' construction phases.
         /// </summary>

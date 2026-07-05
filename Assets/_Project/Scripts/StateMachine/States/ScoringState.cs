@@ -40,6 +40,11 @@ namespace StateMachine.States
 
             int round = _gameManager?.CurrentRound ?? 1;
             int maxRounds = _gameManager?.MaxRounds ?? 4;
+
+            // Final round: master reveals everyone's secret parchments now, so every
+            // client computes identical final scores when the display timer elapses.
+            if (round >= maxRounds)
+                ServiceLocator.GetService<IDraftService>()?.BroadcastParchmentsForReveal();
             string status = round >= maxRounds
                 ? "Final scoring!"
                 : $"Round {round} scoring...";

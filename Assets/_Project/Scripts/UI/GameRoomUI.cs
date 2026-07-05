@@ -125,6 +125,8 @@ public class GameRoomUI : MonoBehaviour
     {
         if (_networkService?.IsMasterClient == true)
         {
+            // Map seed lives in the room's creation properties (see NetworkService) -
+            // setting it here would race the scene switch and desync the maps.
             _networkService.LoadScene("GameScene");
         }
     }

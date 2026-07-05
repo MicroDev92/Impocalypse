@@ -327,6 +327,10 @@ namespace Draft.Services
         {
             Debug.Log("[DraftService] Draft ended - advancing to Build phase");
 
+            // Draft end is decided master-side (ProcessAllPicks) - tell everyone else.
+            if (IsMasterClient)
+                _networkService?.SendToAll(NetworkEventCodes.DraftPhaseEnd, new object[0]);
+
             var gameManager = ServiceLocator.GetService<IGameManager>();
             gameManager?.AdvancePhase();
 
@@ -346,7 +350,7 @@ namespace Draft.Services
         /// imp spawns), buildables/parchments go to the player's pools, and a drawn
         /// Provisions chains (draws 2 more).
         /// </summary>
-        private void ResolveProvisionsPick(int actorNumber, List<string> effectivePicks)
+        private void ResolveProvisionsPick(int actorNumber, List<string> effectivePicks, List<CardData> granted)
         {
             var queue = new Queue<CardData>(DrawFromDeck(2));
             var drawnNames = new List<string>();
@@ -368,6 +372,7 @@ namespace Draft.Services
                 else
                 {
                     GrantPick(actorNumber, drawn);
+                    granted.Add(drawn);
                 }
             }
 
@@ -459,7 +464,98 @@ namespace Draft.Services
                 case NetworkEventCodes.AssignPlayerIdentities:
                     HandleAssignPlayerIdentities(data);
                     break;
+
+                case NetworkEventCodes.GrantCards:
+                    HandleGrantCardsReceived(data);
+                    break;
+
+                case NetworkEventCodes.DraftPhaseEnd:
+                    if (!IsMasterClient) EndDraft();
+                    break;
+
+                case NetworkEventCodes.RevealParchments:
+                    HandleRevealParchments(data);
+                    break;
             }
+        }
+
+        /// <summary>
+        /// Non-master client receives the buildables/parchments it drafted (including
+        /// Provisions draws) - the master routed them authoritatively; mirror locally.
+        /// </summary>
+        private void HandleGrantCardsReceived(object data)
+        {
+            string[] serialized = data as string[];
+            if (serialized == null && data is object[] raw)
+                serialized = raw.Cast<string>().ToArray();
+            if (serialized == null) return;
+
+            int localId = _networkService?.LocalPlayerId ?? -1;
+            var names = new List<string>();
+
+            foreach (var s in serialized)
+            {
+                var card = CardData.Deserialize(s);
+                if (card == null) continue;
+                GrantPick(localId, card);
+                names.Add(card.ToString());
+            }
+
+            Debug.Log($"[DraftService] Granted cards received: {string.Join(", ", names)}");
+            if (names.Count > 0)
+                _eventBus?.Publish(new ShowStatusEvent($"Gained: {string.Join(", ", names)}"));
+        }
+
+        /// <summary>
+        /// Master broadcasts every player's secret parchments so all clients can compute
+        /// identical final scores. Call when final-round scoring begins.
+        /// </summary>
+        public void BroadcastParchmentsForReveal()
+        {
+            if (!IsMasterClient) return;
+
+            var payload = _playerParchments
+                .Select(kvp => (object)new object[]
+                    { kvp.Key, kvp.Value.Select(c => c.Serialize()).ToArray() })
+                .ToArray();
+
+            _networkService?.SendToAll(NetworkEventCodes.RevealParchments, payload);
+            Debug.Log($"[DraftService] Broadcast parchments for {payload.Length} players");
+        }
+
+        private void HandleRevealParchments(object data)
+        {
+            if (IsMasterClient) return; // master already holds the authoritative copy
+            if (data is not object[] rows) return;
+
+            foreach (var row in rows)
+            {
+                if (row is not object[] entry || entry.Length < 2) continue;
+
+                int actor = (int)entry[0];
+                var list = new List<CardData>();
+
+                if (entry[1] is string[] arr)
+                {
+                    foreach (var s in arr)
+                    {
+                        var c = CardData.Deserialize(s);
+                        if (c != null) list.Add(c);
+                    }
+                }
+                else if (entry[1] is object[] rawList)
+                {
+                    foreach (var o in rawList)
+                    {
+                        var c = CardData.Deserialize(o as string);
+                        if (c != null) list.Add(c);
+                    }
+                }
+
+                _playerParchments[actor] = list;
+            }
+
+            Debug.Log("[DraftService] Parchments revealed for final scoring");
         }
 
         private void HandleDealCardsReceived(object data)
@@ -527,6 +623,10 @@ namespace Draft.Services
             // so the effective pick list may grow beyond what was submitted.
             var effectivePicks = new List<string>(serializedPicks);
 
+            // Everything routed to the sender's pools here happens on the MASTER only -
+            // remote players must be told what they now own (GrantCards below).
+            var granted = new List<CardData>();
+
             foreach (var serialized in serializedPicks)
             {
                 var card = CardData.Deserialize(serialized);
@@ -535,7 +635,7 @@ namespace Draft.Services
                 if (card.IsProvisions)
                 {
                     // Resolve NOW (draft rules): draw 2 and play them immediately.
-                    ResolveProvisionsPick(senderActorId, effectivePicks);
+                    ResolveProvisionsPick(senderActorId, effectivePicks, granted);
                 }
                 else if (card.IsCity || card.IsFarm || card.IsCamp || card.IsSkyTower)
                 {
@@ -543,6 +643,7 @@ namespace Draft.Services
                     if (!_playerCityCards.ContainsKey(senderActorId))
                         _playerCityCards[senderActorId] = new List<CardData>();
                     _playerCityCards[senderActorId].Add(card);
+                    granted.Add(card);
                 }
                 else if (card.IsParchment)
                 {
@@ -550,10 +651,21 @@ namespace Draft.Services
                     if (!_playerParchments.ContainsKey(senderActorId))
                         _playerParchments[senderActorId] = new List<CardData>();
                     _playerParchments[senderActorId].Add(card);
+                    granted.Add(card);
                 }
             }
 
             _pendingPicks[senderActorId] = effectivePicks.ToArray();
+
+            // Sync a remote player's granted cards to their own client (the master keeps
+            // its authoritative copy; the local player already routed nothing client-side).
+            if (granted.Count > 0 && senderActorId != (_networkService?.LocalPlayerId ?? -1))
+            {
+                _networkService?.SendToPlayers(
+                    NetworkEventCodes.GrantCards,
+                    granted.Select(c => c.Serialize()).ToArray(),
+                    new[] { senderActorId });
+            }
 
             // Remove picked cards from hand
             if (_playerHands.TryGetValue(senderActorId, out var hand))

@@ -94,8 +94,10 @@ namespace Construction
                 }
             }
 
-            // If all players have no city cards, end immediately
-            if (_donePlayers.Count >= _playerIds.Count)
+            // If all players have no city cards, end immediately. MASTER ONLY: non-master
+            // clients can't see other players' stocks (they'd auto-done everyone and end
+            // the phase early, desyncing the game). The broadcast ends it for them.
+            if (IsMasterClient && _donePlayers.Count >= _playerIds.Count)
             {
                 Debug.Log("[ConstructionService] No city cards to place, ending construction");
                 EndConstruction();
@@ -139,6 +141,7 @@ namespace Construction
 
                 ConsumeBuildingCard(actorNumber, card);
                 Debug.Log($"[ConstructionService] Player {actorNumber} camped {coordinate}");
+                SendPlacement(card, actorNumber, coordinate);
                 return true;
             }
 
@@ -190,20 +193,28 @@ namespace Construction
 
             Debug.Log($"[ConstructionService] Player {actorNumber} placed {card} at {coordinate}");
 
-            // Cities sync over the network (existing path). Farm network sync is a TODO -
-            // single-player applies the placement locally above, which is enough for now.
+            // Local feedback + repaint events
             if (card.IsCity)
-            {
                 _eventBus?.Publish(new CityPlacedEvent(coordinate, (int)card.Strength, actorNumber));
-                if (IsMasterClient)
-                    _networkService?.SendToAll(NetworkEventCodes.CityPlaced,
-                        new object[] { coordinate, (int)card.Strength, actorNumber });
-                else
-                    _networkService?.SendToMaster(NetworkEventCodes.PlaceCity,
-                        new object[] { coordinate, (int)card.Strength });
-            }
+            else
+                _eventBus?.Publish(new TileOwnerChangedEvent(coordinate, actorNumber)); // farm/market repaint
 
+            SendPlacement(card, actorNumber, coordinate);
             return true;
+        }
+
+        /// <summary>
+        /// Syncs a placement: master broadcasts the applied placement to everyone;
+        /// non-master sends a request the master will validate, apply, and re-broadcast.
+        /// </summary>
+        private void SendPlacement(CardData card, int actorNumber, string coordA, string coordB = "")
+        {
+            if (IsMasterClient)
+                _networkService?.SendToAll(NetworkEventCodes.CityPlaced,
+                    new object[] { card.Serialize(), actorNumber, coordA, coordB ?? "" });
+            else
+                _networkService?.SendToMaster(NetworkEventCodes.PlaceCity,
+                    new object[] { card.Serialize(), coordA, coordB ?? "" });
         }
 
         /// <summary>
@@ -233,6 +244,7 @@ namespace Construction
             _eventBus?.Publish(new TileOwnerChangedEvent(coordA, actorNumber));
 
             Debug.Log($"[ConstructionService] Player {actorNumber} sky-linked {coordA} <-> {coordB}");
+            SendPlacement(card, actorNumber, coordA, coordB);
             return true;
         }
 
@@ -312,31 +324,74 @@ namespace Construction
             }
         }
 
+        /// <summary>Master receives a remote player's placement request, validates + applies + re-broadcasts.</summary>
         private void HandlePlaceCityRequest(object data, int senderActorId)
         {
             if (data is not object[] rawData || rawData.Length < 2) return;
 
-            string coord = (string)rawData[0];
-            int strength = (int)rawData[1];
+            var card = CardData.Deserialize(rawData[0] as string);
+            if (card == null) return;
 
-            var cityCard = CardData.City((CityStrength)strength);
-            TryPlaceCity(senderActorId, cityCard, coord);
+            string coordA = rawData[1] as string;
+            string coordB = rawData.Length > 2 ? rawData[2] as string : "";
+
+            if (card.IsSkyTower)
+                TryPlaceSkyTower(senderActorId, card, coordA, coordB);
+            else
+                TryPlaceCity(senderActorId, card, coordA);
         }
 
+        /// <summary>
+        /// Applies a placement broadcast locally. Idempotent: the placing client (and the
+        /// master) already applied it, so an already-built/owned/linked tile means "done".
+        /// </summary>
         private void HandleCityPlacedBroadcast(object data)
         {
             if (data is not object[] rawData || rawData.Length < 3) return;
 
-            string coord = (string)rawData[0];
-            int strength = (int)rawData[1];
-            int actorNumber = (int)rawData[2];
+            var card = CardData.Deserialize(rawData[0] as string);
+            if (card == null) return;
 
-            // Apply locally if not already applied (non-master clients)
-            var tile = _gridService?.GetTileByCoord(coord);
-            if (tile != null && !tile.HasBuilding)
+            int actorNumber = (int)rawData[1];
+            string coordA = rawData[2] as string;
+            string coordB = rawData.Length > 3 ? rawData[3] as string : "";
+
+            var tile = _gridService?.GetTileByCoord(coordA);
+            if (tile == null) return;
+
+            if (card.IsSkyTower)
             {
-                tile.PlaceCity((CityStrength)strength);
-                _eventBus?.Publish(new CityPlacedEvent(coord, strength, actorNumber));
+                if (tile.HasSkyLink || string.IsNullOrEmpty(coordB)) return;
+                var other = _gridService.GetTileByCoord(coordB);
+                if (other == null || other.HasSkyLink) return;
+
+                tile.PlaceSkyLink(coordB);
+                other.PlaceSkyLink(coordA);
+                _eventBus?.Publish(new TileOwnerChangedEvent(coordA, actorNumber));
+            }
+            else if (card.IsCamp)
+            {
+                if (tile.IsOwned) return;
+
+                string color = "red";
+                var player = ServiceLocator.GetService<Players.IPlayerService>()?.GetPlayer(actorNumber);
+                if (player != null && !string.IsNullOrEmpty(player.ImpColor)) color = player.ImpColor;
+
+                _eventBus?.Publish(new SpawnImpEvent(coordA, actorNumber, color));
+                tile.PlaceCamp();
+            }
+            else if (card.IsCity)
+            {
+                if (tile.HasBuilding) return;
+                tile.PlaceCity(card.Strength);
+                _eventBus?.Publish(new CityPlacedEvent(coordA, (int)card.Strength, actorNumber));
+            }
+            else if (card.IsFarm)
+            {
+                if (tile.HasBuilding) return;
+                if (card.Farm == FarmKind.Market) tile.PlaceMarket();
+                else tile.PlaceFarm(card.Resource, card.Farm == FarmKind.Special);
+                _eventBus?.Publish(new TileOwnerChangedEvent(coordA, actorNumber));
             }
         }
 

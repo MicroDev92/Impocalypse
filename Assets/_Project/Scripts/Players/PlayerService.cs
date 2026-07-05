@@ -165,6 +165,11 @@ namespace Players
 
             player.ImpColor = colorId;
             Debug.Log($"[PlayerService] Applied identity: {player.Nickname} -> {colorId}");
+
+            // Non-master clients receive colors over the network AFTER the sidebar has
+            // already built its player cards - notify listeners so they rebuild in color.
+            _eventBus?.Publish(new PlayerIdentitiesAssignedEvent { PlayerCount = _playerList.Count });
+            OnIdentitiesAssigned?.Invoke();
         }
 
         private void HandleNetworkPlayerJoined(int actorNumber, string nickname)

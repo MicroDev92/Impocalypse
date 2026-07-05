@@ -155,6 +155,19 @@ public class MockNetworkService : MonoBehaviour, INetworkService
         _mockPlayers[LocalPlayerId] = nickname;
     }
 
+    private readonly Dictionary<string, object> _roomProperties = new();
+
+    public void SetRoomProperty(string key, object value)
+    {
+        _roomProperties[key] = value;
+        Debug.Log($"[MockNetworkService] Room property set: {key} = {value}");
+    }
+
+    public object GetRoomProperty(string key)
+    {
+        return _roomProperties.TryGetValue(key, out var value) ? value : null;
+    }
+
     // ============================================
     // TEST HELPERS
     // ============================================

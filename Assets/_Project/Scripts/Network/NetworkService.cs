@@ -262,6 +262,26 @@ public class NetworkService : MonoBehaviourPunCallbacks, INetworkService, IOnEve
         Debug.Log($"[NetworkService] Set player name to: {nickname}");
     }
 
+    public void SetRoomProperty(string key, object value)
+    {
+        if (PhotonNetwork.CurrentRoom == null)
+        {
+            Debug.LogWarning($"[NetworkService] Cannot set room property '{key}' - not in a room");
+            return;
+        }
+
+        PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable { { key, value } });
+        Debug.Log($"[NetworkService] Room property set: {key} = {value}");
+    }
+
+    public object GetRoomProperty(string key)
+    {
+        var props = PhotonNetwork.CurrentRoom?.CustomProperties;
+        if (props != null && props.TryGetValue(key, out var value))
+            return value;
+        return null;
+    }
+
     // ============================================
     // PHOTON CALLBACKS
     // ============================================
@@ -271,12 +291,19 @@ public class NetworkService : MonoBehaviourPunCallbacks, INetworkService, IOnEve
         Debug.Log("[NetworkService] Connected to Master Server");
         OnConnectedToServer?.Invoke();
 
-        // Auto-join default room
+        // Auto-join default room. The map seed is baked in at CREATION time: room
+        // properties set here are delivered to every client as part of joining, so
+        // they are guaranteed present before any scene loads. (Setting them later via
+        // SetCustomProperties races the scene switch - learned the hard way.)
         PhotonNetwork.JoinOrCreateRoom(defaultRoomName, new RoomOptions
         {
             MaxPlayers = maxPlayersPerRoom,
             IsOpen = true,
-            IsVisible = true
+            IsVisible = true,
+            CustomRoomProperties = new Hashtable
+            {
+                { "mapSeed", UnityEngine.Random.Range(int.MinValue, int.MaxValue) }
+            }
         }, TypedLobby.Default);
     }
 

@@ -79,6 +79,15 @@ public class GridGenerator : MonoBehaviour, IGridService
 
     void GenerateGrid()
     {
+        // CRITICAL for multiplayer: terrain is rolled with Random, so all clients must
+        // seed identically or every player generates a different world. The host writes
+        // a shared seed into the room before loading the scene.
+        var network = ServiceLocator.GetService<INetworkService>();
+        object seedProp = network?.GetRoomProperty("mapSeed");
+        int seed = seedProp is int s ? s : UnityEngine.Random.Range(int.MinValue, int.MaxValue);
+        UnityEngine.Random.InitState(seed);
+        Debug.Log($"[GridGenerator] Generating grid with seed {seed} (shared: {seedProp != null})");
+
         var reversedLetters = letterSprites.Reverse().ToArray();
         
         // Clear existing data

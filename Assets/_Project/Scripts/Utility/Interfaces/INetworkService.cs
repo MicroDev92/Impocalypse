@@ -117,6 +117,16 @@ public interface INetworkService
     /// <param name="nickname">New nickname</param>
     void SetPlayerName(string nickname);
 
+    /// <summary>
+    /// Sets a room-wide shared property (e.g. the map seed), synced to all clients.
+    /// </summary>
+    void SetRoomProperty(string key, object value);
+
+    /// <summary>
+    /// Reads a room-wide shared property (null if absent or not in a room).
+    /// </summary>
+    object GetRoomProperty(string key);
+
     // ============================================
     // EVENTS - CALLBACKS
     // ============================================

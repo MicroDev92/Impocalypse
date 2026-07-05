@@ -83,6 +83,38 @@ namespace Imps
                 return null;
             }
 
+            // Claim collision handling (the tile's Territory card can arrive after a Camp
+            // already claimed it - camp claims are provisional and get evicted).
+            if (tile.IsOwned)
+            {
+                if (tile.IsOwnedBy(ownerActorNumber))
+                {
+                    // Same player: the Territory card upgrades the camp to a permanent claim,
+                    // freeing the building slot for real construction.
+                    if (tile.IsCampClaim) tile.ClearBuilding();
+                    return _impFactory?.GetImpAtCoordinate(coordinate);
+                }
+
+                if (!tile.IsCampClaim)
+                {
+                    Debug.LogWarning($"[ImpSpawner] {coordinate} already owned by player {tile.OwnerActorNumber} - claim ignored");
+                    return null;
+                }
+
+                // Evict the camper: remove their imp and camp, break any sky link.
+                var oldImp = _impFactory?.GetImpAtCoordinate(coordinate);
+                if (oldImp != null) _impFactory.ReturnImp(oldImp);
+
+                if (tile.HasSkyLink)
+                {
+                    _gridService.GetTileByCoord(tile.SkyLinkCoord)?.ClearSkyLink();
+                    tile.ClearSkyLink();
+                }
+                tile.ClearBuilding();
+
+                Debug.Log($"[ImpSpawner] Player {ownerActorNumber} evicted a camp at {coordinate}");
+            }
+
             // Get sprite
             Sprite sprite = GetImpSprite(colorId);
             if (sprite == null)

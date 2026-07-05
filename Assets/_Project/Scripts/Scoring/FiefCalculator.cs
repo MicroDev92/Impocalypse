@@ -55,6 +55,17 @@ namespace Scoring
                             queue.Enqueue(neighbor);
                         }
                     }
+
+                    // Sky-tower-linked tiles count as adjacent (merges distant fiefs).
+                    if (current.HasSkyLink)
+                    {
+                        var linked = gridService.GetTileByCoord(current.SkyLinkCoord);
+                        if (linked != null && linked.IsOwnedBy(actorNumber) && !visited.Contains(linked.coord))
+                        {
+                            visited.Add(linked.coord);
+                            queue.Enqueue(linked);
+                        }
+                    }
                 }
 
                 // Calculate Strength: sum of city building values in this fief

@@ -123,6 +123,22 @@ namespace Cards
                                 ParchmentRule.None, priority);
         }
 
+        /// <summary>Provisions: played in the build phase - draw 2 cards from the deck and play them immediately.</summary>
+        public static CardData Provisions()
+        {
+            int uid = _nextUniqueId++;
+            return new CardData($"V:#{uid}", CardType.Provisions, null, CityStrength.None,
+                                FarmKind.None, ResourceType.None, TileData.TileType.Grass, uid);
+        }
+
+        /// <summary>Sky Tower: links two of your territories in different fiefs as adjacent.</summary>
+        public static CardData SkyTower()
+        {
+            int uid = _nextUniqueId++;
+            return new CardData($"S:#{uid}", CardType.SkyTower, null, CityStrength.None,
+                                FarmKind.None, ResourceType.None, TileData.TileType.Grass, uid);
+        }
+
         /// <summary>
         /// Parchment: a secret end-game scoring card. Treasure = flat Amount; the Mission
         /// rules score conditionally against the final board (see ParchmentRule).
@@ -142,6 +158,8 @@ namespace Cards
         public bool IsParchment => Type == CardType.Parchment;
         public bool IsTreasure => Type == CardType.Parchment && Rule == ParchmentRule.Treasure;
         public bool IsCamp => Type == CardType.Camp;
+        public bool IsSkyTower => Type == CardType.SkyTower;
+        public bool IsProvisions => Type == CardType.Provisions;
 
         // ---- Serialization (network-safe strings) ----
 
@@ -165,6 +183,10 @@ namespace Cards
                     return $"P:{(int)Rule}:{Amount}:{(int)Resource}#{UniqueId}";
                 case CardType.Camp:
                     return $"K:{Amount}#{UniqueId}";
+                case CardType.SkyTower:
+                    return $"S:#{UniqueId}";
+                case CardType.Provisions:
+                    return $"V:#{UniqueId}";
             }
             return Id;
         }
@@ -217,6 +239,20 @@ namespace Cards
                     SplitUid(rest, out _, out int uid);
                     return new CardData($"FM:#{uid}", CardType.Farm, null, CityStrength.None,
                                         FarmKind.Market, ResourceType.WildcardCommon, TileData.TileType.Grass, uid);
+                }
+
+                case "V":
+                {
+                    SplitUid(rest, out _, out int uid);
+                    return new CardData($"V:#{uid}", CardType.Provisions, null, CityStrength.None,
+                                        FarmKind.None, ResourceType.None, TileData.TileType.Grass, uid);
+                }
+
+                case "S":
+                {
+                    SplitUid(rest, out _, out int uid);
+                    return new CardData($"S:#{uid}", CardType.SkyTower, null, CityStrength.None,
+                                        FarmKind.None, ResourceType.None, TileData.TileType.Grass, uid);
                 }
 
                 case "K":

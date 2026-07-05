@@ -17,6 +17,7 @@ namespace Construction
         event Action OnAllPlayersDone;
         IReadOnlyList<CardData> GetAvailableCityCards(int actorNumber);
         bool TryPlaceCity(int actorNumber, CardData cityCard, string coordinate);
+        bool TryPlaceSkyTower(int actorNumber, CardData card, string coordA, string coordB);
         void MarkPlayerDone(int actorNumber);
         bool IsPlayerDone(int actorNumber);
         void StartConstruction();
@@ -132,6 +133,10 @@ namespace Construction
                 if (player != null && !string.IsNullOrEmpty(player.ImpColor)) color = player.ImpColor;
                 _eventBus?.Publish(new SpawnImpEvent(coordinate, actorNumber, color));
 
+                // The camp occupies the building slot (nothing else can be built here)
+                // and the claim is provisional: the real Territory card evicts it.
+                tile.PlaceCamp();
+
                 ConsumeBuildingCard(actorNumber, card);
                 Debug.Log($"[ConstructionService] Player {actorNumber} camped {coordinate}");
                 return true;
@@ -198,6 +203,36 @@ namespace Construction
                         new object[] { coordinate, (int)card.Strength });
             }
 
+            return true;
+        }
+
+        /// <summary>
+        /// Links two of the player's tiles with a sky tower pair so they count as adjacent
+        /// (merging their fiefs). Both must be owned by the player and not already linked.
+        /// </summary>
+        public bool TryPlaceSkyTower(int actorNumber, CardData card, string coordA, string coordB)
+        {
+            if (card == null || !card.IsSkyTower) return false;
+            if (string.IsNullOrEmpty(coordA) || string.IsNullOrEmpty(coordB) || coordA == coordB) return false;
+
+            var a = _gridService?.GetTileByCoord(coordA);
+            var b = _gridService?.GetTileByCoord(coordB);
+            if (a == null || b == null) return false;
+
+            if (!a.IsOwnedBy(actorNumber) || !b.IsOwnedBy(actorNumber) || a.HasSkyLink || b.HasSkyLink)
+            {
+                Debug.LogWarning($"[ConstructionService] Invalid sky tower endpoints {coordA}/{coordB}");
+                return false;
+            }
+
+            a.PlaceSkyLink(coordB);
+            b.PlaceSkyLink(coordA);
+            ConsumeBuildingCard(actorNumber, card);
+
+            // Repaint fief outlines (the two fiefs just merged).
+            _eventBus?.Publish(new TileOwnerChangedEvent(coordA, actorNumber));
+
+            Debug.Log($"[ConstructionService] Player {actorNumber} sky-linked {coordA} <-> {coordB}");
             return true;
         }
 

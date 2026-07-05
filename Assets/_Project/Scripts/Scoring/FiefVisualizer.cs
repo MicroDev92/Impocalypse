@@ -103,6 +103,7 @@ namespace Scoring
                 foreach (var fief in FiefCalculator.CalculateFiefs(pid, _gridService))
                 {
                     DrawOutline(fief, color);
+                    DrawSkyLinks(fief, color);
                     if (fief.Score > 0 && scoreBadgePrefab != null)
                         DrawBadge(fief);
                 }
@@ -132,6 +133,20 @@ namespace Scoring
 
                     CreateSegment(a, b, color);
                 }
+            }
+        }
+
+        /// <summary>Draws a line between sky-tower-linked tiles (once per pair).</summary>
+        private void DrawSkyLinks(Fief fief, Color color)
+        {
+            foreach (var tile in fief.Tiles)
+            {
+                if (!tile.HasSkyLink) continue;
+                if (string.CompareOrdinal(tile.coord, tile.SkyLinkCoord) >= 0) continue; // draw each pair once
+
+                var other = _gridService.GetTileByCoord(tile.SkyLinkCoord);
+                if (other != null)
+                    CreateSegment(tile.transform.position, other.transform.position, color);
             }
         }
 

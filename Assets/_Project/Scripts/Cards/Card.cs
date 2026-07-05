@@ -198,6 +198,10 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
                 label.text = FarmCardLabel(data);
             else if (data.IsCamp)
                 label.text = $"Camp #{data.Amount}\nclaim empty\ntile";
+            else if (data.IsSkyTower)
+                label.text = "Sky Tower\nlink 2 fiefs";
+            else if (data.IsProvisions)
+                label.text = "Provisions\ndraw 2\n& play";
             else if (data.IsParchment)
                 label.text = ParchmentCardLabel(data);
             else

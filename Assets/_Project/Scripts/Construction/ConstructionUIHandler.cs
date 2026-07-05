@@ -31,6 +31,7 @@ namespace Construction
         private IEventBus _eventBus;
 
         private CardData _selectedCityCard;
+        private string _pendingSkyCoord; // first endpoint of a sky tower (two-click placement)
         private readonly List<GameObject> _cityCardButtons = new();
         private readonly List<TileData> _highlightedTiles = new();
         private bool _isActive;
@@ -103,6 +104,7 @@ namespace Construction
         {
             _isActive = false;
             _selectedCityCard = null;
+            _pendingSkyCoord = null;
             ClearCityCardButtons();
             ClearHighlights();
             SetChildrenActive(false);
@@ -154,6 +156,7 @@ namespace Construction
         private void OnCityCardSelected(CardData card, GameObject buttonObj)
         {
             _selectedCityCard = card;
+            _pendingSkyCoord = null;
 
             // Reset all button colors
             foreach (var btn in _cityCardButtons)
@@ -211,6 +214,7 @@ namespace Construction
         {
             if (card.IsCity) return tile.CanPlaceCity(card.Strength);
             if (card.IsCamp) return !tile.IsOwned;
+            if (card.IsSkyTower) return tile.CanPlaceSkyTower();
             if (card.IsFarm)
             {
                 if (card.Farm == FarmKind.Special) return tile.CanPlaceSpecialFarm(card.AllowedTerrain);
@@ -224,6 +228,7 @@ namespace Construction
         {
             if (card.IsCity) return $"City Str {(int)card.Strength}";
             if (card.IsCamp) return $"Camp #{card.Amount} (claim empty tile)";
+            if (card.IsSkyTower) return "Sky Tower (link 2 fiefs)";
             if (card.IsFarm)
             {
                 return card.Farm switch
@@ -300,7 +305,31 @@ namespace Construction
             int localPlayer = _networkService?.LocalPlayerId ?? -1;
             if (localPlayer < 0) return;
 
-            bool placed = _constructionService.TryPlaceCity(localPlayer, _selectedCityCard, tile.coord);
+            // Sky towers take two clicks: first endpoint, then the second.
+            if (_selectedCityCard.IsSkyTower && _pendingSkyCoord == null)
+            {
+                if (!tile.IsOwnedBy(localPlayer) || tile.HasSkyLink)
+                {
+                    Debug.Log($"[ConstructionUI] {tile.coord} is not a valid sky tower endpoint");
+                    return;
+                }
+                _pendingSkyCoord = tile.coord;
+                if (instructionText != null)
+                    instructionText.text = $"First tower on {tile.coord}. Click a tile in a DIFFERENT fief for the second.";
+                return;
+            }
+
+            bool placed = _selectedCityCard.IsSkyTower
+                ? _constructionService.TryPlaceSkyTower(localPlayer, _selectedCityCard, _pendingSkyCoord, tile.coord)
+                : _constructionService.TryPlaceCity(localPlayer, _selectedCityCard, tile.coord);
+            if (_selectedCityCard.IsSkyTower && !placed)
+            {
+                _pendingSkyCoord = null;
+                if (instructionText != null)
+                    instructionText.text = "Invalid second endpoint - sky tower reset. Click the first tile again.";
+                return;
+            }
+            _pendingSkyCoord = null;
             if (placed)
             {
                 Debug.Log($"[ConstructionUI] Placed city at {tile.coord}");

@@ -46,6 +46,12 @@ namespace Cards
             // breaks ties when several players camp in the same build phase.
             for (int p = 1; p <= 6; p++) deck.Add(CardData.Camp(p));
 
+            // Sky Towers: link two territories in different fiefs as adjacent
+            for (int i = 0; i < 3; i++) deck.Add(CardData.SkyTower());
+
+            // Provisions: draw 2 cards from the deck and play them immediately
+            for (int i = 0; i < 3; i++) deck.Add(CardData.Provisions());
+
             // Parchments (secret end-game scoring; greybox set)
             deck.Add(CardData.Parchment(ParchmentRule.Treasure, 5));
             deck.Add(CardData.Parchment(ParchmentRule.Treasure, 3));
@@ -58,7 +64,7 @@ namespace Cards
 
             Shuffle(deck);
 
-            Debug.Log($"[DeckBuilder] Built deck: {coords.Length} territory + 21 city + 18 farm + 6 camp + 8 parchment = {deck.Count} total");
+            Debug.Log($"[DeckBuilder] Built deck: {coords.Length} territory + 21 city + 18 farm + 6 camp + 3 skytower + 3 provisions + 8 parchment = {deck.Count} total");
             return deck;
         }
 

@@ -2,7 +2,7 @@ using Cards;
 using UnityEngine;
 
 /// <summary>What kind of building occupies a tile (at most one per tile).</summary>
-public enum BuildingKind { None, City, CommonFarm, SpecialFarm, Market }
+public enum BuildingKind { None, City, CommonFarm, SpecialFarm, Market, Camp }
 
 public class TileData : MonoBehaviour
 {
@@ -53,6 +53,35 @@ public class TileData : MonoBehaviour
     public bool ProducesWildcard => _building == BuildingKind.Market;
     /// <summary>The resource this tile's terrain produces on its own (None for non-resource terrain).</summary>
     public ResourceType BaseResource => ResourceTypes.FromTerrain(type);
+
+    /// <summary>Coordinate of the tile this one is sky-tower-linked to (null if none).
+    /// Linked tiles count as adjacent for fief connectivity.</summary>
+    public string SkyLinkCoord { get; private set; }
+    public bool HasSkyLink => !string.IsNullOrEmpty(SkyLinkCoord);
+
+    /// <summary>A sky tower endpoint needs an owned tile without an existing link.</summary>
+    public bool CanPlaceSkyTower() => IsOwned && !HasSkyLink;
+
+    public void PlaceSkyLink(string otherCoord) => SkyLinkCoord = otherCoord;
+    public void ClearSkyLink() => SkyLinkCoord = null;
+
+    /// <summary>
+    /// True if this tile is held by a Camp. The camp occupies the building slot (so
+    /// nothing else can be built here), and the claim is provisional: playing the
+    /// tile's actual Territory card evicts the camper.
+    /// </summary>
+    public bool IsCampClaim => _building == BuildingKind.Camp;
+
+    /// <summary>Places a camp - it fills the building slot, blocking other buildings.</summary>
+    public void PlaceCamp() => _building = BuildingKind.Camp;
+
+    /// <summary>Removes the building (camp removal on eviction/upgrade).</summary>
+    public void ClearBuilding()
+    {
+        _building = BuildingKind.None;
+        _cityStrength = CityStrength.None;
+        _addedResource = ResourceType.None;
+    }
 
     public bool IsOwnedBy(int actorNumber) => _ownerActorNumber == actorNumber;
 
@@ -167,6 +196,7 @@ public class TileData : MonoBehaviour
         _building = BuildingKind.None;
         _cityStrength = CityStrength.None;
         _addedResource = ResourceType.None;
+        SkyLinkCoord = null;
 
         var sr = backgroundRenderer != null ? backgroundRenderer : GetComponent<SpriteRenderer>();
         if (sr != null) sr.color = _originalColor;

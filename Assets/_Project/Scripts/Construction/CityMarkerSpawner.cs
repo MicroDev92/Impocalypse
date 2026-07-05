@@ -33,11 +33,26 @@ public class CityMarkerSpawner : MonoBehaviour
         ServiceLocator.TryGetService(out _eventBus);
         ServiceLocator.TryGetService(out _gridService);
         _eventBus?.Subscribe<CityPlacedEvent>(OnCityPlaced);
+        _eventBus?.Subscribe<TileOwnerChangedEvent>(OnTileOwnerChanged);
     }
 
     private void OnDestroy()
     {
         _eventBus?.Unsubscribe<CityPlacedEvent>(OnCityPlaced);
+        _eventBus?.Unsubscribe<TileOwnerChangedEvent>(OnTileOwnerChanged);
+    }
+
+    /// <summary>Removes the marker if the tile's building was razed (e.g. camp eviction).</summary>
+    private void OnTileOwnerChanged(TileOwnerChangedEvent evt)
+    {
+        if (!_markers.TryGetValue(evt.Coordinate, out var marker) || marker == null) return;
+
+        var tile = _gridService?.GetTileByCoord(evt.Coordinate);
+        if (tile != null && !tile.HasBuilding)
+        {
+            Destroy(marker);
+            _markers.Remove(evt.Coordinate);
+        }
     }
 
     private void OnCityPlaced(CityPlacedEvent evt)

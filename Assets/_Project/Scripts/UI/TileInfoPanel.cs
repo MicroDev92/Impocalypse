@@ -187,6 +187,7 @@ public class TileInfoPanel : MonoBehaviour
                     BuildingKind.Market => "Market",
                     BuildingKind.SpecialFarm => $"Luxury Farm ({tile.AddedResource})",
                     BuildingKind.CommonFarm => $"Farm ({tile.AddedResource})",
+                    BuildingKind.Camp => "Camp (provisional)",
                     _ => "—"
                 };
             }

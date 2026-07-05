@@ -340,6 +340,79 @@ namespace Draft.Services
             return new List<CardData>().AsReadOnly();
         }
 
+        /// <summary>
+        /// Resolves a picked Provisions card at draft time: draws 2 cards and plays them.
+        /// Territories join the effective pick list (so ProcessAllPicks broadcasts their
+        /// imp spawns), buildables/parchments go to the player's pools, and a drawn
+        /// Provisions chains (draws 2 more).
+        /// </summary>
+        private void ResolveProvisionsPick(int actorNumber, List<string> effectivePicks)
+        {
+            var queue = new Queue<CardData>(DrawFromDeck(2));
+            var drawnNames = new List<string>();
+
+            while (queue.Count > 0)
+            {
+                var drawn = queue.Dequeue();
+                drawnNames.Add(drawn.ToString());
+
+                if (drawn.IsTerritory)
+                {
+                    effectivePicks.Add(drawn.Serialize());
+                }
+                else if (drawn.IsProvisions)
+                {
+                    foreach (var chained in DrawFromDeck(2))
+                        queue.Enqueue(chained);
+                }
+                else
+                {
+                    GrantPick(actorNumber, drawn);
+                }
+            }
+
+            Debug.Log($"[DraftService] Provisions (player {actorNumber}) drew: {string.Join(", ", drawnNames)}");
+
+            if (drawnNames.Count > 0 && actorNumber == (_networkService?.LocalPlayerId ?? -1))
+                _eventBus?.Publish(new ShowStatusEvent($"Provisions drew: {string.Join(", ", drawnNames)}"));
+        }
+
+        /// <summary>Draws up to count cards from the top of the deck (master only).</summary>
+        private IReadOnlyList<CardData> DrawFromDeck(int count)
+        {
+            var result = new List<CardData>();
+            if (!IsMasterClient) return result;
+
+            while (result.Count < count && _deckPosition < _deck.Count)
+                result.Add(_deck[_deckPosition++]);
+
+            Debug.Log($"[DraftService] Drew {result.Count} cards from deck (position {_deckPosition}/{_deck.Count})");
+            return result;
+        }
+
+        /// <summary>
+        /// Grants a card to a player as if they had picked it in the draft (used by
+        /// Provisions). Buildables go to the construction stock, parchments to the
+        /// secret hand. Territories are NOT handled here - the caller claims them.
+        /// </summary>
+        private void GrantPick(int actorNumber, CardData card)
+        {
+            if (card == null) return;
+
+            if (card.IsCity || card.IsFarm || card.IsCamp || card.IsSkyTower || card.IsProvisions)
+            {
+                if (!_playerCityCards.ContainsKey(actorNumber))
+                    _playerCityCards[actorNumber] = new List<CardData>();
+                _playerCityCards[actorNumber].Add(card);
+            }
+            else if (card.IsParchment)
+            {
+                if (!_playerParchments.ContainsKey(actorNumber))
+                    _playerParchments[actorNumber] = new List<CardData>();
+                _playerParchments[actorNumber].Add(card);
+            }
+        }
+
         public IReadOnlyList<CardData> GetPlayerParchments(int actorNumber)
         {
             if (_playerParchments.TryGetValue(actorNumber, out var cards))
@@ -448,19 +521,25 @@ namespace Draft.Services
                 return;
             }
 
-            _pendingPicks[senderActorId] = serializedPicks;
-
             Debug.Log($"[DraftService] Received picks from player {senderActorId}: {string.Join(", ", serializedPicks)}");
 
-            // Parse picks and separate territory from city
+            // Provisions resolves at pick time and can inject extra territory claims,
+            // so the effective pick list may grow beyond what was submitted.
+            var effectivePicks = new List<string>(serializedPicks);
+
             foreach (var serialized in serializedPicks)
             {
                 var card = CardData.Deserialize(serialized);
                 if (card == null) continue;
 
-                if (card.IsCity || card.IsFarm || card.IsCamp)
+                if (card.IsProvisions)
                 {
-                    // Store buildable card (city/farm/camp) for the construction phase
+                    // Resolve NOW (draft rules): draw 2 and play them immediately.
+                    ResolveProvisionsPick(senderActorId, effectivePicks);
+                }
+                else if (card.IsCity || card.IsFarm || card.IsCamp || card.IsSkyTower)
+                {
+                    // Store buildable card (city/farm/camp/skytower) for the construction phase
                     if (!_playerCityCards.ContainsKey(senderActorId))
                         _playerCityCards[senderActorId] = new List<CardData>();
                     _playerCityCards[senderActorId].Add(card);
@@ -473,6 +552,8 @@ namespace Draft.Services
                     _playerParchments[senderActorId].Add(card);
                 }
             }
+
+            _pendingPicks[senderActorId] = effectivePicks.ToArray();
 
             // Remove picked cards from hand
             if (_playerHands.TryGetValue(senderActorId, out var hand))

@@ -388,10 +388,13 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
                 sprite = carrotResourceSprite;
                 resourceName = "Carrot";
                 break;
-            case TileData.TileType.Water:
             case TileData.TileType.Fish:
                 sprite = fishResourceSprite;
                 resourceName = "Fish";
+                break;
+            case TileData.TileType.Water:
+                // Plain water is scenery - it produces nothing (only Fish tiles give fish)
+                resourceName = "Water";
                 break;
             case TileData.TileType.Plains:
                 resourceName = "Plains";

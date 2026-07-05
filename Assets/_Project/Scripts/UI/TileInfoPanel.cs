@@ -169,6 +169,7 @@ public class TileInfoPanel : MonoBehaviour
                 TileData.TileType.Fish => "Fish",
                 TileData.TileType.Mountain => "None (Mountain)",
                 TileData.TileType.Plains => "None (Plains)",
+                TileData.TileType.Water => "None (Water)",
                 _ => "None"
             };
         }

@@ -88,10 +88,7 @@ namespace Construction
             if (instructionText != null)
                 instructionText.text = "Select a city card, then click an owned tile to place it.";
 
-            foreach (var card in cityCards)
-            {
-                CreateCityCardButton(card);
-            }
+            BuildButtons(cityCards);
 
             if (doneButton != null)
             {
@@ -118,7 +115,55 @@ namespace Construction
             }
         }
 
-        private void CreateCityCardButton(CardData card)
+        /// <summary>
+        /// Creates one button per DISTINCT card, stacking duplicates with a ×N count and
+        /// sorting by category (Cities, Farms, Markets, Camps, Sky Towers). Bounded distinct
+        /// types mean the row can never overflow.
+        /// </summary>
+        private void BuildButtons(IReadOnlyList<CardData> cards)
+        {
+            ClearCityCardButtons();
+            if (cards == null) return;
+
+            var groups = cards
+                .GroupBy(StackKey)
+                .OrderBy(g => SortIndex(g.First()))
+                .ThenBy(g => (int)g.First().Strength)
+                .ThenBy(g => g.First().Amount);
+
+            foreach (var group in groups)
+                CreateCityCardButton(group.First(), group.Count());
+        }
+
+        /// <summary>Gameplay identity ignoring unique ids - identical cards share a stack.</summary>
+        private static string StackKey(CardData c)
+        {
+            if (c.IsCity) return $"C{(int)c.Strength}";
+            if (c.IsCamp) return $"K{c.Amount}";      // priorities are distinct on purpose
+            if (c.IsSkyTower) return "S";
+            if (c.IsFarm)
+            {
+                return c.Farm switch
+                {
+                    FarmKind.Market => "FM",
+                    FarmKind.Special => $"FS{(int)c.Resource}:{(int)c.AllowedTerrain}",
+                    _ => $"FC{(int)c.Resource}"
+                };
+            }
+            return c.Serialize();
+        }
+
+        private static int SortIndex(CardData c)
+        {
+            if (c.IsCity) return 0;
+            if (c.IsFarm)
+                return c.Farm switch { FarmKind.Common => 1, FarmKind.Special => 2, _ => 3 };
+            if (c.IsCamp) return 4;
+            if (c.IsSkyTower) return 5;
+            return 6;
+        }
+
+        private void CreateCityCardButton(CardData card, int stackCount = 1)
         {
             if (cityCardContainer == null || cityCardButtonPrefab == null)
             {
@@ -143,7 +188,9 @@ namespace Construction
             var label = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
             if (label != null)
             {
-                label.text = BuildingLabel(card);
+                label.text = stackCount > 1
+                    ? $"{BuildingLabel(card)}  ×{stackCount}"
+                    : BuildingLabel(card);
             }
             
             // If it has a Card script, disable it so it doesn't fight our UI logic
@@ -338,16 +385,12 @@ namespace Construction
                 ClearHighlights();
 
                 var remaining = _constructionService.GetAvailableCityCards(localPlayer);
-                ClearCityCardButtons();
+                BuildButtons(remaining);
 
                 if (remaining.Count > 0)
                 {
-                    foreach (var card in remaining)
-                    {
-                        CreateCityCardButton(card);
-                    }
                     if (instructionText != null)
-                        instructionText.text = "City placed! Select another card or click Done.";
+                        instructionText.text = "Placed! Select another card or click Done.";
                 }
                 else
                 {

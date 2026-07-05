@@ -598,6 +598,10 @@ public static class GameSceneUISetup
         rightHlg.childControlWidth = true;  // size each text to its content
         rightHlg.childControlHeight = true;
 
+        // Prefix so these read as map info, not the player's own resources
+        var onBoard = CreateTextObject(right.transform, "OnBoardLabel", "On board:", 15, FontStyles.Italic);
+        onBoard.GetComponent<TMP_Text>().color = TextSecondary;
+
         var woodAmount = CreateResourceCounter(right.transform, "Wood");
         var carrotAmount = CreateResourceCounter(right.transform, "Carrot");
         var fishAmount = CreateResourceCounter(right.transform, "Fish");

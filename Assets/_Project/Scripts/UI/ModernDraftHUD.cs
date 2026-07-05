@@ -18,7 +18,7 @@ namespace UI
         [SerializeField] private TMP_Text statusText;
         [SerializeField] private TMP_Text draftInfoText;
 
-        [Header("Resource Amounts")]
+        [Header("Board Resource Counts (unclaimed/total per resource on this map)")]
         [SerializeField] private TMP_Text woodAmount;
         [SerializeField] private TMP_Text carrotAmount;
         [SerializeField] private TMP_Text fishAmount;
@@ -28,7 +28,6 @@ namespace UI
         [SerializeField] private float statusFadeDuration = 0.5f;
 
         private IEventBus _eventBus;
-        private IResourceService _resourceService;
         private Coroutine _statusFadeCoroutine;
 
         public bool IsVisible => gameObject.activeSelf;
@@ -48,12 +47,7 @@ namespace UI
                 _eventBus.Subscribe<GamePhaseChangedEvent>(OnPhaseChanged);
                 _eventBus.Subscribe<CardsDealtEvent>(OnCardsDealt);
                 _eventBus.Subscribe<CardConfirmedEvent>(OnCardConfirmed);
-            }
-
-            ServiceLocator.TryGetService(out _resourceService);
-            if (_resourceService != null)
-            {
-                _resourceService.OnResourceChanged += OnResourceChanged;
+                _eventBus.Subscribe<TileOwnerChangedEvent>(OnTileOwnerChanged);
             }
 
             // Sync initial state after a short delay to ensure GameManager is ready
@@ -70,7 +64,7 @@ namespace UI
                 UpdateHUD(gm.CurrentRound, gm.CurrentPhase, "");
                 if (draftInfoText) draftInfoText.gameObject.SetActive(gm.CurrentPhase == GamePhase.Draft);
             }
-            UpdateResourceTexts();
+            UpdateBoardCounts();
         }
 
         private void OnDestroy()
@@ -83,11 +77,7 @@ namespace UI
                 _eventBus.Unsubscribe<GamePhaseChangedEvent>(OnPhaseChanged);
                 _eventBus.Unsubscribe<CardsDealtEvent>(OnCardsDealt);
                 _eventBus.Unsubscribe<CardConfirmedEvent>(OnCardConfirmed);
-            }
-
-            if (_resourceService != null)
-            {
-                _resourceService.OnResourceChanged -= OnResourceChanged;
+                _eventBus.Unsubscribe<TileOwnerChangedEvent>(OnTileOwnerChanged);
             }
 
             ServiceLocator.UnregisterService<IDraftHUD>();
@@ -150,22 +140,38 @@ namespace UI
         public void Show() => gameObject.SetActive(true);
         public void Hide() => gameObject.SetActive(false);
 
-        private void OnResourceChanged(int actor, TileData.TileType type, int amount)
+        private void OnTileOwnerChanged(TileOwnerChangedEvent evt)
         {
-            // For simplicity, showing current player (actor 0 or 1 usually)
-            // Modern games might show multiple, but we'll focus on 'Local' view
-            UpdateResourceTexts();
+            // A claim changes how many resource tiles are still up for grabs.
+            UpdateBoardCounts();
         }
 
-        private void UpdateResourceTexts()
+        /// <summary>
+        /// Shows map-level resource availability: how many Wood/Carrot/Fish tiles this
+        /// grid rolled, and how many are still unclaimed ("unclaimed/total"). Draft info -
+        /// per-player counts live in the player cards, not here.
+        /// </summary>
+        private void UpdateBoardCounts()
         {
-            if (_resourceService == null) return;
-            // Assuming actor 1 is the primary player for now or using Photon actor if available
-            int actor = 1; 
-            
-            if (woodAmount) woodAmount.text = _resourceService.GetResourceAmount(actor, TileData.TileType.Wood).ToString();
-            if (carrotAmount) carrotAmount.text = _resourceService.GetResourceAmount(actor, TileData.TileType.Carrot).ToString();
-            if (fishAmount) fishAmount.text = _resourceService.GetResourceAmount(actor, TileData.TileType.Fish).ToString();
+            var grid = ServiceLocator.GetService<IGridService>();
+            if (grid == null) return;
+
+            SetBoardCount(woodAmount, grid, TileData.TileType.Wood);
+            SetBoardCount(carrotAmount, grid, TileData.TileType.Carrot);
+            SetBoardCount(fishAmount, grid, TileData.TileType.Fish);
+        }
+
+        private static void SetBoardCount(TMP_Text text, IGridService grid, TileData.TileType type)
+        {
+            if (text == null) return;
+
+            var tiles = grid.GetTilesByResourceType(type);
+            int total = tiles.Count;
+            int unclaimed = 0;
+            foreach (var t in tiles)
+                if (!t.IsOwned) unclaimed++;
+
+            text.text = $"{unclaimed}/{total}";
         }
 
         private void OnUpdateHUD(UpdateHUDEvent evt) => UpdateHUD(evt.Round, evt.Phase, evt.Status);
@@ -175,7 +181,7 @@ namespace UI
         {
             SetPhase(evt.NewPhase);
             if (draftInfoText) draftInfoText.gameObject.SetActive(evt.NewPhase == GamePhase.Draft);
-            UpdateResourceTexts();
+            UpdateBoardCounts();
         }
 
         private void OnCardsDealt(CardsDealtEvent evt) => UpdateDraftInfo(evt.SerializedCards?.Length ?? 0);

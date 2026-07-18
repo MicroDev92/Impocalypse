@@ -48,6 +48,10 @@ namespace Cards
             TileData.TileType.Wood => ResourceType.Wood,
             TileData.TileType.Carrot => ResourceType.Carrot,
             TileData.TileType.Fish => ResourceType.Fish,
+            // The Styx carries Souls: all liquid terrain produces the soul resource
+            // (Bunny Kingdom style - the sea IS the fish). ResourceType.Fish is the
+            // internal id; GameLexicon displays it as "Souls".
+            TileData.TileType.Water => ResourceType.Fish,
             _ => ResourceType.None
         };
     }

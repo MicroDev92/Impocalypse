@@ -38,7 +38,7 @@ namespace Cards
             // Special Farms: add a luxury resource on a matching RESOURCE tile
             deck.Add(CardData.SpecialFarm(ResourceType.Special_A, TileData.TileType.Wood));
             deck.Add(CardData.SpecialFarm(ResourceType.Special_B, TileData.TileType.Carrot));
-            deck.Add(CardData.SpecialFarm(ResourceType.Special_C, TileData.TileType.Fish));
+            deck.Add(CardData.SpecialFarm(ResourceType.Special_C, TileData.TileType.Water)); // Ectoplasm farm sits on the Styx
             // Markets: wildcard common (player's choice at scoring)
             for (int i = 0; i < 3; i++) deck.Add(CardData.Market());
 

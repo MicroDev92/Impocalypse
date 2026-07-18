@@ -76,7 +76,7 @@ namespace Construction
             {
                 Debug.LogWarning("[ConstructionUI] No city cards provided to Show()");
                 if (instructionText != null)
-                    instructionText.text = "No city cards to place. Click Done.";
+                    instructionText.text = "Nothing to build. Click Done.";
                 if (doneButton != null)
                 {
                     doneButton.gameObject.SetActive(true);
@@ -86,7 +86,7 @@ namespace Construction
             }
 
             if (instructionText != null)
-                instructionText.text = "Select a city card, then click an owned tile to place it.";
+                instructionText.text = "Select a building, then click a highlighted tile to place it.";
 
             BuildButtons(cityCards);
 
@@ -273,16 +273,16 @@ namespace Construction
         /// <summary>Short label describing a building card.</summary>
         private static string BuildingLabel(CardData card)
         {
-            if (card.IsCity) return $"City Str {(int)card.Strength}";
-            if (card.IsCamp) return $"Camp #{card.Amount} (claim empty tile)";
-            if (card.IsSkyTower) return "Sky Tower (link 2 fiefs)";
+            if (card.IsCity) return $"{GameLexicon.CityName} Str {(int)card.Strength}";
+            if (card.IsCamp) return $"{GameLexicon.CampName} #{card.Amount} (claim empty tile)";
+            if (card.IsSkyTower) return $"{GameLexicon.SkyTowerName} (link 2 domains)";
             if (card.IsFarm)
             {
                 return card.Farm switch
                 {
-                    FarmKind.Market => "Market (wildcard)",
-                    FarmKind.Special => $"Luxury: {card.Resource} (on {card.AllowedTerrain} tile)",
-                    _ => $"Farm: +{card.Resource}"
+                    FarmKind.Market => $"{GameLexicon.MarketName} (any resource)",
+                    FarmKind.Special => $"Luxury: {GameLexicon.Resource(card.Resource)} (on {GameLexicon.TerrainShort(card.AllowedTerrain)})",
+                    _ => $"Farm: +{GameLexicon.Resource(card.Resource)}"
                 };
             }
             return "Building";
@@ -362,7 +362,7 @@ namespace Construction
                 }
                 _pendingSkyCoord = tile.coord;
                 if (instructionText != null)
-                    instructionText.text = $"First tower on {tile.coord}. Click a tile in a DIFFERENT fief for the second.";
+                    instructionText.text = $"First gate on {tile.coord}. Click a tile in a DIFFERENT domain for the second.";
                 return;
             }
 
@@ -373,7 +373,7 @@ namespace Construction
             {
                 _pendingSkyCoord = null;
                 if (instructionText != null)
-                    instructionText.text = "Invalid second endpoint - sky tower reset. Click the first tile again.";
+                    instructionText.text = $"Invalid second endpoint - {GameLexicon.SkyTowerName} reset. Click the first tile again.";
                 return;
             }
             _pendingSkyCoord = null;
@@ -395,7 +395,7 @@ namespace Construction
                 else
                 {
                     if (instructionText != null)
-                        instructionText.text = "All city cards placed!";
+                        instructionText.text = "Everything built!";
                 }
             }
             else

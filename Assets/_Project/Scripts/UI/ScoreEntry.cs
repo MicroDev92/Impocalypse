@@ -33,9 +33,9 @@ public class ScoreEntry : MonoBehaviour
         if (scoreText != null)
         {
             if (roundScore == cumulative)
-                scoreText.text = $"{cumulative} pts";
+                scoreText.text = $"{cumulative} {GameLexicon.ScoreName}";
             else
-                scoreText.text = $"{cumulative} pts (this round: +{roundScore})";
+                scoreText.text = $"{cumulative} {GameLexicon.ScoreName} (this round: +{roundScore})";
         }
 
         if (fiefs != null && fiefDetailsContainer != null && fiefDetailPrefab != null)
@@ -64,7 +64,7 @@ public class ScoreEntry : MonoBehaviour
                 var detailObj = Instantiate(fiefDetailPrefab, fiefDetailsContainer);
                 var detailText = detailObj.GetComponentInChildren<TMP_Text>();
                 if (detailText != null)
-                    detailText.text = $"Fief {index}: {fief.Tiles.Count} tiles, Str {fief.Strength} x Wealth {fief.Wealth} = {fief.Score}";
+                    detailText.text = $"{GameLexicon.FiefName} {index}: {fief.Tiles.Count} tiles, Str {fief.Strength} x Wealth {fief.Wealth} = {fief.Score}";
                 index++;
             }
         }

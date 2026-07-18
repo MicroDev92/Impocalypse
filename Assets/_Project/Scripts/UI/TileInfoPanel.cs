@@ -159,19 +159,13 @@ public class TileInfoPanel : MonoBehaviour
             }
         }
 
-        // Resource
+        // Resource (base terrain resource via the lexicon; None for barren terrain)
         if (resourceValue != null)
         {
-            resourceValue.text = tile.type switch
-            {
-                TileData.TileType.Wood => "Wood",
-                TileData.TileType.Carrot => "Carrot",
-                TileData.TileType.Fish => "Fish",
-                TileData.TileType.Mountain => "None (Mountain)",
-                TileData.TileType.Plains => "None (Plains)",
-                TileData.TileType.Water => "None (Water)",
-                _ => "None"
-            };
+            var baseRes = tile.BaseResource;
+            resourceValue.text = baseRes != Cards.ResourceType.None
+                ? GameLexicon.Resource(baseRes)
+                : "None";
         }
 
         // Building (city / farm / market)
@@ -184,11 +178,11 @@ public class TileInfoPanel : MonoBehaviour
             {
                 cityValue.text = tile.Building switch
                 {
-                    BuildingKind.City => $"City (Str {(int)tile.BuildingStrength})",
-                    BuildingKind.Market => "Market",
-                    BuildingKind.SpecialFarm => $"Luxury Farm ({tile.AddedResource})",
-                    BuildingKind.CommonFarm => $"Farm ({tile.AddedResource})",
-                    BuildingKind.Camp => "Camp (provisional)",
+                    BuildingKind.City => $"{GameLexicon.CityName} (Str {(int)tile.BuildingStrength})",
+                    BuildingKind.Market => GameLexicon.MarketName,
+                    BuildingKind.SpecialFarm => $"Luxury Farm ({GameLexicon.Resource(tile.AddedResource)})",
+                    BuildingKind.CommonFarm => $"Farm ({GameLexicon.Resource(tile.AddedResource)})",
+                    BuildingKind.Camp => $"{GameLexicon.CampName} (provisional)",
                     _ => "—"
                 };
             }
@@ -216,17 +210,6 @@ public class TileInfoPanel : MonoBehaviour
 
     private static string GetTileTypeName(TileData.TileType type)
     {
-        return type switch
-        {
-            TileData.TileType.Grass => "Grassland",
-            TileData.TileType.Water => "Water",
-            TileData.TileType.Wood => "Forest",
-            TileData.TileType.Carrot => "Farmland",
-            TileData.TileType.Fish => "Fishing Waters",
-            TileData.TileType.Plains => "Plains",
-            TileData.TileType.Mountain => "Mountain",
-            TileData.TileType.PresetVillage => "Village",
-            _ => type.ToString()
-        };
+        return GameLexicon.Terrain(type);
     }
 }

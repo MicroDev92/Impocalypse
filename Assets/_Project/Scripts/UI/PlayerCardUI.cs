@@ -99,7 +99,7 @@ public class PlayerCardUI : MonoBehaviour
     public void UpdateStats(int score, int territories, int wood, int carrot, int fish)
     {
         if (scoreText != null)
-            scoreText.text = $"Score: {score}";
+            scoreText.text = $"{GameLexicon.ScoreName}: {score}";
 
         if (territoryCountText != null)
             territoryCountText.text = territories.ToString();

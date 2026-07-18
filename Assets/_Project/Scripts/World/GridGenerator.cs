@@ -12,6 +12,8 @@ public class GridGenerator : MonoBehaviour, IGridService
     [Header("Grid Configuration")]
     public GameObject tilePrefab;
     public Sprite grassSprite;
+    [Tooltip("Optional second Ashlands look - plains pick randomly between the two for variety.")]
+    public Sprite plainsVariantSprite;
     public Sprite waterSprite;
     
     [Header("Terrain Sprites")]
@@ -34,6 +36,54 @@ public class GridGenerator : MonoBehaviour, IGridService
     
     [Header("Grid Settings")]
     public Vector2Int gridDimensions = new Vector2Int(12, 12);
+
+    [Tooltip("Visual fill of each cell. 1 = seamless edge-to-edge tiles; slightly below 1 (e.g. 0.97) leaves a deliberate hairline gap for a board-game look.")]
+    [Range(0.9f, 1f)] public float tileVisualFill = 1f;
+
+    [Tooltip("Randomly rotate full-bleed terrain tiles (plains/lava/forest/mountain) in 90-degree steps to hide texture repetition. Uses the seeded random stream, so all clients get identical rotations.")]
+    public bool randomizeTerrainRotation = true;
+
+    [Header("Terrain Generation")]
+    [Tooltip("How strongly terrain clumps into regions (rivers, groves, ranges). 1 = pure random; ~3 = gentle regions; 8 = big continents. Seeded, so all clients generate identical maps.")]
+    [Range(1f, 8f)] public float clusterStrength = 3f;
+
+    // Base terrain distribution: Ashlands 40 / Styx 16 / Grove 16 / Field 16 / Peaks 12.
+    private static readonly TileData.TileType[] TerrainTypes =
+    {
+        TileData.TileType.Plains,
+        TileData.TileType.Water,
+        TileData.TileType.Wood,
+        TileData.TileType.Carrot,
+        TileData.TileType.Mountain
+    };
+    private static readonly float[] TerrainBaseWeights = { 40f, 16f, 16f, 16f, 12f };
+
+    // Fixed "tile bag": exact tile counts per terrain, derived from the weights.
+    // Clustering decides WHERE terrain goes, never HOW MUCH - this prevents the
+    // dominant terrain from snowballing via the neighbor boost.
+    private int[] _terrainQuota;
+
+    // Companion rule: Styx and Peaks may never appear as a lonely single tile.
+    // When one is placed with no same-type neighbor, a future adjacent cell is
+    // reserved for its partner. Grove/Field/Ashlands may be singletons.
+    private readonly Dictionary<Vector2Int, TileData.TileType> _forcedTerrain = new();
+
+    private void InitTerrainQuota()
+    {
+        int playable = (gridDimensions.x - 2) * (gridDimensions.y - 2);
+
+        float sum = 0f;
+        foreach (var w in TerrainBaseWeights) sum += w;
+
+        _terrainQuota = new int[TerrainTypes.Length];
+        int assigned = 0;
+        for (int i = 0; i < TerrainTypes.Length; i++)
+        {
+            _terrainQuota[i] = Mathf.FloorToInt(TerrainBaseWeights[i] / sum * playable);
+            assigned += _terrainQuota[i];
+        }
+        _terrainQuota[0] += playable - assigned; // rounding remainder goes to Ashlands
+    }
     
     // Private collections for optimized lookups
     private readonly Dictionary<string, TileData> _coordToTile = new();
@@ -94,6 +144,10 @@ public class GridGenerator : MonoBehaviour, IGridService
         _allTiles.Clear();
         _coordToTile.Clear();
         _positionToTile.Clear();
+
+        // Fill the fixed tile bag for this board (see InitTerrainQuota).
+        InitTerrainQuota();
+        _forcedTerrain.Clear();
         
         // Clear existing child objects
         foreach (Transform child in transform)
@@ -133,43 +187,22 @@ public class GridGenerator : MonoBehaviour, IGridService
                 }
                 else
                 {
-                    // Playable tile terrain distribution:
-                    // Plains 30%, Water 20%, Wood 15%, Carrot 15%, Fish 10%, Mountain 10%
-                    float randomValue = Random.value;
+                    // Weighted terrain roll with neighbor clustering bias, so terrain
+                    // forms soft regions (the Styx winds, groves clump, peaks range).
+                    // A cell reserved as a companion (see PickTerrain) skips the roll.
                     TileData.TileType tileType;
-                    Sprite tileSprite;
-
-                    if (randomValue < 0.30f)
+                    var cell = new Vector2Int(x, y);
+                    if (_forcedTerrain.TryGetValue(cell, out var forcedType))
                     {
-                        tileType = TileData.TileType.Plains;
-                        tileSprite = grassSprite;
-                    }
-                    else if (randomValue < 0.50f)
-                    {
-                        tileType = TileData.TileType.Water;
-                        tileSprite = waterSprite;
-                    }
-                    else if (randomValue < 0.65f)
-                    {
-                        tileType = TileData.TileType.Wood;
-                        tileSprite = woodSprite;
-                    }
-                    else if (randomValue < 0.80f)
-                    {
-                        tileType = TileData.TileType.Carrot;
-                        tileSprite = carrotSprite;
-                    }
-                    else if (randomValue < 0.90f)
-                    {
-                        tileType = TileData.TileType.Fish;
-                        tileSprite = fishSprite;
+                        tileType = forcedType; // quota already reserved at force time
+                        _forcedTerrain.Remove(cell);
                     }
                     else
                     {
-                        tileType = TileData.TileType.Mountain;
-                        tileSprite = mountainSprite != null ? mountainSprite : grassSprite;
+                        tileType = PickTerrain(x, y);
                     }
-                    
+                    Sprite tileSprite = SpriteFor(tileType);
+
                     string coord = $"{(char)('A' + (gridDimensions.y - 2 - (y - 1)) - 1)}{x}";
                     tileData.Init(tileType, coord, new Vector2Int(x, y), tileSprite);
                     
@@ -177,12 +210,171 @@ public class GridGenerator : MonoBehaviour, IGridService
                     _coordToTile[coord] = tileData;
                     _positionToTile[new Vector2Int(x, y)] = tileData;
                 }
+
+                // Normalize every tile (playable, coordinate labels, corners) to exactly
+                // one grid cell so the board is seamless regardless of sprite dimensions.
+                tileData.FitToCell(tileVisualFill);
+
+                // Break the wallpaper effect where identical full-bleed textures sit
+                // adjacent. Uses the seeded random stream, so all clients match.
+                if (randomizeTerrainRotation)
+                    ApplyTerrainVariation(tileData);
             }
         }
         
         Debug.Log($"Grid generated with {_allTiles.Count} tiles, {_coordToTile.Count} playable tiles");
     }
     
+    /// <summary>
+    /// Weighted terrain pick with clustering: each already-generated orthogonal
+    /// neighbor (left, below - generation order guarantees they exist first)
+    /// multiplies its own terrain's weight by clusterStrength. Terrain tends to
+    /// continue itself without ever being guaranteed to.
+    /// </summary>
+    private TileData.TileType PickTerrain(int x, int y)
+    {
+        // Remaining quota is the base weight: a terrain that's used up its share
+        // has weight 0, and a depleting terrain gets naturally rarer.
+        var weights = new float[TerrainTypes.Length];
+        for (int i = 0; i < weights.Length; i++)
+            weights[i] = _terrainQuota[i];
+
+        BoostForNeighbor(weights, new Vector2Int(x - 1, y));
+        BoostForNeighbor(weights, new Vector2Int(x, y - 1));
+
+        // Re-roll loop: a companion-required terrain that can't satisfy the rule
+        // here gets its weight zeroed and the roll repeats with the rest.
+        for (int attempt = 0; attempt < TerrainTypes.Length; attempt++)
+        {
+            float total = 0f;
+            foreach (var w in weights) total += w;
+            if (total <= 0f) break;
+
+            int picked = -1;
+            float roll = Random.Range(0f, total);
+            for (int i = 0; i < weights.Length; i++)
+            {
+                roll -= weights[i];
+                if (roll <= 0f && weights[i] > 0f) { picked = i; break; }
+            }
+            if (picked < 0) break;
+
+            var type = TerrainTypes[picked];
+
+            if (RequiresCompanion(type) && !HasSameNeighbor(x, y, type))
+            {
+                // Needs a partner: reserve a future adjacent cell for the same type.
+                if (_terrainQuota[picked] >= 2 && TryReserveCompanion(x, y, type))
+                {
+                    _terrainQuota[picked] -= 2; // this tile + the reserved partner
+                    return type;
+                }
+
+                weights[picked] = 0f; // rule can't be satisfied here - re-roll
+                continue;
+            }
+
+            _terrainQuota[picked]--;
+            return type;
+        }
+
+        // Fallback: prefer terrains without the companion rule, then anything left.
+        for (int i = 0; i < TerrainTypes.Length; i++)
+            if (_terrainQuota[i] > 0 && !RequiresCompanion(TerrainTypes[i]))
+            { _terrainQuota[i]--; return TerrainTypes[i]; }
+        for (int i = 0; i < TerrainTypes.Length; i++)
+            if (_terrainQuota[i] > 0)
+            { _terrainQuota[i]--; return TerrainTypes[i]; }
+        return TileData.TileType.Plains;
+    }
+
+    /// <summary>Styx and Peaks may never be a lonely single tile.</summary>
+    private static bool RequiresCompanion(TileData.TileType t) =>
+        t == TileData.TileType.Water || t == TileData.TileType.Mountain;
+
+    private bool HasSameNeighbor(int x, int y, TileData.TileType type)
+    {
+        return (_positionToTile.TryGetValue(new Vector2Int(x - 1, y), out var left) && left.type == type)
+            || (_positionToTile.TryGetValue(new Vector2Int(x, y - 1), out var below) && below.type == type);
+    }
+
+    /// <summary>
+    /// Reserves a not-yet-generated adjacent cell for the same terrain, guaranteeing
+    /// the companion rule. Generation order is x-outer/y-inner, so (x, y+1) and
+    /// (x+1, y) are always in the future.
+    /// </summary>
+    private bool TryReserveCompanion(int x, int y, TileData.TileType type)
+    {
+        var a = new Vector2Int(x, y + 1);
+        var b = new Vector2Int(x + 1, y);
+        if (Random.value < 0.5f) (a, b) = (b, a); // vary partner direction
+
+        foreach (var cell in new[] { a, b })
+        {
+            if (IsPlayableCell(cell) && !_forcedTerrain.ContainsKey(cell))
+            {
+                _forcedTerrain[cell] = type;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool IsPlayableCell(Vector2Int p) =>
+        p.x >= 1 && p.x <= gridDimensions.x - 2 &&
+        p.y >= 1 && p.y <= gridDimensions.y - 2;
+
+    private void BoostForNeighbor(float[] weights, Vector2Int pos)
+    {
+        if (!_positionToTile.TryGetValue(pos, out var neighbor)) return;
+
+        for (int i = 0; i < TerrainTypes.Length; i++)
+        {
+            if (TerrainTypes[i] == neighbor.type)
+            {
+                weights[i] *= clusterStrength;
+                return;
+            }
+        }
+    }
+
+    private Sprite SpriteFor(TileData.TileType type) => type switch
+    {
+        TileData.TileType.Water => waterSprite,
+        TileData.TileType.Wood => woodSprite,
+        TileData.TileType.Carrot => carrotSprite,
+        TileData.TileType.Mountain => mountainSprite != null ? mountainSprite : grassSprite,
+        // Ashlands: pick between the two plains looks for variety
+        _ => (plainsVariantSprite != null && Random.value < 0.5f) ? plainsVariantSprite : grassSprite
+    };
+
+    /// <summary>
+    /// Visual variety for full-bleed terrain. Non-directional textures (plains, lava)
+    /// rotate in 90-degree steps; directional art (tree faces, mountain peaks) only
+    /// mirrors so "up" stays up. Rimmed tiles (fish pond, fenced crops) stay untouched -
+    /// they read as discrete objects on purpose.
+    /// </summary>
+    private static void ApplyTerrainVariation(TileData tile)
+    {
+        switch (tile.type)
+        {
+            case TileData.TileType.Plains:
+            case TileData.TileType.Water:
+                tile.transform.rotation = Quaternion.Euler(0f, 0f, 90f * Random.Range(0, 4));
+                break;
+
+            case TileData.TileType.Wood:
+            case TileData.TileType.Mountain:
+                if (Random.value < 0.5f)
+                {
+                    var s = tile.transform.localScale;
+                    s.x = -s.x;
+                    tile.transform.localScale = s;
+                }
+                break;
+        }
+    }
+
     // IGridService Implementation
     public TileData GetTileByCoord(string coord)
     {
@@ -238,14 +430,18 @@ public class GridGenerator : MonoBehaviour, IGridService
     
     public List<TileData> GetTilesByResourceType(TileData.TileType resourceType)
     {
-        if (resourceType != TileData.TileType.Wood && 
-            resourceType != TileData.TileType.Carrot && 
-            resourceType != TileData.TileType.Fish)
+        // Souls: the Styx (Water) is the soul-bearing terrain. Legacy Fish requests
+        // map to it so existing callers (HUD counters, sidebar) keep working.
+        if (resourceType == TileData.TileType.Fish || resourceType == TileData.TileType.Water)
+            return _allTiles.Where(t => t.type == TileData.TileType.Water).ToList();
+
+        if (resourceType != TileData.TileType.Wood &&
+            resourceType != TileData.TileType.Carrot)
         {
             Debug.LogWarning($"Requested resource type {resourceType} is not a valid resource");
             return new List<TileData>();
         }
-        
+
         return _allTiles.Where(t => t.type == resourceType).ToList();
     }
     

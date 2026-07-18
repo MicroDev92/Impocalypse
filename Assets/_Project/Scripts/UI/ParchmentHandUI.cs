@@ -66,10 +66,10 @@ namespace UI
         private static string Describe(CardData p) => p.Rule switch
         {
             ParchmentRule.Treasure => $"Treasure: +{p.Amount}",
-            ParchmentRule.PerResource => $"+{p.Amount} per {p.Resource}",
-            ParchmentRule.PerFief => $"+{p.Amount} per fief",
-            ParchmentRule.LargestFief => $"+{p.Amount}/tile in biggest fief",
-            ParchmentRule.PerCity => $"+{p.Amount} per city",
+            ParchmentRule.PerResource => $"+{p.Amount} per {GameLexicon.Resource(p.Resource)}",
+            ParchmentRule.PerFief => $"+{p.Amount} per domain",
+            ParchmentRule.LargestFief => $"+{p.Amount}/tile in biggest domain",
+            ParchmentRule.PerCity => $"+{p.Amount} per citadel",
             _ => p.ToString()
         };
     }

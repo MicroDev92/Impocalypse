@@ -92,7 +92,7 @@ public class GameOverUI : MonoBehaviour
         string winnerName = networkService?.GetPlayerName(sorted[0].Key) ?? $"Player {sorted[0].Key}";
 
         if (winnerText != null)
-            winnerText.text = $"{winnerName} Wins! ({sorted[0].Value} pts)";
+            winnerText.text = $"{winnerName} Wins! ({sorted[0].Value} {GameLexicon.ScoreName})";
 
         // Create score entries
         foreach (var kvp in sorted)

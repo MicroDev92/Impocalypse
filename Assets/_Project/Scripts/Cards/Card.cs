@@ -193,13 +193,13 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
             if (data.IsTerritory)
                 label.text = data.Coordinate;
             else if (data.IsCity)
-                label.text = $"City\nStr {(int)data.Strength}";
+                label.text = $"{GameLexicon.CityName}\nStr {(int)data.Strength}";
             else if (data.IsFarm)
                 label.text = FarmCardLabel(data);
             else if (data.IsCamp)
-                label.text = $"Camp #{data.Amount}\nclaim empty\ntile";
+                label.text = $"{GameLexicon.CampName} #{data.Amount}\nclaim empty\ntile";
             else if (data.IsSkyTower)
-                label.text = "Sky Tower\nlink 2 fiefs";
+                label.text = $"{GameLexicon.SkyTowerName}\nlink 2\ndomains";
             else if (data.IsProvisions)
                 label.text = "Provisions\ndraw 2\n& play";
             else if (data.IsParchment)
@@ -226,9 +226,9 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         return data.Farm switch
         {
-            FarmKind.Market => "Market\n(any common)",
-            FarmKind.Special => $"Luxury\n{data.Resource}\non {TerrainName(data.AllowedTerrain)}",
-            _ => $"Farm\n+{data.Resource}"
+            FarmKind.Market => $"{GameLexicon.MarketName}\n(any resource)",
+            FarmKind.Special => $"Luxury\n{GameLexicon.Resource(data.Resource)}\non {GameLexicon.TerrainShort(data.AllowedTerrain)}",
+            _ => $"Farm\n+{GameLexicon.Resource(data.Resource)}"
         };
     }
 
@@ -238,22 +238,13 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         return data.Rule switch
         {
             Cards.ParchmentRule.Treasure => $"Treasure\n+{data.Amount}",
-            Cards.ParchmentRule.PerResource => $"Pact\n+{data.Amount}/{data.Resource}",
-            Cards.ParchmentRule.PerFief => $"Pact\n+{data.Amount}/fief",
-            Cards.ParchmentRule.LargestFief => $"Pact\n+{data.Amount}/tile\nbiggest fief",
-            Cards.ParchmentRule.PerCity => $"Pact\n+{data.Amount}/city",
+            Cards.ParchmentRule.PerResource => $"Pact\n+{data.Amount}/{GameLexicon.Resource(data.Resource)}",
+            Cards.ParchmentRule.PerFief => $"Pact\n+{data.Amount}/domain",
+            Cards.ParchmentRule.LargestFief => $"Pact\n+{data.Amount}/tile\nbiggest domain",
+            Cards.ParchmentRule.PerCity => $"Pact\n+{data.Amount}/citadel",
             _ => "Pact"
         };
     }
-
-    private static string TerrainName(TileData.TileType t) => t switch
-    {
-        TileData.TileType.Wood => "Wood",
-        TileData.TileType.Carrot => "Carrot",
-        TileData.TileType.Fish => "Fish",
-        TileData.TileType.Mountain => "Mountain",
-        _ => t.ToString()
-    };
 
     private void ResetState()
     {
@@ -382,25 +373,23 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         {
             case TileData.TileType.Wood:
                 sprite = woodResourceSprite;
-                resourceName = "Wood";
+                resourceName = GameLexicon.Resource(Cards.ResourceType.Wood);
                 break;
             case TileData.TileType.Carrot:
                 sprite = carrotResourceSprite;
-                resourceName = "Carrot";
+                resourceName = GameLexicon.Resource(Cards.ResourceType.Carrot);
                 break;
             case TileData.TileType.Fish:
-                sprite = fishResourceSprite;
-                resourceName = "Fish";
-                break;
             case TileData.TileType.Water:
-                // Plain water is scenery - it produces nothing (only Fish tiles give fish)
-                resourceName = "Water";
+                // The Styx carries Souls
+                sprite = fishResourceSprite;
+                resourceName = GameLexicon.Resource(Cards.ResourceType.Fish);
                 break;
             case TileData.TileType.Plains:
-                resourceName = "Plains";
+                resourceName = GameLexicon.TerrainShort(TileData.TileType.Plains);
                 break;
             case TileData.TileType.Mountain:
-                resourceName = "Mountain";
+                resourceName = GameLexicon.TerrainShort(TileData.TileType.Mountain);
                 break;
             case TileData.TileType.Grass:
             default:

@@ -51,9 +51,9 @@ public class ResourceManager : MonoBehaviour, IResourceService
 
     private void InitializeMetadata()
     {
-        _resourceNames[TileData.TileType.Wood] = "Wood";
-        _resourceNames[TileData.TileType.Carrot] = "Carrot";
-        _resourceNames[TileData.TileType.Fish] = "Fish";
+        _resourceNames[TileData.TileType.Wood] = GameLexicon.Resource(Cards.ResourceType.Wood);
+        _resourceNames[TileData.TileType.Carrot] = GameLexicon.Resource(Cards.ResourceType.Carrot);
+        _resourceNames[TileData.TileType.Fish] = GameLexicon.Resource(Cards.ResourceType.Fish);
 
         _resourceIcons[TileData.TileType.Wood] = woodIcon;
         _resourceIcons[TileData.TileType.Carrot] = carrotIcon;
@@ -78,14 +78,17 @@ public class ResourceManager : MonoBehaviour, IResourceService
 
         EnsurePlayerExists(actorNumber);
 
+        // Styx (Water) tiles produce Souls, tracked under the Fish key internally.
+        var key = NormalizeResourceKey(tile.type);
+
         var resources = _playerResources[actorNumber];
-        resources[tile.type]++;
-        int newAmount = resources[tile.type];
+        resources[key]++;
+        int newAmount = resources[key];
 
-        OnResourceCollected?.Invoke(actorNumber, tile.type, newAmount);
-        OnResourceChanged?.Invoke(actorNumber, tile.type, newAmount);
+        OnResourceCollected?.Invoke(actorNumber, key, newAmount);
+        OnResourceChanged?.Invoke(actorNumber, key, newAmount);
 
-        string resourceId = tile.type.ToString().ToLowerInvariant();
+        string resourceId = key.ToString().ToLowerInvariant();
         _eventBus?.Publish(new ResourceCollectedEvent(resourceId, 1, newAmount));
 
         return true;
@@ -95,8 +98,12 @@ public class ResourceManager : MonoBehaviour, IResourceService
     {
         return tileType == TileData.TileType.Wood ||
                tileType == TileData.TileType.Carrot ||
-               tileType == TileData.TileType.Fish;
+               tileType == TileData.TileType.Fish ||
+               tileType == TileData.TileType.Water; // the Styx produces Souls
     }
+
+    private static TileData.TileType NormalizeResourceKey(TileData.TileType type) =>
+        type == TileData.TileType.Water ? TileData.TileType.Fish : type;
 
     public int GetResourceAmount(int actorNumber, TileData.TileType resourceType)
     {

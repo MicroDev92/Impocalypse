@@ -107,7 +107,8 @@ public class TileData : MonoBehaviour
     /// Whether this tile type produces a resource for fief wealth calculation.
     /// </summary>
     public bool IsResourceTile =>
-        type == TileType.Wood || type == TileType.Carrot || type == TileType.Fish;
+        type == TileType.Wood || type == TileType.Carrot || type == TileType.Fish ||
+        type == TileType.Water; // the Styx produces Souls
 
     public void Init(TileType tileType, string coordLabel, Vector2Int position, Sprite sprite)
     {
@@ -148,10 +149,92 @@ public class TileData : MonoBehaviour
         gameObject.name = $"Tile_{coord}_{type}";
     }
 
-    public void Highlight(bool on)
+    [Tooltip("Glyph (letter/number/skull) size as a fraction of the cell on coordinate tiles.")]
+    [SerializeField] private float labelCellFraction = 0.7f;
+
+    /// <summary>
+    /// Scales the tile so its background sprite spans exactly cellSize world units,
+    /// regardless of the source image's pixel size or PPU. Makes the board seamless
+    /// and art-proof: any sprite resolves to a perfect grid cell.
+    /// </summary>
+    public void FitToCell(float cellSize)
     {
         var sr = backgroundRenderer != null ? backgroundRenderer : GetComponent<SpriteRenderer>();
-        sr.color = on ? Color.yellow : (IsOwned ? GetOwnerTintColor() : _originalColor);
+        if (sr == null || sr.sprite == null) return;
+
+        var size = sr.sprite.bounds.size;
+        if (size.x <= 0f || size.y <= 0f) return;
+
+        transform.localScale = new Vector3(cellSize / size.x, cellSize / size.y, 1f);
+
+        // The glyph is a child, so the root normalization above scales it by an
+        // arbitrary factor that depends on the background art's pixel size. Undo
+        // that: normalize the glyph independently so it always spans
+        // labelCellFraction of the cell, no matter what art either sprite uses.
+        if (labelRenderer != null && labelRenderer.sprite != null)
+        {
+            var glyph = labelRenderer.sprite.bounds.size;
+            if (glyph.x > 0f && glyph.y > 0f)
+            {
+                float worldTarget = cellSize * labelCellFraction;
+                float k = worldTarget / Mathf.Max(glyph.x, glyph.y);
+                labelRenderer.transform.localScale = new Vector3(
+                    k * size.x / cellSize,
+                    k * size.y / cellSize,
+                    1f);
+                labelRenderer.sortingOrder = 1; // always above the slab
+            }
+        }
+    }
+
+    [Header("Highlight")]
+    [Tooltip("Translucent overlay shown when the tile is highlighted. An overlay BRIGHTENS any terrain, unlike a sprite tint which can only darken - so it contrasts every tile type.")]
+    [SerializeField] private Color highlightColor = new Color(1f, 0.95f, 0.45f, 0.5f);
+
+    private SpriteRenderer _highlightOverlay;
+    private static Sprite _unitWhiteSprite;
+
+    public void Highlight(bool on)
+    {
+        if (_highlightOverlay == null)
+        {
+            if (!on) return;
+            CreateHighlightOverlay();
+        }
+        _highlightOverlay.enabled = on;
+    }
+
+    private void CreateHighlightOverlay()
+    {
+        var go = new GameObject("Highlight");
+        go.transform.SetParent(transform, false);
+
+        _highlightOverlay = go.AddComponent<SpriteRenderer>();
+        _highlightOverlay.sprite = GetUnitWhiteSprite();
+        _highlightOverlay.color = highlightColor;
+        _highlightOverlay.sortingOrder = 5; // above tile art (0), below imps (10)
+        _highlightOverlay.enabled = false;
+
+        // Match the background sprite's local bounds, so the parent's FitToCell
+        // scaling lands the overlay at exactly one grid cell.
+        var sr = backgroundRenderer != null ? backgroundRenderer : GetComponent<SpriteRenderer>();
+        if (sr != null && sr.sprite != null)
+        {
+            var size = sr.sprite.bounds.size;
+            go.transform.localScale = new Vector3(size.x, size.y, 1f);
+        }
+    }
+
+    private static Sprite GetUnitWhiteSprite()
+    {
+        if (_unitWhiteSprite == null)
+        {
+            var tex = Texture2D.whiteTexture;
+            _unitWhiteSprite = Sprite.Create(
+                tex, new Rect(0, 0, tex.width, tex.height),
+                new Vector2(0.5f, 0.5f), tex.width);
+        }
+        return _unitWhiteSprite;
     }
 
     /// <summary>
@@ -197,6 +280,8 @@ public class TileData : MonoBehaviour
         _cityStrength = CityStrength.None;
         _addedResource = ResourceType.None;
         SkyLinkCoord = null;
+
+        if (_highlightOverlay != null) _highlightOverlay.enabled = false;
 
         var sr = backgroundRenderer != null ? backgroundRenderer : GetComponent<SpriteRenderer>();
         if (sr != null) sr.color = _originalColor;

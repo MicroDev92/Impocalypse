@@ -41,11 +41,11 @@ namespace StateMachine.States
                 var sorted = scores.OrderByDescending(s => s.Value).ToList();
                 string winnerName = networkService.GetPlayerName(sorted[0].Key) ?? $"Player {sorted[0].Key}";
 
-                string summary = $"GAME OVER! Winner: {winnerName} ({sorted[0].Value} pts)\n";
+                string summary = $"GAME OVER! Winner: {winnerName} ({sorted[0].Value} {GameLexicon.ScoreName})\n";
                 foreach (var kvp in sorted)
                 {
                     string name = networkService.GetPlayerName(kvp.Key) ?? $"Player {kvp.Key}";
-                    summary += $"\n{name}: {kvp.Value} pts";
+                    summary += $"\n{name}: {kvp.Value} {GameLexicon.ScoreName}";
                 }
 
                 _eventBus?.Publish(new ShowStatusEvent(summary));

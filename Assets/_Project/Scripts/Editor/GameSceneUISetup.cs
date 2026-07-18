@@ -602,9 +602,9 @@ public static class GameSceneUISetup
         var onBoard = CreateTextObject(right.transform, "OnBoardLabel", "On board:", 15, FontStyles.Italic);
         onBoard.GetComponent<TMP_Text>().color = TextSecondary;
 
-        var woodAmount = CreateResourceCounter(right.transform, "Wood");
-        var carrotAmount = CreateResourceCounter(right.transform, "Carrot");
-        var fishAmount = CreateResourceCounter(right.transform, "Fish");
+        var woodAmount = CreateResourceCounter(right.transform, GameLexicon.Resource(Cards.ResourceType.Wood));
+        var carrotAmount = CreateResourceCounter(right.transform, GameLexicon.Resource(Cards.ResourceType.Carrot));
+        var fishAmount = CreateResourceCounter(right.transform, GameLexicon.Resource(Cards.ResourceType.Fish));
 
         // Wire the HUD component
         var hud = topBar.AddComponent<UI.ModernDraftHUD>();

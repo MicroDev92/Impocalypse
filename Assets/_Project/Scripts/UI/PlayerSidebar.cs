@@ -237,7 +237,7 @@ public class PlayerSidebar : MonoBehaviour
             turnStatusText.text = phase switch
             {
                 GamePhase.Draft => "Pick your cards",
-                GamePhase.Build => "Place your cities",
+                GamePhase.Build => "Build your structures",
                 GamePhase.Scoring => "Scoring...",
                 GamePhase.GameOver => "Game Over",
                 _ => "Waiting..."

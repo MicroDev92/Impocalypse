@@ -54,3 +54,7 @@ sysinfo.txt
 nul
 clipboard.txt
 claude-chat-text-file.txt
+
+# Unity crash-recovery snapshots - local only
+/Assets/_Recovery/
+/Assets/_Recovery.meta

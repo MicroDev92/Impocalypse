@@ -133,11 +133,13 @@ namespace Construction
                 var playerService = ServiceLocator.GetService<Players.IPlayerService>();
                 var player = playerService?.GetPlayer(actorNumber);
                 if (player != null && !string.IsNullOrEmpty(player.ImpColor)) color = player.ImpColor;
-                _eventBus?.Publish(new SpawnImpEvent(coordinate, actorNumber, color));
 
                 // The camp occupies the building slot (nothing else can be built here)
                 // and the claim is provisional: the real Territory card evicts it.
+                // PlaceCamp BEFORE the spawn event: its handlers sync building markers
+                // synchronously and must see the camp already on the tile.
                 tile.PlaceCamp();
+                _eventBus?.Publish(new SpawnImpEvent(coordinate, actorNumber, color));
 
                 ConsumeBuildingCard(actorNumber, card);
                 Debug.Log($"[ConstructionService] Player {actorNumber} camped {coordinate}");
@@ -377,8 +379,9 @@ namespace Construction
                 var player = ServiceLocator.GetService<Players.IPlayerService>()?.GetPlayer(actorNumber);
                 if (player != null && !string.IsNullOrEmpty(player.ImpColor)) color = player.ImpColor;
 
-                _eventBus?.Publish(new SpawnImpEvent(coordA, actorNumber, color));
+                // PlaceCamp before the spawn event - marker sync runs synchronously.
                 tile.PlaceCamp();
+                _eventBus?.Publish(new SpawnImpEvent(coordA, actorNumber, color));
             }
             else if (card.IsCity)
             {

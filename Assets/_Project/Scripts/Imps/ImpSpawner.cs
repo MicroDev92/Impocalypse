@@ -16,9 +16,20 @@ namespace Imps
         [SerializeField] private ImpVisuals impVisuals;
         [SerializeField] private PlayerColorPalette colorPalette;
 
+        [Header("Building Etiquette")]
+        [Tooltip("When a building occupies the imp's tile, the imp steps aside: tucked into this corner offset, at reduced scale, drawn in front of the building marker.")]
+        [SerializeField] private Vector2 buildingTuckOffset = new Vector2(-0.28f, -0.26f);
+        [Range(0.3f, 1f)]
+        [SerializeField] private float buildingTuckScale = 0.55f;
+        [Tooltip("Sorting order for a tucked imp - should beat the building marker's (default 100) so the imp stands in front of its new home.")]
+        [SerializeField] private int tuckedSortingOrder = 101;
+
         private ImpFactory _impFactory;
         private IEventBus _eventBus;
         private IGridService _gridService;
+
+        // Original scale/sorting per tucked imp, so eviction/pooling restores them.
+        private readonly System.Collections.Generic.Dictionary<Imp, (Vector3 scale, int order)> _tucked = new();
 
         private void Awake()
         {
@@ -36,6 +47,8 @@ namespace Imps
             if (_eventBus != null)
             {
                 _eventBus.Subscribe<SpawnImpEvent>(OnSpawnImpEvent);
+                _eventBus.Subscribe<CityPlacedEvent>(OnCityPlacedEvent);
+                _eventBus.Subscribe<TileOwnerChangedEvent>(OnTileOwnerChangedEvent);
             }
 
             // Load visuals if not set
@@ -50,6 +63,8 @@ namespace Imps
             if (_eventBus != null)
             {
                 _eventBus.Unsubscribe<SpawnImpEvent>(OnSpawnImpEvent);
+                _eventBus.Unsubscribe<CityPlacedEvent>(OnCityPlacedEvent);
+                _eventBus.Unsubscribe<TileOwnerChangedEvent>(OnTileOwnerChangedEvent);
             }
 
             ServiceLocator.UnregisterService<ImpSpawner>();
@@ -102,8 +117,13 @@ namespace Imps
                 }
 
                 // Evict the camper: remove their imp and camp, break any sky link.
+                // Restore pose first - pooled imps must never carry a tucked scale.
                 var oldImp = _impFactory?.GetImpAtCoordinate(coordinate);
-                if (oldImp != null) _impFactory.ReturnImp(oldImp);
+                if (oldImp != null)
+                {
+                    RestorePose(oldImp, tile.transform.position);
+                    _impFactory.ReturnImp(oldImp);
+                }
 
                 if (tile.HasSkyLink)
                 {
@@ -141,9 +161,59 @@ namespace Imps
 
                 // Publish event
                 _eventBus?.Publish(new ImpSpawnedEvent(coordinate, ownerActorNumber));
+
+                // Camp flow: the tile already has its building when the imp arrives.
+                SyncImpPose(coordinate);
             }
 
             return imp;
+        }
+
+        // ==========================================
+        // BUILDING ETIQUETTE
+        // The building is the tile's dominant visual; its imp steps aside.
+        // ==========================================
+
+        private void OnCityPlacedEvent(CityPlacedEvent evt) => SyncImpPose(evt.Coordinate);
+        private void OnTileOwnerChangedEvent(TileOwnerChangedEvent evt) => SyncImpPose(evt.Coordinate);
+
+        private void SyncImpPose(string coordinate)
+        {
+            var tile = _gridService?.GetTileByCoord(coordinate);
+            var imp = _impFactory?.GetImpAtCoordinate(coordinate);
+            if (tile == null || imp == null) return;
+
+            if (tile.HasBuilding)
+                TuckPose(imp, tile.transform.position);
+            else
+                RestorePose(imp, tile.transform.position);
+        }
+
+        private void TuckPose(Imp imp, Vector3 tileCenter)
+        {
+            if (!_tucked.ContainsKey(imp))
+            {
+                var sr = imp.GetComponentInChildren<SpriteRenderer>();
+                _tucked[imp] = (imp.transform.localScale, sr != null ? sr.sortingOrder : 10);
+
+                if (sr != null) sr.sortingOrder = tuckedSortingOrder;
+                imp.transform.localScale *= buildingTuckScale;
+            }
+
+            imp.transform.position = tileCenter + (Vector3)buildingTuckOffset;
+        }
+
+        private void RestorePose(Imp imp, Vector3 tileCenter)
+        {
+            if (_tucked.TryGetValue(imp, out var original))
+            {
+                imp.transform.localScale = original.scale;
+                var sr = imp.GetComponentInChildren<SpriteRenderer>();
+                if (sr != null) sr.sortingOrder = original.order;
+                _tucked.Remove(imp);
+            }
+
+            imp.transform.position = tileCenter;
         }
 
         /// <summary>
@@ -182,6 +252,16 @@ namespace Imps
         /// </summary>
         public void ClearAllImps()
         {
+            // Restore every tucked imp before pooling - reused imps must start clean.
+            foreach (var kvp in _tucked)
+            {
+                if (kvp.Key == null) continue;
+                kvp.Key.transform.localScale = kvp.Value.scale;
+                var sr = kvp.Key.GetComponentInChildren<SpriteRenderer>();
+                if (sr != null) sr.sortingOrder = kvp.Value.order;
+            }
+            _tucked.Clear();
+
             _impFactory?.ReturnAllImps();
             Debug.Log("[ImpSpawner] Cleared all imps");
         }

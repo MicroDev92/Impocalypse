@@ -24,9 +24,6 @@ namespace StateMachine.States
         private float _autoAdvanceTimer;
         private bool _useAutoAdvance;
 
-        // Fallback auto-advance if construction takes too long
-        private const float FallbackTimeout = 120f;
-
         public override void Enter()
         {
             Debug.Log("[BuildState] Entering build state");
@@ -109,17 +106,9 @@ namespace StateMachine.States
                     EndBuildPhase();
                 }
             }
-            else
-            {
-                // Fallback timeout for construction
-                _autoAdvanceTimer += Time.deltaTime;
-                if (_autoAdvanceTimer >= FallbackTimeout)
-                {
-                    Debug.LogWarning("[BuildState] Construction timed out, auto-advancing");
-                    _advanced = true;
-                    EndBuildPhase();
-                }
-            }
+            // No local fallback timeout here: phase end is master-authoritative
+            // (ConstructionService's build timer or the everyone-done broadcast).
+            // A per-client timeout advanced clients independently and desynced them.
         }
 
         private void OnConstructionComplete()

@@ -95,7 +95,7 @@ namespace UI
         public void SetPhase(GamePhase phase)
         {
             if (phaseText == null) return;
-            phaseText.text = phase switch
+            _phaseLabel = phase switch
             {
                 GamePhase.Lobby => "LOBBY",
                 GamePhase.Draft => "DRAFT PHASE",
@@ -104,6 +104,67 @@ namespace UI
                 GamePhase.GameOver => "GAME OVER",
                 _ => phase.ToString().ToUpper()
             };
+
+            // Build counts down from phase entry; draft restarts per deal (OnCardsDealt).
+            if (phase == GamePhase.Build) StartCountdown(GameTiming.BuildSeconds);
+            else if (phase != GamePhase.Draft) StopCountdown();
+
+            RefreshPhaseText();
+        }
+
+        // ==========================================
+        // PHASE COUNTDOWN (display only - enforcement is master-side)
+        // ==========================================
+
+        private string _phaseLabel = "";
+        private float _countdown;
+        private bool _countdownActive;
+        private int _lastShownSecond = -1;
+
+        private void StartCountdown(float seconds)
+        {
+            _countdown = seconds;
+            _countdownActive = true;
+            _lastShownSecond = -1;
+            RefreshPhaseText();
+        }
+
+        private void StopCountdown()
+        {
+            _countdownActive = false;
+            RefreshPhaseText();
+        }
+
+        private void Update()
+        {
+            if (!_countdownActive) return;
+
+            _countdown -= Time.deltaTime;
+            if (_countdown <= 0f)
+            {
+                _countdown = 0f;
+                _countdownActive = false;
+            }
+
+            int second = Mathf.CeilToInt(_countdown);
+            if (second == _lastShownSecond && _countdownActive) return; // once per second
+            _lastShownSecond = second;
+            RefreshPhaseText();
+        }
+
+        private void RefreshPhaseText()
+        {
+            if (phaseText == null) return;
+
+            if (_countdownActive)
+            {
+                int t = Mathf.CeilToInt(_countdown);
+                phaseText.text = $"{_phaseLabel}  {t / 60}:{t % 60:00}";
+            }
+            else
+            {
+                phaseText.text = _phaseLabel;
+            }
         }
 
         public void SetStatus(string status)
@@ -184,7 +245,11 @@ namespace UI
             UpdateBoardCounts();
         }
 
-        private void OnCardsDealt(CardsDealtEvent evt) => UpdateDraftInfo(evt.SerializedCards?.Length ?? 0);
+        private void OnCardsDealt(CardsDealtEvent evt)
+        {
+            UpdateDraftInfo(evt.SerializedCards?.Length ?? 0);
+            StartCountdown(GameTiming.DraftPickSeconds); // fresh 45s per hand
+        }
         private void OnCardConfirmed(CardConfirmedEvent evt)
         {
             if (ServiceLocator.TryGetService<CardSelectionHandler>(out var handler))

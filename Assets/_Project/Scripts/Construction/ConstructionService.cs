@@ -102,6 +102,32 @@ namespace Construction
                 Debug.Log("[ConstructionService] No city cards to place, ending construction");
                 EndConstruction();
             }
+            else if (IsMasterClient)
+            {
+                // Master-authoritative build timer: expiry ends the phase for
+                // everyone through the same broadcast path as everyone-done.
+                _buildTimer = GameTiming.BuildSeconds;
+                _buildTimerActive = true;
+            }
+        }
+
+        // ==========================================
+        // BUILD TIMER (master-authoritative)
+        // ==========================================
+
+        private float _buildTimer;
+        private bool _buildTimerActive;
+
+        private void Update()
+        {
+            if (!_buildTimerActive || !IsMasterClient) return;
+
+            _buildTimer -= Time.deltaTime;
+            if (_buildTimer > 0f) return;
+
+            _buildTimerActive = false;
+            Debug.Log("[ConstructionService] Build timer expired - ending construction");
+            EndConstruction();
         }
 
         public IReadOnlyList<CardData> GetAvailableCityCards(int actorNumber)
@@ -291,6 +317,7 @@ namespace Construction
 
         private void EndConstruction()
         {
+            _buildTimerActive = false;
             Debug.Log("[ConstructionService] Construction phase ended");
 
             if (IsMasterClient)

@@ -221,6 +221,7 @@ namespace Draft.Services
             }
 
             _deckPosition += cardsPerPlayer * _cachedPlayerIds.Count;
+            StartPickTimer();
         }
 
         private void DealRandomCoords()
@@ -256,6 +257,8 @@ namespace Draft.Services
 
                 Debug.Log($"[DraftService] Dealt {coords.Length} cards to player {actorNumber}");
             }
+
+            StartPickTimer();
         }
 
         public void SubmitPicks(string[] serializedPicks)
@@ -274,6 +277,56 @@ namespace Draft.Services
 
             _eventBus?.Publish(new ShowStatusEvent("Waiting for other players..."));
             _eventBus?.Publish(new LocalPicksSubmittedEvent(serializedPicks));
+        }
+
+        // ==========================================
+        // PICK TIMER (master-authoritative)
+        // ==========================================
+
+        private float _pickTimer;
+        private bool _pickTimerActive;
+
+        private void Update()
+        {
+            if (!_pickTimerActive || !IsMasterClient) return;
+
+            _pickTimer -= Time.deltaTime;
+            if (_pickTimer > 0f) return;
+
+            _pickTimerActive = false;
+            AutoPickForMissingPlayers();
+        }
+
+        private void StartPickTimer()
+        {
+            if (!IsMasterClient) return;
+            _pickTimer = GameTiming.DraftPickSeconds;
+            _pickTimerActive = true;
+        }
+
+        private void StopPickTimer() => _pickTimerActive = false;
+
+        /// <summary>
+        /// Pick timer expired: submit random picks on behalf of every player who
+        /// hasn't picked yet. Runs through HandlePicksReceived - the same
+        /// authoritative path as a real submission (provisions, grants, spawns).
+        /// </summary>
+        private void AutoPickForMissingPlayers()
+        {
+            var missing = _cachedPlayerIds.Where(id => !_pendingPicks.ContainsKey(id)).ToList();
+            foreach (var actorId in missing)
+            {
+                if (!_playerHands.TryGetValue(actorId, out var hand) || hand.Count == 0) continue;
+
+                int count = Mathf.Min(PicksPerRound, hand.Count);
+                var picks = hand.OrderBy(_ => UnityEngine.Random.value)
+                                .Take(count)
+                                .Select(c => c.Serialize())
+                                .ToArray();
+
+                Debug.Log($"[DraftService] Pick timer expired - auto-picking {count} random cards for player {actorId}");
+                HandlePicksReceived(picks, actorId);
+            }
         }
 
         public void PassHands()
@@ -321,11 +374,14 @@ namespace Draft.Services
 
             _eventBus?.Publish(new HandsPassedEvent(IsClockwise));
             OnHandsPassed?.Invoke(IsClockwise);
+
+            StartPickTimer(); // fresh 45s for the new hands
         }
 
         public void EndDraft()
         {
             Debug.Log("[DraftService] Draft ended - advancing to Build phase");
+            StopPickTimer();
 
             // Draft end is decided master-side (ProcessAllPicks) - tell everyone else.
             if (IsMasterClient)
@@ -619,6 +675,27 @@ namespace Draft.Services
 
             Debug.Log($"[DraftService] Received picks from player {senderActorId}: {string.Join(", ", serializedPicks)}");
 
+            // A submission can arrive after the pick timer already auto-picked for
+            // this player (or be a duplicate) - the first accepted submission wins.
+            if (_pendingPicks.ContainsKey(senderActorId))
+            {
+                Debug.LogWarning($"[DraftService] Ignoring duplicate/late picks from player {senderActorId}");
+                return;
+            }
+
+            // Integrity: only accept picks that exist in the player's current hand
+            // (stale picks from a previous hand would corrupt the round).
+            if (_playerHands.TryGetValue(senderActorId, out var currentHand))
+            {
+                var handSet = new HashSet<string>(currentHand.Select(c => c.Serialize()));
+                serializedPicks = serializedPicks.Where(handSet.Contains).ToArray();
+                if (serializedPicks.Length == 0)
+                {
+                    Debug.LogWarning($"[DraftService] Ignoring picks from player {senderActorId} - none match their current hand");
+                    return;
+                }
+            }
+
             // Provisions resolves at pick time and can inject extra territory claims,
             // so the effective pick list may grow beyond what was submitted.
             var effectivePicks = new List<string>(serializedPicks);
@@ -684,6 +761,7 @@ namespace Draft.Services
         private void ProcessAllPicks()
         {
             Debug.Log("[DraftService] All picks received, processing...");
+            StopPickTimer();
 
             // Broadcast imp spawns for territory picks only
             var spawnData = new List<object[]>();

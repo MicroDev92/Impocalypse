@@ -24,7 +24,8 @@ public class GridGenerator : MonoBehaviour, IGridService
     public Sprite carrotSprite;
     public Sprite fishSprite;
     
-    [Header("Coordinate Sprites")]
+    [Header("Coordinate Sprites (Board Frame source)")]
+    [Tooltip("The runtime grid no longer draws the frame - these feed the static BoardFrame prefab. Regenerate it via Tools > Impocalypse > Generate Board Frame after changing them.")]
     public Sprite[] letterSprites;     // A–J in order
     public Sprite[] numberSprites;     // 1–10 in order
     public Sprite emptyBorderSprite;
@@ -138,8 +139,6 @@ public class GridGenerator : MonoBehaviour, IGridService
         UnityEngine.Random.InitState(seed);
         Debug.Log($"[GridGenerator] Generating grid with seed {seed} (shared: {seedProp != null})");
 
-        var reversedLetters = letterSprites.Reverse().ToArray();
-        
         // Clear existing data
         _allTiles.Clear();
         _coordToTile.Clear();
@@ -155,64 +154,43 @@ public class GridGenerator : MonoBehaviour, IGridService
             DestroyImmediate(child.gameObject);
         }
 
-        for (int x = 0; x < gridDimensions.x; x++)
+        // Playable cells only (1..dim-2). The coordinate frame is the static
+        // BoardFrame prefab in the scene (Tools > Impocalypse > Generate Board Frame) -
+        // pure decoration has no business in the gameplay tile pipeline.
+        for (int x = 1; x <= gridDimensions.x - 2; x++)
         {
-            for (int y = 0; y < gridDimensions.y; y++)
+            for (int y = 1; y <= gridDimensions.y - 2; y++)
             {
                 Vector3 position = new Vector3(x, y, 0);
                 GameObject tile = Instantiate(tilePrefab, position, Quaternion.identity, transform);
                 TileData tileData = tile.GetComponent<TileData>();
 
-                // Add the tile to collections
                 _allTiles.Add(tileData);
 
-                // Coordinate label tiles
-                if ((x == 0 || x == gridDimensions.x - 1) && (y >= 1 && y <= gridDimensions.y - 2))
+                // Weighted terrain roll with neighbor clustering bias, so terrain
+                // forms soft regions (the Styx winds, groves clump, peaks range).
+                // A cell reserved as a companion (see PickTerrain) skips the roll.
+                TileData.TileType tileType;
+                var cell = new Vector2Int(x, y);
+                if (_forcedTerrain.TryGetValue(cell, out var forcedType))
                 {
-                    Sprite letter = reversedLetters[y - 1];
-                    Sprite background = coordTileBackground != null ? coordTileBackground : letter;
-                    tileData.InitWithLabel(TileData.TileType.Coordinate, $"Letter_{y}", new Vector2Int(x, y), background, letter);
-                }
-                else if ((y == 0 || y == gridDimensions.y - 1) && (x >= 1 && x <= gridDimensions.x - 2))
-                {
-                    Sprite number = numberSprites[x - 1];
-                    Sprite background = coordTileBackground != null ? coordTileBackground : number;
-                    tileData.InitWithLabel(TileData.TileType.Coordinate, $"Number_{x}", new Vector2Int(x, y), background, number);
-                }
-                else if ((x == 0 || x == gridDimensions.x - 1) && (y == 0 || y == gridDimensions.y - 1))
-                {
-                    Sprite background = coordTileBackground != null ? coordTileBackground : emptyBorderSprite;
-                    Sprite skull = cornerSkullSprite;
-                    tileData.InitWithLabel(TileData.TileType.EmptyCorner, "Corner", new Vector2Int(x, y), background, skull);
+                    tileType = forcedType; // quota already reserved at force time
+                    _forcedTerrain.Remove(cell);
                 }
                 else
                 {
-                    // Weighted terrain roll with neighbor clustering bias, so terrain
-                    // forms soft regions (the Styx winds, groves clump, peaks range).
-                    // A cell reserved as a companion (see PickTerrain) skips the roll.
-                    TileData.TileType tileType;
-                    var cell = new Vector2Int(x, y);
-                    if (_forcedTerrain.TryGetValue(cell, out var forcedType))
-                    {
-                        tileType = forcedType; // quota already reserved at force time
-                        _forcedTerrain.Remove(cell);
-                    }
-                    else
-                    {
-                        tileType = PickTerrain(x, y);
-                    }
-                    Sprite tileSprite = SpriteFor(tileType);
-
-                    string coord = $"{(char)('A' + (gridDimensions.y - 2 - (y - 1)) - 1)}{x}";
-                    tileData.Init(tileType, coord, new Vector2Int(x, y), tileSprite);
-                    
-                    // Add to lookup dictionaries
-                    _coordToTile[coord] = tileData;
-                    _positionToTile[new Vector2Int(x, y)] = tileData;
+                    tileType = PickTerrain(x, y);
                 }
+                Sprite tileSprite = SpriteFor(tileType);
 
-                // Normalize every tile (playable, coordinate labels, corners) to exactly
-                // one grid cell so the board is seamless regardless of sprite dimensions.
+                string coord = $"{(char)('A' + (gridDimensions.y - 2 - (y - 1)) - 1)}{x}";
+                tileData.Init(tileType, coord, new Vector2Int(x, y), tileSprite);
+
+                _coordToTile[coord] = tileData;
+                _positionToTile[new Vector2Int(x, y)] = tileData;
+
+                // Normalize to exactly one grid cell so the board is seamless
+                // regardless of sprite dimensions.
                 tileData.FitToCell(tileVisualFill);
 
                 // Break the wallpaper effect where identical full-bleed textures sit
@@ -221,8 +199,8 @@ public class GridGenerator : MonoBehaviour, IGridService
                     ApplyTerrainVariation(tileData);
             }
         }
-        
-        Debug.Log($"Grid generated with {_allTiles.Count} tiles, {_coordToTile.Count} playable tiles");
+
+        Debug.Log($"Grid generated with {_allTiles.Count} playable tiles");
     }
     
     /// <summary>

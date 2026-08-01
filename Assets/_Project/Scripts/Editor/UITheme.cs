@@ -73,7 +73,9 @@ public static class UITheme
     }
 
     /// <summary>Applies the themed 9-sliced button art. Returns false if missing.</summary>
-    public const float ButtonFrameScale = 3f;
+    /// Button art is imported at a high PPU (1000), which already scales the
+    /// borders down to ~23px - so no extra thinning here, or the horns vanish.
+    public const float ButtonFrameScale = 1f;
 
     public static bool ApplyButton(GameObject button)
     {

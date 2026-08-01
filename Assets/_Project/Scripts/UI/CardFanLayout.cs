@@ -152,11 +152,41 @@ public class CardFanLayout : MonoBehaviour
                 rt.localRotation = Quaternion.Euler(0f, 0f, angle);
             }
 
-            // Center card on top
-            int midPoint = count / 2;
-            int siblingIndex = (count - 1) - Mathf.Abs(index - midPoint);
-            child.SetSiblingIndex(siblingIndex);
-            card?.SetRestSiblingIndex(siblingIndex);
+        }
+
+        ApplyFanDepth(activeChildren);
+    }
+
+    /// <summary>
+    /// Draw order for the fan: outermost cards at the back, centre card on top.
+    ///
+    /// This must be a STRICT TOTAL ORDER. The previous version derived the sibling
+    /// index from distance-to-centre directly, which handed symmetric pairs (e.g.
+    /// index 5 and 7 of 12) the same value - and repeated SetSiblingIndex calls with
+    /// the same index make Unity reshuffle siblings, so a card could end up drawn
+    /// behind both of its neighbours. Sorting first and assigning sequentially in a
+    /// separate pass keeps every index unique and avoids mutating sibling order
+    /// while positioning.
+    /// </summary>
+    private static void ApplyFanDepth(List<Transform> cards)
+    {
+        int count = cards.Count;
+        float centre = (count - 1) * 0.5f;
+
+        var drawOrder = new List<int>(count);
+        for (int i = 0; i < count; i++) drawOrder.Add(i);
+
+        drawOrder.Sort((a, b) =>
+        {
+            int byDistance = Mathf.Abs(b - centre).CompareTo(Mathf.Abs(a - centre)); // farthest first
+            return byDistance != 0 ? byDistance : a.CompareTo(b);                    // stable tie-break
+        });
+
+        for (int depth = 0; depth < count; depth++)
+        {
+            var child = cards[drawOrder[depth]];
+            child.SetSiblingIndex(depth);
+            child.GetComponent<Card>()?.SetRestSiblingIndex(depth);
         }
     }
 

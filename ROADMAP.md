@@ -31,20 +31,50 @@ anything. Those live in the Parking Lot until after launch.
       portals on both endpoints, imps step aside for buildings
 - [x] Phase timers: draft 45 s/hand (random auto-pick), build 90 s,
       master-authoritative, top-bar countdown
+- [x] Art pass — UI theme: 9-sliced panels/buttons, resource + stat icons,
+      display font, dark background, larger board
 
 ---
 
 ## Milestone A — Finish the Art Pass
 
-- [ ] **A1. UI theme slice** ← **NEXT SESSION**
-  - Panels (sidebars, top bar, pacts panel, game-over screen) themed
-  - Buttons (Done, construction list, Play Again / Main Menu)
-  - Real icons for the placeholder squares (resources, stats)
-  - The global-font verdict: does Luckiest Guy take over all UI?
-- [ ] **A2. Juice slice** *(can slide later — even after B4)*
+- [x] **A1. UI theme slice**
+  - Panel / button / icon art, 9-sliced; `UITheme` central lookup with graceful
+    fallback; generator commands apply it automatically
+  - Display font on headings (≥16px), clean font for dense text
+  - Dark background, camera framing widened, board enlarged
+  - *Residual (judge during a real multiplayer session, not solo):* sidebar
+    width + frame thickness, whether the stone frames earn their space
+
+- [ ] **A2. GameScene UX iteration** ← **NEXT**
+  *Layout and clarity, not decoration. Ordered by value-per-effort.*
+  - [ ] **Hand: fan → flat row.** A 12-card hand is a *browsing* task, not a
+        holding task — a fan buries and clips cards by design. Going flat
+        retires that whole bug class. Decide the 12-card rule up front:
+        smaller cards, two rows, or horizontal scroll.
+  - [ ] **Card thumbnails** — show the terrain/building art on each card
+        (sprites already exist).
+  - [ ] **Prominent pick prompt** — "Pick 2 cards · Selected 0/2" as a clear
+        call to action; data already exists in the top bar.
+  - [ ] **Explicit Confirm Picks** button instead of auto-submitting on the
+        second click.
+  - [ ] **Phase legend** (Draft → Reveal → Territory Claim → Save for Later).
+        Onboarding inside the UI — the difference between "I don't get it" and
+        "oh, I see" for playtesters who don't know Bunny Kingdom.
+  - [ ] **Richer tile inspector** — potential value, connected citadels, and a
+        one-line explanation of what claiming does.
+  - [ ] **Domains list** — a *growing* list of real domains ("Domain 1: 4 tiles,
+        Str 2 × Wealth 3"). NOT fixed "empty fief" slots: domains are emergent
+        from connected tiles, so fixed slots would misinform players.
+
+- [ ] **A3. Juice slice** *(can slide later — even after B4)*
   - SFX + music
   - Animations: imp hop-to-corner, marker pop-in, card deal, harvest feedback
   - Hellgate adaptive placement (centered when alone on a tile)
+
+> **Mockup discipline:** reference mockups are cheap, implementations are not.
+> Take the *decisions* (flat row, thumbnails, pick counter, legend); don't
+> chase pixel-perfect panel ornamentation.
 
 ## Milestone B — Playtest-Ready Plumbing
 

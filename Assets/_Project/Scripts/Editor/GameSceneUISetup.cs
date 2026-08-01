@@ -57,7 +57,7 @@ public static class GameSceneUISetup
         topBarRect.anchorMax = new Vector2(1, 1);
         topBarRect.pivot = new Vector2(0.5f, 1f);
         topBarRect.sizeDelta = new Vector2(0, TopBarHeight);
-        topBar.GetComponent<Image>().color = new Color(BgColor.r, BgColor.g, BgColor.b, 0.95f);
+        ThemeSurface(topBar, 0.95f, UITheme.TopBarFrameScale);
 
         // Leave button (top-left)
         var leaveBtn = CreateButton(topBar.transform, "LeaveButton", "\u2190 Leave Game", 140f, 34f);
@@ -109,6 +109,9 @@ public static class GameSceneUISetup
         leftRect.sizeDelta = new Vector2(SidebarWidth, 0);
         leftRect.offsetMin = new Vector2(0, BottomBarHeight);
         leftRect.offsetMax = new Vector2(SidebarWidth, -TopBarHeight);
+        // Sidebars stay a quiet dark backdrop on purpose: an ornate frame around a
+        // mostly-empty column is visual noise. The widgets sitting on them (current
+        // turn, player cards, pacts) carry the stone framing instead.
         leftSidebar.GetComponent<Image>().color = new Color(BgColor.r, BgColor.g, BgColor.b, 0.9f);
 
         // Current Turn Panel (top of left sidebar)
@@ -265,7 +268,7 @@ public static class GameSceneUISetup
         botRect.anchorMax = new Vector2(1, 0);
         botRect.pivot = new Vector2(0.5f, 0);
         botRect.sizeDelta = new Vector2(0, BottomBarHeight);
-        bottomBar.GetComponent<Image>().color = new Color(BgColor.r, BgColor.g, BgColor.b, 0.95f);
+        ThemeSurface(bottomBar, 0.95f);
 
         // Card fan container (centered in bottom bar)
         var cardFanObj = new GameObject("CardFanContainer", typeof(RectTransform), typeof(CanvasGroup));
@@ -371,6 +374,9 @@ public static class GameSceneUISetup
         leftRect.sizeDelta = new Vector2(SidebarWidth, 0);
         leftRect.offsetMin = new Vector2(0, BottomBarHeight);
         leftRect.offsetMax = new Vector2(SidebarWidth, -TopBarHeight);
+        // Sidebars stay a quiet dark backdrop on purpose: an ornate frame around a
+        // mostly-empty column is visual noise. The widgets sitting on them (current
+        // turn, player cards, pacts) carry the stone framing instead.
         leftSidebar.GetComponent<Image>().color = new Color(BgColor.r, BgColor.g, BgColor.b, 0.9f);
 
         var currentTurnPanel = CreateBorderedPanel(leftSidebar.transform, "CurrentTurnPanel");
@@ -541,7 +547,7 @@ public static class GameSceneUISetup
         barRect.anchorMax = new Vector2(1, 1);
         barRect.pivot = new Vector2(0.5f, 1f);
         barRect.sizeDelta = new Vector2(0, TopBarHeight);
-        topBar.GetComponent<Image>().color = new Color(BgColor.r, BgColor.g, BgColor.b, 0.95f);
+        ThemeSurface(topBar, 0.95f, UITheme.TopBarFrameScale);
 
         // Left zone: round | phase | draft info (auto-spaced, can never overlap)
         var left = new GameObject("LeftGroup", typeof(RectTransform), typeof(HorizontalLayoutGroup));
@@ -602,9 +608,9 @@ public static class GameSceneUISetup
         var onBoard = CreateTextObject(right.transform, "OnBoardLabel", "On board:", 15, FontStyles.Italic);
         onBoard.GetComponent<TMP_Text>().color = TextSecondary;
 
-        var woodAmount = CreateResourceCounter(right.transform, GameLexicon.Resource(Cards.ResourceType.Wood));
-        var carrotAmount = CreateResourceCounter(right.transform, GameLexicon.Resource(Cards.ResourceType.Carrot));
-        var fishAmount = CreateResourceCounter(right.transform, GameLexicon.Resource(Cards.ResourceType.Fish));
+        var woodAmount = CreateResourceCounter(right.transform, GameLexicon.Resource(Cards.ResourceType.Wood), "charwood");
+        var carrotAmount = CreateResourceCounter(right.transform, GameLexicon.Resource(Cards.ResourceType.Carrot), "bloodroot");
+        var fishAmount = CreateResourceCounter(right.transform, GameLexicon.Resource(Cards.ResourceType.Fish), "souls");
 
         // Wire the HUD component
         var hud = topBar.AddComponent<UI.ModernDraftHUD>();
@@ -625,10 +631,31 @@ public static class GameSceneUISetup
     }
 
     /// <summary>Creates a "Label 0" counter pair and returns the amount text (for HUD wiring).</summary>
-    private static TMP_Text CreateResourceCounter(Transform parent, string label)
+    /// <summary>
+    /// Top-bar board counter. With icon art present it shows [icon] 5/16 - the
+    /// icon replaces the word, which keeps the bar readable now that resource
+    /// names are long ("Charwood"). Without art it falls back to the word.
+    /// </summary>
+    private static TMP_Text CreateResourceCounter(Transform parent, string label, string iconName)
     {
-        var labelObj = CreateTextObject(parent, $"{label}Label", label, 16, FontStyles.Normal);
-        labelObj.GetComponent<TMP_Text>().color = TextSecondary;
+        var iconSprite = UITheme.Icon(iconName);
+        if (iconSprite != null)
+        {
+            var iconObj = new GameObject($"{label}Icon", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+            iconObj.transform.SetParent(parent, false);
+            var iconImage = iconObj.GetComponent<Image>();
+            iconImage.sprite = iconSprite;
+            iconImage.preserveAspect = true;
+            iconImage.raycastTarget = false;
+            var iconLayout = iconObj.GetComponent<LayoutElement>();
+            iconLayout.preferredWidth = 24;
+            iconLayout.preferredHeight = 24;
+        }
+        else
+        {
+            var labelObj = CreateTextObject(parent, $"{label}Label", label, 16, FontStyles.Normal);
+            labelObj.GetComponent<TMP_Text>().color = TextSecondary;
+        }
 
         var amountObj = CreateTextObject(parent, $"{label}Amount", "0", 18, FontStyles.Bold);
         var amountTmp = amountObj.GetComponent<TMP_Text>();
@@ -705,7 +732,8 @@ public static class GameSceneUISetup
         // Full-screen dark overlay panel (this is what gets shown/hidden).
         var panel = CreatePanel(root.transform, "GameOverPanel");
         StretchFull(panel.GetComponent<RectTransform>());
-        panel.GetComponent<Image>().color = new Color(0.05f, 0.02f, 0.02f, 0.92f);
+        if (!UITheme.ApplyPanel(panel))
+            panel.GetComponent<Image>().color = new Color(0.05f, 0.02f, 0.02f, 0.92f);
 
         var title = CreateTextObject(panel.transform, "Title", "GAME OVER", 40, FontStyles.Bold);
         var titleRect = title.GetComponent<RectTransform>();
@@ -830,10 +858,10 @@ public static class GameSceneUISetup
         hlg.childControlHeight = true;
 
         // Stat items: territory, wood, carrot, fish
-        var terrStat = CreateMiniStat(statsRow.transform, "TerritoryStat", "0");
-        var woodStat = CreateMiniStat(statsRow.transform, "WoodStat", "0");
-        var carrotStat = CreateMiniStat(statsRow.transform, "CarrotStat", "0");
-        var fishStat = CreateMiniStat(statsRow.transform, "FishStat", "0");
+        var terrStat = CreateMiniStat(statsRow.transform, "TerritoryStat", "0", "territory");
+        var woodStat = CreateMiniStat(statsRow.transform, "WoodStat", "0", "charwood");
+        var carrotStat = CreateMiniStat(statsRow.transform, "CarrotStat", "0", "bloodroot");
+        var fishStat = CreateMiniStat(statsRow.transform, "FishStat", "0", "souls");
 
         // Add PlayerCardUI and wire
         var cardUI = card.AddComponent<PlayerCardUI>();
@@ -894,6 +922,20 @@ public static class GameSceneUISetup
         return obj;
     }
 
+    /// <summary>
+    /// Themes a top-level UI surface (bars, sidebars, popup panels) with the
+    /// 9-sliced panel art, falling back to the flat dark color when the art
+    /// isn't imported yet. Inner containers/rows deliberately stay untextured.
+    /// </summary>
+    private static void ThemeSurface(GameObject surface, float fallbackAlpha, float frameScale = 1f)
+    {
+        if (UITheme.ApplyPanel(surface, frameScale)) return;
+
+        var image = surface.GetComponent<Image>();
+        if (image != null)
+            image.color = new Color(BgColor.r, BgColor.g, BgColor.b, fallbackAlpha);
+    }
+
     private static GameObject CreateBorderedPanel(Transform parent, string name)
     {
         // Outer border
@@ -904,6 +946,9 @@ public static class GameSceneUISetup
         var outline = outer.GetComponent<Outline>();
         outline.effectColor = PanelBorder;
         outline.effectDistance = new Vector2(BorderWidth, -BorderWidth);
+
+        // Themed art replaces the procedural border when available.
+        UITheme.ApplyPanel(outer, UITheme.SmallPanelFrameScale);
         return outer;
     }
 
@@ -916,6 +961,7 @@ public static class GameSceneUISetup
         tmp.fontSize = fontSize;
         tmp.fontStyle = style;
         tmp.color = TextPrimary;
+        UITheme.ApplyFont(tmp, fontSize); // display font for headings, default for small text
         tmp.raycastTarget = false;
         tmp.enableWordWrapping = false;
         tmp.overflowMode = TextOverflowModes.Ellipsis;
@@ -928,6 +974,7 @@ public static class GameSceneUISetup
         obj.transform.SetParent(parent, false);
         obj.GetComponent<RectTransform>().sizeDelta = new Vector2(width, height);
         obj.GetComponent<Image>().color = ButtonPrimary;
+        UITheme.ApplyButton(obj); // themed art when available, flat orange otherwise
 
         var btnColors = obj.GetComponent<Button>().colors;
         btnColors.normalColor = Color.white;
@@ -967,7 +1014,7 @@ public static class GameSceneUISetup
         return row;
     }
 
-    private static GameObject CreateMiniStat(Transform parent, string name, string value)
+    private static GameObject CreateMiniStat(Transform parent, string name, string value, string iconName = null)
     {
         var obj = new GameObject(name, typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
         obj.transform.SetParent(parent, false);
@@ -981,13 +1028,15 @@ public static class GameSceneUISetup
         hlg.childControlWidth = true;   // without this, the LayoutElement sizes below are ignored
         hlg.childControlHeight = true;
 
-        // Icon placeholder
+        // Icon (themed art when available, otherwise the old flat placeholder square)
         var icon = new GameObject("Icon", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
         icon.transform.SetParent(obj.transform, false);
         icon.GetComponent<LayoutElement>().preferredWidth = 16;
         icon.GetComponent<LayoutElement>().preferredHeight = 16;
-        icon.GetComponent<Image>().color = TextSecondary;
-        icon.GetComponent<Image>().raycastTarget = false;
+        var iconImage = icon.GetComponent<Image>();
+        iconImage.raycastTarget = false;
+        if (!UITheme.ApplyIcon(iconImage, iconName))
+            iconImage.color = TextSecondary;
 
         // Count text
         var text = CreateTextObject(obj.transform, "Count", value, 13, FontStyles.Bold);

@@ -33,6 +33,16 @@ public class GameRoomUI : MonoBehaviour
             _eventBus.Subscribe<ShowStatusEvent>(OnShowStatus);
         }
 
+        // The EventBus player events come from PlayerService, which does NOT exist in
+        // the lobby scene - so subscribe to the network layer directly. These fire
+        // straight off Photon's callbacks and work regardless of what else is loaded.
+        if (_networkService != null)
+        {
+            _networkService.OnPlayerJoined += OnNetworkPlayerJoined;
+            _networkService.OnPlayerLeft += OnNetworkPlayerLeft;
+            _networkService.OnMasterClientChanged += OnMasterChanged;
+        }
+
         if (startButton != null)
         {
             startButton.onClick.AddListener(OnStartClicked);
@@ -49,7 +59,31 @@ public class GameRoomUI : MonoBehaviour
             _eventBus.Unsubscribe<PlayerLeftEvent>(OnPlayerLeft);
             _eventBus.Unsubscribe<ShowStatusEvent>(OnShowStatus);
         }
+
+        if (_networkService != null)
+        {
+            _networkService.OnPlayerJoined -= OnNetworkPlayerJoined;
+            _networkService.OnPlayerLeft -= OnNetworkPlayerLeft;
+            _networkService.OnMasterClientChanged -= OnMasterChanged;
+        }
     }
+
+    private void OnNetworkPlayerJoined(int actorNumber, string nickname)
+    {
+        UpdateUI();
+        if (statusText != null && !string.IsNullOrEmpty(nickname))
+            statusText.text = $"{nickname} joined";
+    }
+
+    private void OnNetworkPlayerLeft(int actorNumber, string nickname)
+    {
+        UpdateUI();
+        if (statusText != null && !string.IsNullOrEmpty(nickname))
+            statusText.text = $"{nickname} left";
+    }
+
+    /// <summary>Host migration: whoever inherits master gets the Start button.</summary>
+    private void OnMasterChanged(int actorNumber, string nickname) => UpdateUI();
 
     private void OnPlayerJoined(PlayerJoinedEvent evt)
     {

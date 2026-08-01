@@ -53,8 +53,12 @@ anything. Those live in the Parking Lot until after launch.
 - [ ] **B2. Minimal lobby** — main menu scene; Create Game (4-letter room
       code) / Join Game (enter code); player names; fresh map seed per game.
       Replaces the hardcoded LocalTestRoom. *Biggest remaining engineering.*
-- [ ] **B3. Regression test** — rebuild the (stale!) standalone .exe,
-      full 2-player game, same winner both screens
+- [x] ~~**B3a. Remote smoke test**~~ — build sent to a friend, ran
+      out-of-the-box on his machine; 1 full round played over the internet
+      with territories, scores and board state in sync on both ends.
+      Found + fixed: lobby list didn't refresh for players already waiting.
+- [ ] **B3b. Full remote regression** — complete 4-round game with a remote
+      player, same winner + score on both screens
 - [ ] **B4. WebGL build → itch.io unlisted page** → **🎉 FRIEND PLAYTESTS**
 
 ## Milestone C — Hardening & Balance (playtest-driven)

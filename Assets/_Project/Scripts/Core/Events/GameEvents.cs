@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Core.Events
 {
@@ -316,6 +317,23 @@ namespace Core.Events
         {
             Coordinate = coordinate;
             IsHighlighted = isHighlighted;
+        }
+    }
+
+    /// <summary>
+    /// Raised when the player hovers a card in hand. The inspector panel shows the
+    /// card's full rules - cards themselves are too small to carry an explanation,
+    /// so hovering is where "what does a Hellgate do?" gets answered.
+    /// </summary>
+    public struct CardInspectedEvent : IGameEvent
+    {
+        public Cards.CardData Card { get; }
+        public Sprite Art { get; }
+
+        public CardInspectedEvent(Cards.CardData card, Sprite art)
+        {
+            Card = card;
+            Art = art;
         }
     }
 

@@ -527,7 +527,7 @@ MonoBehaviour:
   arcHeight: 0
   cardGap: 14
   maxFanWidth: 1100
-  minCardScale: 0.62
+  minCardScale: 0.8
   maxCardScale: 1
   bottomOffset: 130
   fadeDuration: 0.3
@@ -1657,6 +1657,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c4b37e53ca233141ae86700b9c97621, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Construction.ConstructionUIHandler
+  cardArt:
+    citadel: {fileID: 8392797238846179811, guid: 59f9bde1e5835a64d8e390fc1ae4dc40, type: 3}
+    farm: {fileID: 8015055741400221070, guid: 59f9bde1e5835a64d8e390fc1ae4dc40, type: 3}
+    bazaar: {fileID: 8581223825504080427, guid: 59f9bde1e5835a64d8e390fc1ae4dc40, type: 3}
+    warcamp: {fileID: -5164255642835302057, guid: 59f9bde1e5835a64d8e390fc1ae4dc40, type: 3}
+    hellgate: {fileID: 5150867506319556125, guid: 59f9bde1e5835a64d8e390fc1ae4dc40, type: 3}
+    pact: {fileID: 0}
+    provisions: {fileID: 0}
   cityCardContainer: {fileID: 2035433340}
   cityCardButtonPrefab: {fileID: 730347159401646627, guid: 422f1261b08cbc44d8af5b73b169204d, type: 3}
   doneButton: {fileID: 1156000281}

@@ -27,6 +27,8 @@ using Players;
 public class TileInfoPanel : MonoBehaviour
 {
     [Header("UI References")]
+    [Tooltip("Panel title. Switches between tile and card wording so the header never contradicts what's shown.")]
+    [SerializeField] private TMP_Text headerText;
     [SerializeField] private GameObject contentPanel;
     [SerializeField] private GameObject emptyStatePanel;
     [SerializeField] private TMP_Text emptyStateText;
@@ -41,6 +43,12 @@ public class TileInfoPanel : MonoBehaviour
     [SerializeField] private TMP_Text resourceValue;
     [SerializeField] private TMP_Text cityValue;
     [SerializeField] private GameObject cityRow;
+    [Tooltip("Container holding the tile stat rows. Hidden while inspecting a card, whose stats don't apply.")]
+    [SerializeField] private GameObject statsContainer;
+
+    [Header("Description")]
+    [Tooltip("Free text under the stats: what a card does, or what claiming a tile means. This is where the rules explanation lives - cards in hand are too small for it.")]
+    [SerializeField] private TMP_Text descriptionText;
 
     [Header("Configuration")]
     [SerializeField] private GameTheme theme;
@@ -56,6 +64,7 @@ public class TileInfoPanel : MonoBehaviour
             _eventBus.Subscribe<TileHighlightedEvent>(OnTileHighlighted);
             _eventBus.Subscribe<TileOwnerChangedEvent>(OnTileOwnerChanged);
             _eventBus.Subscribe<CityPlacedEvent>(OnCityPlaced);
+            _eventBus.Subscribe<CardInspectedEvent>(OnCardInspected);
         }
 
         ShowEmptyState();
@@ -68,6 +77,7 @@ public class TileInfoPanel : MonoBehaviour
             _eventBus.Unsubscribe<TileHighlightedEvent>(OnTileHighlighted);
             _eventBus.Unsubscribe<TileOwnerChangedEvent>(OnTileOwnerChanged);
             _eventBus.Unsubscribe<CityPlacedEvent>(OnCityPlaced);
+            _eventBus.Unsubscribe<CardInspectedEvent>(OnCardInspected);
         }
     }
 
@@ -113,6 +123,18 @@ public class TileInfoPanel : MonoBehaviour
 
         _selectedCoord = coord;
         ShowContent();
+
+        // Coming back from a card inspection - restore the header and stat rows.
+        if (headerText != null) headerText.text = "Territory Info";
+        if (statsContainer != null) statsContainer.SetActive(true);
+
+        if (descriptionText != null)
+        {
+            descriptionText.text = tile.IsOwned
+                ? "Tiles you own join up into Domains, which score Strength x Wealth at the end of each round."
+                : "Claiming this tile adds it to your Domain and scores at the end of the round.";
+            descriptionText.gameObject.SetActive(true);
+        }
 
         // Type name
         if (tileTypeName != null)
@@ -189,6 +211,41 @@ public class TileInfoPanel : MonoBehaviour
         }
     }
 
+    private void OnCardInspected(CardInspectedEvent evt) => ShowCardInfo(evt.Card, evt.Art);
+
+    /// <summary>
+    /// Shows a hand card's name, art and full rules. Tile stat rows are hidden -
+    /// owner/resource/building don't apply to a card in hand.
+    /// </summary>
+    public void ShowCardInfo(Cards.CardData card, Sprite art)
+    {
+        if (card == null) return;
+
+        _selectedCoord = null;
+        ShowContent();
+
+        if (headerText != null) headerText.text = "Card Info";
+        if (statsContainer != null) statsContainer.SetActive(false);
+        if (cityRow != null) cityRow.SetActive(false);
+
+        if (tileTypeName != null)
+            tileTypeName.text = GameLexicon.CardName(card);
+
+        if (tilePreviewImage != null)
+        {
+            tilePreviewImage.sprite = art;
+            tilePreviewImage.color = Color.white;
+            tilePreviewImage.preserveAspect = true;
+            tilePreviewImage.enabled = art != null;
+        }
+
+        if (descriptionText != null)
+        {
+            descriptionText.text = GameLexicon.CardDescription(card);
+            descriptionText.gameObject.SetActive(true);
+        }
+    }
+
     public void ClearSelection()
     {
         _selectedCoord = null;
@@ -199,7 +256,7 @@ public class TileInfoPanel : MonoBehaviour
     {
         if (contentPanel != null) contentPanel.SetActive(false);
         if (emptyStatePanel != null) emptyStatePanel.SetActive(true);
-        if (emptyStateText != null) emptyStateText.text = "Click a tile to inspect";
+        if (emptyStateText != null) emptyStateText.text = "Click a tile or hover a card to inspect";
     }
 
     private void ShowContent()

@@ -19,6 +19,10 @@ namespace Construction
     /// </summary>
     public class ConstructionUIHandler : MonoBehaviour
     {
+        [Header("Card Art")]
+        [Tooltip("Same art the draft hand uses, so a building looks identical in hand and while constructing.")]
+        [SerializeField] private CardArtSet cardArt = new CardArtSet();
+
         [Header("UI References")]
         [SerializeField] private Transform cityCardContainer;
         [SerializeField] private GameObject cityCardButtonPrefab;
@@ -197,7 +201,30 @@ namespace Construction
             var cardScript = buttonObj.GetComponent<Card>();
             if (cardScript != null) cardScript.enabled = false;
 
+            // ...but the disabled Card script also means nothing fills its thumbnail,
+            // so set the art here from the shared set. Buildings look the same while
+            // constructing as they did in hand.
+            ApplyButtonArt(buttonObj, card);
+
             _cityCardButtons.Add(buttonObj);
+        }
+
+        /// <summary>
+        /// Fills the button's "Thumbnail" image with the building's art. Falls back
+        /// to hiding it when the art is missing, so a button never shows a white box.
+        /// </summary>
+        private void ApplyButtonArt(GameObject buttonObj, CardData card)
+        {
+            Transform thumbTransform = buttonObj.transform.Find("Thumbnail");
+            if (thumbTransform == null) return;
+
+            var thumb = thumbTransform.GetComponent<Image>();
+            if (thumb == null) return;
+
+            var art = cardArt.SpriteFor(card);
+            thumb.sprite = art;
+            thumb.preserveAspect = true;
+            thumb.enabled = art != null;
         }
 
         private void OnCityCardSelected(CardData card, GameObject buttonObj)

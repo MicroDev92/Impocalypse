@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 using TMPro;
 using _Project.Scripts.Utility;
 using Cards;
+using Core.Events;
 
 /// <summary>
 /// Represents a single card in the draft phase.
@@ -30,6 +31,14 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     [SerializeField] private Color confirmedColor = new Color(0.45f, 0.78f, 0.45f, 1f);
     [SerializeField] private Color disabledColor = new Color(0.40f, 0.38f, 0.36f, 0.7f);
     [SerializeField] private Color cityCardColor = new Color(0.70f, 0.75f, 0.90f, 1f);
+
+    [Tooltip("Smallest the card label may auto-shrink to. The hand layout also scales cards down, so this is the real readability floor.")]
+    [SerializeField] private float minLabelFontSize = 20f;
+
+    [Header("Card Art")]
+    [Tooltip("Large art panel on the card face. Territory cards mirror their tile's terrain; the art set below covers everything else.")]
+    [SerializeField] private Image thumbnail;
+    [SerializeField] private CardArtSet cardArt = new CardArtSet();
 
     [Header("Hover Settings")]
     [SerializeField] private float hoverScale = 1.2f;
@@ -70,13 +79,16 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         _rectTransform = GetComponent<RectTransform>();
 
-        // Card text varies a lot (coordinates vs multi-line pact rules) - let TMP shrink
-        // it to fit the card instead of overflowing the edges.
+        // Card text varies (coordinates vs pact rules), so TMP may shrink it to fit -
+        // but never below a readable floor. The old 8pt minimum let long labels
+        // collapse to an illegible smudge once the hand layout also scaled the card
+        // down; text that can't be read is worse than text that wraps.
         if (label != null)
         {
             label.enableAutoSizing = true;
             label.fontSizeMax = label.fontSize;
-            label.fontSizeMin = 8f;
+            label.fontSizeMin = minLabelFontSize;
+            label.textWrappingMode = TextWrappingModes.Normal;
         }
         if (button != null)
         {
@@ -175,6 +187,11 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
             _targetScale = _restScale * hoverScale;
             _linkedTile?.Highlight(true);
 
+            // Cards are too small to carry their own rules text - hovering sends
+            // them to the inspector panel, which has room to explain them.
+            if (cardData != null && ServiceLocator.TryGetService<IEventBus>(out var bus))
+                bus.Publish(new CardInspectedEvent(cardData, thumbnail != null ? thumbnail.sprite : null));
+
             // Move to front of sibling list so it's not covered
             transform.SetAsLastSibling();
         }
@@ -230,15 +247,19 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
             if (data.IsTerritory)
                 label.text = data.Coordinate;
             else if (data.IsCity)
-                label.text = $"{GameLexicon.CityName}\nStr {(int)data.Strength}";
+                label.text = $"Str {(int)data.Strength}"; // art already says "citadel"
             else if (data.IsFarm)
                 label.text = FarmCardLabel(data);
+            // Labels stay short: the thumbnail identifies the card, so text is a
+            // caption rather than a rules explanation (which no longer fits at
+            // twelve-cards-across sizes). Pacts are the exception - their rule IS
+            // their content and no art can convey it.
             else if (data.IsCamp)
-                label.text = $"{GameLexicon.CampName} #{data.Amount}\nclaim empty\ntile";
+                label.text = $"{GameLexicon.CampName} #{data.Amount}";
             else if (data.IsSkyTower)
-                label.text = $"{GameLexicon.SkyTowerName}\nlink 2\ndomains";
+                label.text = GameLexicon.SkyTowerName;
             else if (data.IsProvisions)
-                label.text = "Provisions\ndraw 2\n& play";
+                label.text = "Provisions";
             else if (data.IsParchment)
                 label.text = ParchmentCardLabel(data);
             else
@@ -256,6 +277,29 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
             UpdateCityDisplay();
         else
             HideResourceDisplay();
+
+        // After LinkToTile, so a territory card can read its tile's terrain art.
+        UpdateThumbnail();
+    }
+
+    /// <summary>
+    /// Chooses the card's art. Territory cards mirror their actual tile sprite,
+    /// so card and board can never disagree (and new terrain art needs no card
+    /// changes); other card types use the sprites assigned on the prefab.
+    /// </summary>
+    private void UpdateThumbnail()
+    {
+        if (thumbnail == null) return;
+
+        // Territory cards mirror their own tile; everything else comes from the
+        // shared art set, so hand and construction buttons can't disagree.
+        Sprite art = cardData != null && cardData.IsTerritory
+            ? (_linkedTile != null ? _linkedTile.TerrainSprite : null)
+            : cardArt.SpriteFor(cardData);
+
+        thumbnail.sprite = art;
+        thumbnail.preserveAspect = true;
+        thumbnail.enabled = art != null;
     }
 
     /// <summary>Hand-card label for a farm: says what it adds and where it can go.</summary>
@@ -263,9 +307,9 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         return data.Farm switch
         {
-            FarmKind.Market => $"{GameLexicon.MarketName}\n(any resource)",
-            FarmKind.Special => $"Luxury\n{GameLexicon.Resource(data.Resource)}\non {GameLexicon.TerrainShort(data.AllowedTerrain)}",
-            _ => $"Farm\n+{GameLexicon.Resource(data.Resource)}"
+            FarmKind.Market => GameLexicon.MarketName,
+            FarmKind.Special => $"{GameLexicon.Resource(data.Resource)}\non {GameLexicon.TerrainShort(data.AllowedTerrain)}",
+            _ => GameLexicon.Resource(data.Resource) // art says "farm"; the inspector says "adds"
         };
     }
 
@@ -306,6 +350,7 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 
         if (label != null) label.text = "";
         if (button != null) button.interactable = true;
+        if (thumbnail != null) { thumbnail.sprite = null; thumbnail.enabled = false; }
 
         if (resourceIcon != null)
         {
@@ -394,7 +439,11 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         var gridService = ServiceLocator.GetService<IGridService>();
         _linkedTile = gridService?.GetTileByCoord(coordinate);
 
-        UpdateResourceDisplay();
+        // The link exists for tile highlighting on hover; the card's own face is
+        // thumbnail + coordinate only. The old resource icon/name row is gone -
+        // it duplicated what the terrain art already shows and collided with the
+        // coordinate in the same strip. Exact resource lives in the tile inspector.
+        HideResourceDisplay();
     }
 
     private void UpdateResourceDisplay()
@@ -451,15 +500,9 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 
     private void UpdateCityDisplay()
     {
+        // Citadel art + "Str N" is the whole card now; the tower-marks row was a
+        // third way of saying the same thing and collided with the label.
         HideResourceDisplay();
-
-        if (resourceLabel != null)
-        {
-            resourceLabel.gameObject.SetActive(true);
-            int str = cardData != null ? (int)cardData.Strength : 0;
-            string towers = new string('I', str);
-            resourceLabel.text = towers;
-        }
     }
 
     private void HideResourceDisplay()

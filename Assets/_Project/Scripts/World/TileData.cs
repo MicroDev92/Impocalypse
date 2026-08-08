@@ -54,6 +54,19 @@ public class TileData : MonoBehaviour
     /// <summary>The resource this tile's terrain produces on its own (None for non-resource terrain).</summary>
     public ResourceType BaseResource => ResourceTypes.FromTerrain(type);
 
+    /// <summary>
+    /// The terrain art currently drawn on this tile. Territory cards use it for
+    /// their thumbnail, so a card can never show different terrain than the board.
+    /// </summary>
+    public Sprite TerrainSprite
+    {
+        get
+        {
+            var sr = backgroundRenderer != null ? backgroundRenderer : GetComponent<SpriteRenderer>();
+            return sr != null ? sr.sprite : null;
+        }
+    }
+
     /// <summary>Coordinate of the tile this one is sky-tower-linked to (null if none).
     /// Linked tiles count as adjacent for fief connectivity.</summary>
     public string SkyLinkCoord { get; private set; }

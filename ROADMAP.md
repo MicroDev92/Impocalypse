@@ -61,8 +61,11 @@ anything. Those live in the Parking Lot until after launch.
   - [ ] **Phase legend** (Draft → Reveal → Territory Claim → Save for Later).
         Onboarding inside the UI — the difference between "I don't get it" and
         "oh, I see" for playtesters who don't know Bunny Kingdom.
-  - [ ] **Richer tile inspector** — potential value, connected citadels, and a
-        one-line explanation of what claiming does.
+  - [x] **Inspector shows cards too** — hovering a card fills the right panel
+        with its name, art and full rules. Cards in hand are too small to carry
+        an explanation, so this is where "what does a Hellgate do?" is answered;
+        it also gives the mostly-empty right sidebar a job during the draft.
+  - [ ] **Richer tile inspector** — potential value, connected citadels.
   - [ ] **Domains list** — a *growing* list of real domains ("Domain 1: 4 tiles,
         Str 2 × Wealth 3"). NOT fixed "empty fief" slots: domains are emergent
         from connected tiles, so fixed slots would misinform players.

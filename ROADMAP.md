@@ -48,27 +48,32 @@ anything. Those live in the Parking Lot until after launch.
 
 - [ ] **A2. GameScene UX iteration** ← **NEXT**
   *Layout and clarity, not decoration. Ordered by value-per-effort.*
-  - [ ] **Hand: fan → flat row.** A 12-card hand is a *browsing* task, not a
-        holding task — a fan buries and clips cards by design. Going flat
-        retires that whole bug class. Decide the 12-card rule up front:
-        smaller cards, two rows, or horizontal scroll.
-  - [ ] **Card thumbnails** — show the terrain/building art on each card
-        (sprites already exist).
+  - [x] **Hand: fan → flat row.** Evenly spaced, auto-shrinks to fit, bottom
+        aligned, strict draw order. Retired the burying/clipping bug class.
+  - [x] **Card thumbnails** — territory cards draw their own tile's sprite;
+        others use a shared `CardArtSet` (hand + construction buttons).
+        Labels are captions only now; rules moved to the inspector.
+  - [ ] **Domains list** ← **NEXT** (see below)
   - [ ] **Prominent pick prompt** — "Pick 2 cards · Selected 0/2" as a clear
-        call to action; data already exists in the top bar.
+        call to action; data already exists in the top bar. ~5 minutes.
   - [ ] **Explicit Confirm Picks** button instead of auto-submitting on the
         second click.
-  - [ ] **Phase legend** (Draft → Reveal → Territory Claim → Save for Later).
-        Onboarding inside the UI — the difference between "I don't get it" and
-        "oh, I see" for playtesters who don't know Bunny Kingdom.
+  - [ ] **Phase legend** — now OPTIONAL. Hovering a card explains more than a
+        static legend would; decide after a playtest whether anyone's lost.
   - [x] **Inspector shows cards too** — hovering a card fills the right panel
         with its name, art and full rules. Cards in hand are too small to carry
         an explanation, so this is where "what does a Hellgate do?" is answered;
         it also gives the mostly-empty right sidebar a job during the draft.
   - [ ] **Richer tile inspector** — potential value, connected citadels.
-  - [ ] **Domains list** — a *growing* list of real domains ("Domain 1: 4 tiles,
-        Str 2 × Wealth 3"). NOT fixed "empty fief" slots: domains are emergent
-        from connected tiles, so fixed slots would misinform players.
+  - [ ] **Domains list** ← **START HERE NEXT SESSION**
+        A *growing* list of real domains in the left sidebar: "Domain 1:
+        4 tiles, Str 2 × Wealth 3 = 6". NOT fixed "empty fief" slots — domains
+        are emergent from connected tiles, so fixed slots would misinform.
+        Why this one: the left sidebar is still mostly empty, and right now you
+        cannot see your score forming until the round ends. This turns dead
+        space into the game's core feedback loop. Pure code + one small prefab
+        row; no art needed. `FiefCalculator.CalculateFiefs(actor, grid)` already
+        returns everything needed, and `FiefDetail.prefab` may be reusable.
 
 - [ ] **A3. Juice slice** *(can slide later — even after B4)*
   - SFX + music

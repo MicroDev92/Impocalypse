@@ -523,11 +523,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 51847a18cb2acb545998741101e2c63d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardFanLayout
-  fanAngle: 25
-  arcHeight: 50
-  cardSpacing: 90
-  maxFanWidth: 1350
-  bottomOffset: 80
+  fanAngle: 0
+  arcHeight: 0
+  cardGap: 14
+  maxFanWidth: 1100
+  minCardScale: 0.62
+  maxCardScale: 1
+  bottomOffset: 130
   fadeDuration: 0.3
 --- !u!1 &770500386
 GameObject:
@@ -1400,7 +1402,7 @@ MonoBehaviour:
   gridDimensions: {x: 12, y: 12}
   tileSize: 1
   headerHeight: 0.05
-  cardPanelHeight: 0.25
+  cardPanelHeight: 0.27
   resourcePanelWidth: 0
   sideMargin: 0.16
   gridPadding: 0.01

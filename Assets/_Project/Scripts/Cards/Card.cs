@@ -44,10 +44,18 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     private bool _isDisabled;
     private float _currentScale = 1f;
     private float _targetScale = 1f;
-    
+
+    /// <summary>
+    /// Scale the card returns to when not hovered. The hand layout sets this so a
+    /// large hand can shrink its cards to fit; hover multiplies it rather than
+    /// replacing it, so hovering a shrunken card still pops it proportionally.
+    /// </summary>
+    private float _restScale = 1f;
+
     private Vector2 _restPosition;
     private Quaternion _restRotation = Quaternion.identity;
     private bool _hasReceivedInitialPosition;
+    private bool _isHovered;
     private int _restSiblingIndex = -1;
     private RectTransform _rectTransform;
     private TileData _linkedTile;
@@ -100,13 +108,19 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 
         // Smoothly lerp scale
         if (Mathf.Abs(_currentScale - _targetScale) > 0.001f)
-        {
             _currentScale = Mathf.Lerp(_currentScale, _targetScale, Time.deltaTime * hoverLerpSpeed);
-            transform.localScale = Vector3.one * _currentScale;
-        }
+
+        // Enforce every frame, not only while lerping: other systems (pooling,
+        // visual resets) set localScale back to 1, which used to desync the card's
+        // displayed size from _currentScale - hovering then "shrank" the card
+        // instead of popping it, and it stayed shrunk.
+        transform.localScale = Vector3.one * _currentScale;
 
         // Calculate target position based on rest position + hover lift
-        float lift = (_currentScale - 1f) / (hoverScale - 1f) * hoverLift;
+        float hoverProgress = hoverScale > 1f
+            ? Mathf.Clamp01((_currentScale / _restScale - 1f) / (hoverScale - 1f))
+            : 0f;
+        float lift = hoverProgress * hoverLift;
         Vector2 targetPos = _restPosition + new Vector2(0, lift);
         
         _rectTransform.anchoredPosition = Vector2.Lerp(_rectTransform.anchoredPosition, targetPos, Time.deltaTime * hoverLerpSpeed);
@@ -127,6 +141,27 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     }
 
     /// <summary>
+    /// Sets the card's resting scale (the hand layout shrinks cards when the hand
+    /// is large). Hover scales relative to this, so the pop stays proportional.
+    /// </summary>
+    public void SetLayoutScale(float scale)
+    {
+        _restScale = Mathf.Max(0.05f, scale);
+
+        if (_isHovered)
+        {
+            _targetScale = _restScale * hoverScale;
+            return;
+        }
+
+        // Snap rather than lerp: a re-layout (new hand dealt, card picked) should
+        // land at the right size immediately, not visibly animate from the old one.
+        _targetScale = _restScale;
+        _currentScale = _restScale;
+        transform.localScale = Vector3.one * _restScale;
+    }
+
+    /// <summary>
     /// Records the card's resting layer in the fan's draw order, so it can be
     /// restored after a hover temporarily brings it to the front.
     /// </summary>
@@ -136,9 +171,10 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         if (!_isDisabled)
         {
-            _targetScale = hoverScale;
+            _isHovered = true;
+            _targetScale = _restScale * hoverScale;
             _linkedTile?.Highlight(true);
-            
+
             // Move to front of sibling list so it's not covered
             transform.SetAsLastSibling();
         }
@@ -146,7 +182,8 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        _targetScale = 1f;
+        _isHovered = false;
+        _targetScale = _restScale;
 
         // Restore the card's resting layer so hovering doesn't scramble the fan's
         // overlap order (a hovered card pops to the front, then drops back on exit).
@@ -254,6 +291,8 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         _currentScale = 1f;
         _targetScale = 1f;
         transform.localScale = Vector3.one;
+        _restScale = 1f;
+        _isHovered = false;
         _linkedTile = null;
     }
 

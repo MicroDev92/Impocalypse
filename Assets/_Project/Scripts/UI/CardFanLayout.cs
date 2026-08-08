@@ -8,17 +8,36 @@ using Core.Events;
 using Cards;
 
 /// <summary>
-/// Arranges child cards in a hand-held fan/arc shape.
-/// Center card is straight, outer cards fan outward with rotation.
+/// Lays the hand out as a flat, evenly spaced row.
+///
+/// A 12-card hand is a BROWSING task - the player reads and compares every card -
+/// so cards must not overlap or rotate. (The previous fan buried cards by design;
+/// spacing/clipping/draw-order bugs were symptoms of forcing a fan onto a
+/// browsing UI.) Cards auto-shrink to fit the available width, so a fresh
+/// 12-card hand fits and the cards grow as the hand is spent.
+///
+/// A gentle arc/tilt is still available via arcHeight/fanAngle for flavour;
+/// both default to 0 for a clean row.
 /// </summary>
 [RequireComponent(typeof(RectTransform))]
 public class CardFanLayout : MonoBehaviour
 {
-    [Header("Fan Shape")]
-    [SerializeField] private float fanAngle = 30f;
-    [SerializeField] private float arcHeight = 70f;
-    [SerializeField] private float cardSpacing = 90f;
-    [SerializeField] private float maxFanWidth = 700f;
+    [Header("Row Shape")]
+    [Tooltip("Total tilt across the row in degrees. 0 = flat row (recommended for readability).")]
+    [SerializeField] private float fanAngle = 0f;
+    [Tooltip("How much the middle of the row lifts. 0 = perfectly straight.")]
+    [SerializeField] private float arcHeight = 0f;
+    [Tooltip("Gap between neighbouring cards, in card-width-independent pixels.")]
+    [SerializeField] private float cardGap = 14f;
+    [Tooltip("Total width the hand may occupy. Cards shrink to fit inside it.")]
+    [SerializeField] private float maxFanWidth = 1350f;
+
+    [Header("Auto-fit")]
+    [Tooltip("Smallest the cards may shrink to when the hand is large. Below this they stop shrinking and start overlapping instead.")]
+    [Range(0.3f, 1f)][SerializeField] private float minCardScale = 0.62f;
+    [Tooltip("Largest the cards may grow to when only a few remain.")]
+    [Range(0.5f, 2f)][SerializeField] private float maxCardScale = 1f;
+
 
     [Header("Position")]
     [Tooltip("How high above the bottom of the screen the hand sits. Increase to lift the fan clear of the board.")]
@@ -117,17 +136,37 @@ public class CardFanLayout : MonoBehaviour
         });
 
         int count = activeChildren.Count;
-        float totalWidth = (count - 1) * cardSpacing;
-        float effectiveSpacing = totalWidth > maxFanWidth ? maxFanWidth / (count - 1) : cardSpacing;
+
+        // Auto-fit: shrink cards so the whole hand fits inside maxFanWidth.
+        // Below minCardScale they stop shrinking (unreadable) and overlap instead -
+        // the depth order below keeps that overlap clean and predictable.
+        float cardWidth = GetCardSize(activeChildren[0]).x;
+        float cardHeight = GetCardSize(activeChildren[0]).y;
+        float requiredAtFullSize = count * cardWidth + (count - 1) * cardGap;
+        float scale = requiredAtFullSize > maxFanWidth && requiredAtFullSize > 0f
+            ? maxFanWidth / requiredAtFullSize
+            : 1f;
+        scale = Mathf.Clamp(scale, minCardScale, maxCardScale);
+
+        float step = cardWidth * scale + cardGap * scale;
+        if (count > 1)
+        {
+            // If even the minimum scale overflows, tighten the step so the row
+            // still fits the budget (cards then overlap by design).
+            float rowWidth = (count - 1) * step + cardWidth * scale;
+            if (rowWidth > maxFanWidth)
+                step = (maxFanWidth - cardWidth * scale) / (count - 1);
+        }
+
         float startAngle = count > 1 ? fanAngle / 2f : 0f;
 
         for (int index = 0; index < count; index++)
         {
             var child = activeChildren[index];
 
-            // Fan math is measured from the hand's center, so each card must be
+            // Row math is measured from the hand's center, so each card must be
             // center-anchored. The card prefab is corner-anchored (0,0), which would
-            // shove the whole fan off to the left - force center anchoring here.
+            // shove the whole row off to the left - force center anchoring here.
             var childRect = child.GetComponent<RectTransform>();
             if (childRect != null)
             {
@@ -136,13 +175,20 @@ public class CardFanLayout : MonoBehaviour
             }
 
             float normalized = count > 1 ? (2f * index / (count - 1)) - 1f : 0f;
-            float x = count > 1 ? (index - (count - 1) * 0.5f) * effectiveSpacing : 0f;
-            float y = arcHeight * (1f - normalized * normalized);
+            float x = count > 1 ? (index - (count - 1) * 0.5f) * step : 0f;
+
+            // Bottom-align the row: cards are positioned by their centre, so a
+            // shrunken card would otherwise float above the line. Pulling it down
+            // by half the lost height keeps every hand size sitting on the same
+            // baseline, whatever the auto-fit scale.
+            float bottomAlign = -(cardHeight * (1f - scale)) * 0.5f;
+            float y = arcHeight * (1f - normalized * normalized) + bottomAlign;
             float angle = count > 1 ? Mathf.Lerp(startAngle, -startAngle, (float)index / (count - 1)) : 0f;
 
             var card = child.GetComponent<Card>();
             if (card != null)
             {
+                card.SetLayoutScale(scale);
                 card.SetLayoutPosition(new Vector2(x, y), Quaternion.Euler(0f, 0f, angle));
             }
             else
@@ -150,11 +196,21 @@ public class CardFanLayout : MonoBehaviour
                 var rt = child.GetComponent<RectTransform>();
                 rt.anchoredPosition = new Vector2(x, y);
                 rt.localRotation = Quaternion.Euler(0f, 0f, angle);
+                rt.localScale = Vector3.one * scale;
             }
-
         }
 
         ApplyFanDepth(activeChildren);
+    }
+
+    /// <summary>Card size at scale 1, read from the prefab's rect (art-proof).</summary>
+    private static Vector2 GetCardSize(Transform card)
+    {
+        var rt = card.GetComponent<RectTransform>();
+        if (rt == null) return new Vector2(150f, 210f); // sane fallback
+        float w = rt.rect.width > 1f ? rt.rect.width : 150f;
+        float h = rt.rect.height > 1f ? rt.rect.height : 210f;
+        return new Vector2(w, h);
     }
 
     /// <summary>

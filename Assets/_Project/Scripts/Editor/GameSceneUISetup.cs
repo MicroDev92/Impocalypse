@@ -216,7 +216,10 @@ public static class GameSceneUISetup
         statsVlg.childForceExpandWidth = true;
         statsVlg.childForceExpandHeight = false;
         statsVlg.childControlWidth = true;
-        statsVlg.childControlHeight = false;
+        // Must be true or CreateStatRow's 24px preferredHeight is ignored and each
+        // row falls back to the RectTransform default of 100px - which is what made
+        // the info panel look sparse, with ~85px between stat rows.
+        statsVlg.childControlHeight = true;
         statsVlg.padding = new RectOffset(4, 4, 4, 4);
 
         var coordRow = CreateStatRow(statsContainer.transform, "CoordRow", "Position", "—");
@@ -477,7 +480,10 @@ public static class GameSceneUISetup
         statsVlg.childForceExpandWidth = true;
         statsVlg.childForceExpandHeight = false;
         statsVlg.childControlWidth = true;
-        statsVlg.childControlHeight = false;
+        // Must be true or CreateStatRow's 24px preferredHeight is ignored and each
+        // row falls back to the RectTransform default of 100px - which is what made
+        // the info panel look sparse, with ~85px between stat rows.
+        statsVlg.childControlHeight = true;
         statsVlg.padding = new RectOffset(4, 4, 4, 4);
 
         var coordRow = CreateStatRow(statsContainer.transform, "CoordRow", "Position", "—");
@@ -999,7 +1005,11 @@ public static class GameSceneUISetup
 
         var hlg = row.GetComponent<HorizontalLayoutGroup>();
         hlg.childForceExpandWidth = true;
-        hlg.childForceExpandHeight = true;
+        // Must stay false: force-expanding height gives the ROW a flexible height,
+        // and flexible sizes propagate upward - the parent VerticalLayoutGroup then
+        // shares all its leftover space between the rows, ignoring the 24px
+        // preferredHeight below and leaving the info panel looking sparse.
+        hlg.childForceExpandHeight = false;
         hlg.childControlWidth = true;
         hlg.childControlHeight = true;
 

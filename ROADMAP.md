@@ -81,11 +81,29 @@ anything. Those live in the Parking Lot until after launch.
         and building marker, plus a player-coloured disc under imps. Biggest
         single gain, two shared sprites, no tileset changes. The ring also
         answers "whose imp is that?" at a glance.
-  - [ ] **A3.2 Bevel + seam overlay** — ONE reusable overlay sprite over every
-        cell (light top edge, dark bottom, thin dark border), fitted by the
-        existing `FitToCell` pipeline. Turns painted squares into slabs and
-        deepens the grid without regenerating any terrain. Keep it subtle —
-        too strong and the board reads as bathroom tiling.
+  - [ ] **A3.2 Edge-aware lips** — the board's angle problem. Buildings and imps
+        are drawn in ¾ view but sit on ground drawn at 0°, so they read as
+        pasted onto paint. Fix: give each terrain region a front face.
+        **Rule: draw a lip only where a tile's southern neighbour is a different
+        terrain** (the board's outer edge is the same rule with no neighbour).
+        Interior tiles stay flat and full-bleed, so Styx remains one uniform
+        sheet of water and each region gains a bank where it meets the land.
+        - ~1 lip sprite per terrain (bank / cliff / shore), not a 16-sprite
+          auto-tiling set.
+        - Neighbour data already exists — `GridGenerator` reads left/below
+          for clustering.
+        - Sorting is ONE constant: a lip only hangs into the row directly
+          below, and no two lips overlap. Bump tile labels above it.
+        - Per-terrain knob: dropping the lip on Styx makes water read as
+          *sunken* rather than raised, which is what a lake wants.
+        - Judge afterwards whether any within-region bevel is still needed —
+          probably a much lighter one, if at all.
+  - [ ] **A3.2b Scatter props + board lighting** — bones, skulls, rocks, dead
+        trees strewn on tiles (seeded, non-interactive, they get shadows too),
+        plus a vignette and a single global grade. Cheap, no tileset changes,
+        and a large part of why reference mockups look "alive" — mockup boards
+        are never bare, and one consistent light unifies mismatched elements
+        better than any single sprite.
   - [ ] **A3.3 Terrain variants** — 2 variants per terrain, picked on the
         seeded stream. Machinery already exists (Ashlands variant B + seeded
         rotation/mirroring); this just extends it and kills visible repetition.
@@ -97,12 +115,19 @@ anything. Those live in the Parking Lot until after launch.
         scale, already verified), but brighter and simpler to match the tiles.
         Currently painted like miniatures next to cartoon ground.
 
-  > **Rejected deliberately: irregular / chipped per-tile slab masks.**
-  > Tiles are full-bleed *by design* so adjacent same terrain fuses — that's why
-  > the Styx reads as a river and groves clump, and why clustering and the
-  > companion rule exist. Per-tile silhouettes would fragment those regions back
-  > into 100 separate stones. This game is about connectivity; the board must
-  > read as continuous regions. Favour blending over mosaic.
+  > **Rejected: a lip on every tile (per-tile slabs).** It bands the board
+  > horizontally and reads as a staircase — and it breaks the uniform Styx.
+  > Terrain must fuse: the water is meant to look like one lake or river.
+  > Region-edge lips (A3.2) give the same thickness without either problem.
+  >
+  > **Rejected: true isometric.** Not mainly on cost. Cards *are* coordinates —
+  > a player reads "Ashlands · C7" and must find C7 in about a second. A square
+  > grid with row/column labels beats a diamond lattice at that decisively.
+  >
+  > *Correction to an earlier note here: terrain fusion is thematic, not
+  > mechanical. Domains are formed by owned adjacency and shown by imps and
+  > markers. Keeping regions continuous is a taste call — and it's the one
+  > we're making.*
 
 - [ ] **A4. Juice slice** *(hold until after a playtest)*
   - SFX + music

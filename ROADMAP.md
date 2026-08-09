@@ -54,26 +54,22 @@ anything. Those live in the Parking Lot until after launch.
         others use a shared `CardArtSet` (hand + construction buttons).
         Labels are captions only now; rules moved to the inspector.
   - [ ] **Domains list** ← **NEXT** (see below)
-  - [ ] **Prominent pick prompt** — "Pick 2 cards · Selected 0/2" as a clear
-        call to action; data already exists in the top bar. ~5 minutes.
-  - [ ] **Explicit Confirm Picks** button instead of auto-submitting on the
-        second click.
-  - [ ] **Phase legend** — now OPTIONAL. Hovering a card explains more than a
-        static legend would; decide after a playtest whether anyone's lost.
+  - [x] **Pick counter** in the top bar, beside the phase and countdown.
+  - [x] **Explicit Confirm Picks** — plus one-click pick/release, dimmed
+        unavailable cards, and a shake on refused clicks.
+  - [ ] **Phase legend** — OPTIONAL. Hovering a card explains more than a static
+        legend would; decide after a playtest whether anyone's actually lost.
+  - [ ] *Polish tail (only if a playtest asks for it):* richer tile inspector
+        (potential value, connected citadels); construction phase could reuse
+        the same dim/shake affordances as the draft.
   - [x] **Inspector shows cards too** — hovering a card fills the right panel
         with its name, art and full rules. Cards in hand are too small to carry
         an explanation, so this is where "what does a Hellgate do?" is answered;
         it also gives the mostly-empty right sidebar a job during the draft.
   - [ ] **Richer tile inspector** — potential value, connected citadels.
-  - [ ] **Domains list** ← **START HERE NEXT SESSION**
-        A *growing* list of real domains in the left sidebar: "Domain 1:
-        4 tiles, Str 2 × Wealth 3 = 6". NOT fixed "empty fief" slots — domains
-        are emergent from connected tiles, so fixed slots would misinform.
-        Why this one: the left sidebar is still mostly empty, and right now you
-        cannot see your score forming until the round ends. This turns dead
-        space into the game's core feedback loop. Pure code + one small prefab
-        row; no art needed. `FiefCalculator.CalculateFiefs(actor, grid)` already
-        returns everything needed, and `FiefDetail.prefab` may be reusable.
+  - [x] **Domains list** — live in the left sidebar, showing the real maths
+        ("9 tiles · Str 0 × Wealth 3 = 0"), so a domain scoring nothing for
+        want of a citadel is obvious while you play.
 
 - [ ] **A3. Juice slice** *(can slide later — even after B4)*
   - SFX + music

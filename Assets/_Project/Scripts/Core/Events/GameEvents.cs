@@ -321,6 +321,24 @@ namespace Core.Events
     }
 
     /// <summary>
+    /// Raised whenever the local player's pick selection changes, so the prompt
+    /// ("Pick 2 cards - Selected 1/2") and the Confirm button can track it.
+    /// </summary>
+    public struct PickSelectionChangedEvent : IGameEvent
+    {
+        public int Selected { get; }
+        public int Required { get; }
+        public bool CanSubmit { get; }
+
+        public PickSelectionChangedEvent(int selected, int required, bool canSubmit)
+        {
+            Selected = selected;
+            Required = required;
+            CanSubmit = canSubmit;
+        }
+    }
+
+    /// <summary>
     /// Raised when the player hovers a card in hand. The inspector panel shows the
     /// card's full rules - cards themselves are too small to carry an explanation,
     /// so hovering is where "what does a Hellgate do?" gets answered.

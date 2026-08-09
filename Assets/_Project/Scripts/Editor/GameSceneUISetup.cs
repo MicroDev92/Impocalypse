@@ -716,6 +716,58 @@ public static class GameSceneUISetup
     }
 
     // ==========================================
+    // FOCUSED: add the draft pick prompt + Confirm button
+    // ==========================================
+
+    [MenuItem("GameObject/UI/Impocalypse - Add Pick Prompt", false, 27)]
+    private static void AddPickPrompt()
+    {
+        var canvas = FindExistingCanvas();
+        if (canvas == null)
+        {
+            Debug.LogError("[GameSceneUISetup] No Canvas found in the open scene. Open GameScene first.");
+            return;
+        }
+
+        var existing = canvas.transform.Find("PickPrompt");
+        if (existing != null) Undo.DestroyObjectImmediate(existing.gameObject);
+
+        // Sits just above the hand, anchored to the bottom edge so it tracks the
+        // reserved card band rather than drifting with resolution.
+        // Button only - the "Pick 2 cards (1/2)" line lives in the top bar.
+        //
+        // Bottom-RIGHT, mirroring the construction phase's Done button: the commit
+        // action sits in the same corner in every phase, and it can never collide
+        // with the hand, which grows as cards are spent.
+        var root = new GameObject("PickPrompt", typeof(RectTransform));
+        root.transform.SetParent(canvas.transform, false);
+        var rootRect = root.GetComponent<RectTransform>();
+        rootRect.anchorMin = new Vector2(1f, 0f);
+        rootRect.anchorMax = new Vector2(1f, 0f);
+        rootRect.pivot = new Vector2(1f, 0f);
+        rootRect.sizeDelta = new Vector2(240, 56);
+        rootRect.anchoredPosition = new Vector2(-40, 120);
+
+        var confirm = CreateButton(root.transform, "ConfirmButton", "Confirm Picks", 220f, 46f);
+        var confirmRect = confirm.GetComponent<RectTransform>();
+        confirmRect.anchorMin = new Vector2(0.5f, 0.5f);
+        confirmRect.anchorMax = new Vector2(0.5f, 0.5f);
+        confirmRect.pivot = new Vector2(0.5f, 0.5f);
+        confirmRect.anchoredPosition = Vector2.zero;
+        confirm.AddComponent<CanvasGroup>(); // dimmed while the pick is incomplete
+
+        var ui = root.AddComponent<UI.PickPromptUI>();
+        var so = new SerializedObject(ui);
+        so.FindProperty("confirmButton").objectReferenceValue = confirm.GetComponent<Button>();
+        so.FindProperty("confirmLabel").objectReferenceValue = confirm.GetComponentInChildren<TMP_Text>();
+        so.ApplyModifiedProperties();
+
+        Undo.RegisterCreatedObjectUndo(root, "Add Pick Prompt");
+        Selection.activeGameObject = root;
+        Debug.Log("[GameSceneUISetup] Pick prompt added. Raise its anchoredPosition.y if it overlaps the hand.");
+    }
+
+    // ==========================================
     // FOCUSED: add the live Domains list
     // ==========================================
 
@@ -1066,7 +1118,13 @@ public static class GameSceneUISetup
         obj.GetComponent<Button>().colors = btnColors;
 
         var label = CreateTextObject(obj.transform, "Label", text, 14, FontStyles.Bold);
-        StretchFull(label.GetComponent<RectTransform>());
+        var labelRect = label.GetComponent<RectTransform>();
+        StretchFull(labelRect);
+        // The button art's horns occupy the top of the sprite, so the visible stone
+        // bar is the lower part of the rect. Centring in the raw rect puts text on
+        // the horns; inset the top so it centres on the bar itself.
+        labelRect.offsetMin = new Vector2(10, 6);
+        labelRect.offsetMax = new Vector2(-10, -18);
         label.GetComponent<TMP_Text>().alignment = TextAlignmentOptions.Center;
         label.GetComponent<TMP_Text>().color = new Color(1f, 0.95f, 0.9f, 1f);
 

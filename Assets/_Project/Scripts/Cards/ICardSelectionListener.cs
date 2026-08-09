@@ -16,7 +16,18 @@ namespace Cards
         /// Called when a card is confirmed (second click - lock in).
         /// </summary>
         /// <param name="card">The confirmed card</param>
-        void OnCardConfirmed(Card card);
+        /// <returns>
+        /// False if the pick was refused (the quota is already full). The card must
+        /// then leave its visual state alone - otherwise it turns "confirmed" green
+        /// for a pick that was never accepted.
+        /// </returns>
+        bool OnCardConfirmed(Card card);
+
+        /// <summary>
+        /// Called when a confirmed card is clicked again to take the pick back.
+        /// Picks are only submitted explicitly, so a misclick must be undoable.
+        /// </summary>
+        void OnCardUnconfirmed(Card card);
 
         /// <summary>
         /// Called when a card is deselected.

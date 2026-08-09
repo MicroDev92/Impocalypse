@@ -16,6 +16,9 @@ namespace Cards
         [Header("Configuration")]
         [SerializeField] private int maxPicks = 2;
 
+        [Tooltip("Picks are submitted by pressing Confirm rather than the moment the last card is clicked. Removes the 'did that count?' ambiguity and lets a misclick be undone.")]
+        [SerializeField] private bool requireExplicitConfirm = true;
+
         private readonly List<Card> _selectedCards = new();
         private readonly List<Card> _confirmedCards = new();
         private CardFactory _cardFactory;
@@ -68,6 +71,7 @@ namespace Cards
             _selectionsLocked = false;
 
             Debug.Log("[CardSelectionHandler] Selections reset");
+            PublishSelectionChanged();
         }
 
         /// <summary>
@@ -89,14 +93,14 @@ namespace Cards
         /// <summary>
         /// Called when a card is confirmed (locked in).
         /// </summary>
-        public void OnCardConfirmed(Card card)
+        public bool OnCardConfirmed(Card card)
         {
-            if (_selectionsLocked || card == null) return;
+            if (_selectionsLocked || card == null) return false;
 
             if (_confirmedCards.Count >= maxPicks)
             {
-                Debug.LogWarning("[CardSelectionHandler] Max picks already reached");
-                return;
+                Debug.Log("[CardSelectionHandler] Pick refused - quota already full");
+                return false;
             }
 
             if (!_confirmedCards.Contains(card))
@@ -110,13 +114,77 @@ namespace Cards
                 _eventBus?.Publish(new CardConfirmedEvent(card.coordinate, localPlayerId));
                 Debug.Log($"[CardSelectionHandler] Card confirmed: {card.coordinate} ({_confirmedCards.Count}/{maxPicks})");
 
-                // Check if all picks are made, or all available cards are confirmed
-                int availableCards = _cardFactory?.ActiveCards?.Count ?? 0;
-                if (_confirmedCards.Count >= maxPicks || _confirmedCards.Count >= availableCards)
+                PublishSelectionChanged();
+
+                // Legacy flow: submitting the instant the last card is clicked. Kept
+                // behind a flag so the auto-pick path and tests still work.
+                if (!requireExplicitConfirm && CanSubmit)
                 {
-                    LockSelections();
-                    NotifyAllPicksMade();
+                    SubmitPicks();
                 }
+            }
+
+            return true;
+        }
+
+        /// <summary>Takes a pick back before it has been submitted.</summary>
+        public void OnCardUnconfirmed(Card card)
+        {
+            if (_selectionsLocked || card == null) return;
+
+            if (_confirmedCards.Remove(card))
+            {
+                _selectedCards.Remove(card);
+                Debug.Log($"[CardSelectionHandler] Card unconfirmed: {card.coordinate} ({_confirmedCards.Count}/{maxPicks})");
+                PublishSelectionChanged();
+            }
+        }
+
+        /// <summary>
+        /// True when the player has picked their full quota - or every card they
+        /// have, when the hand is smaller than the quota (last pass of a round).
+        /// </summary>
+        public bool CanSubmit
+        {
+            get
+            {
+                int availableCards = _cardFactory?.ActiveCards?.Count ?? 0;
+                return !_selectionsLocked &&
+                       (_confirmedCards.Count >= maxPicks ||
+                        (availableCards > 0 && _confirmedCards.Count >= availableCards));
+            }
+        }
+
+        /// <summary>Commits the current picks. Safe to call from a Confirm button.</summary>
+        public void SubmitPicks()
+        {
+            if (_selectionsLocked || !CanSubmit) return;
+
+            LockSelections();
+            NotifyAllPicksMade();
+            PublishSelectionChanged();
+        }
+
+        private void PublishSelectionChanged()
+        {
+            RefreshCardAvailability();
+            _eventBus?.Publish(new PickSelectionChangedEvent(_confirmedCards.Count, maxPicks, CanSubmit));
+        }
+
+        /// <summary>
+        /// Dims the cards that cannot be picked right now, so "quota full" is visible
+        /// rather than only discoverable by clicking. Picked cards stay bright (they
+        /// can be released); dimmed cards stay hoverable so they can still be read.
+        /// </summary>
+        private void RefreshCardAvailability()
+        {
+            if (_cardFactory?.ActiveCards == null) return;
+
+            bool quotaFull = _confirmedCards.Count >= maxPicks;
+            foreach (var card in _cardFactory.ActiveCards)
+            {
+                if (card == null) continue;
+                card.SetUnavailable(quotaFull && !_confirmedCards.Contains(card));
             }
         }
 

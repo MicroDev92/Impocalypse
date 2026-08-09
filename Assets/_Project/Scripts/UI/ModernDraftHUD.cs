@@ -48,6 +48,7 @@ namespace UI
                 _eventBus.Subscribe<CardsDealtEvent>(OnCardsDealt);
                 _eventBus.Subscribe<CardConfirmedEvent>(OnCardConfirmed);
                 _eventBus.Subscribe<TileOwnerChangedEvent>(OnTileOwnerChanged);
+                _eventBus.Subscribe<PickSelectionChangedEvent>(OnPickSelectionChanged);
             }
 
             // Sync initial state after a short delay to ensure GameManager is ready
@@ -78,6 +79,7 @@ namespace UI
                 _eventBus.Unsubscribe<CardsDealtEvent>(OnCardsDealt);
                 _eventBus.Unsubscribe<CardConfirmedEvent>(OnCardConfirmed);
                 _eventBus.Unsubscribe<TileOwnerChangedEvent>(OnTileOwnerChanged);
+                _eventBus.Unsubscribe<PickSelectionChangedEvent>(OnPickSelectionChanged);
             }
 
             ServiceLocator.UnregisterService<IDraftHUD>();
@@ -262,13 +264,43 @@ namespace UI
 
         private void UpdateDraftInfo(int count, int picks = -1)
         {
-            if (draftInfoText == null) return;
-            if (picks == -1)
+            int selected = 0, required = 2;
+            bool canSubmit = false;
+
+            if (ServiceLocator.TryGetService<CardSelectionHandler>(out var handler))
             {
-                if (ServiceLocator.TryGetService<CardSelectionHandler>(out var handler))
-                    picks = handler.RemainingPicks;
+                required = handler.MaxPicks;
+                selected = Mathf.Max(0, handler.MaxPicks - handler.RemainingPicks);
+                canSubmit = handler.CanSubmit;
             }
-            draftInfoText.text = $"Cards: {count} | Picks: {picks}";
+
+            RenderDraftInfo(count, selected, required, canSubmit);
+        }
+
+        /// <summary>
+        /// The draft's call to action lives here rather than beside the Confirm
+        /// button: the top bar already carries phase and countdown, so this keeps
+        /// "what am I meant to do" in one place and leaves the button room to breathe.
+        /// </summary>
+        private void OnPickSelectionChanged(PickSelectionChangedEvent evt)
+        {
+            var factory = ServiceLocator.GetService<CardFactory>();
+            int cardsInHand = factory?.ActiveCards?.Count ?? 0;
+            RenderDraftInfo(cardsInHand, evt.Selected, evt.Required, evt.CanSubmit);
+        }
+
+        /// <summary>
+        /// Single renderer for the draft line. Both the deal and the selection events
+        /// funnel through here - they used to write different formats, and whichever
+        /// fired last won (the deal fires after a reset, so the counter never showed).
+        /// </summary>
+        private void RenderDraftInfo(int cardsInHand, int selected, int required, bool canSubmit)
+        {
+            if (draftInfoText == null) return;
+
+            draftInfoText.text = canSubmit
+                ? $"Cards: {cardsInHand}  |  Picked {selected}/{required}"
+                : $"Cards: {cardsInHand}  |  Pick {required} cards ({selected}/{required})";
         }
     }
 }

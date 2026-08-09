@@ -31,6 +31,12 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     [SerializeField] private Color confirmedColor = new Color(0.45f, 0.78f, 0.45f, 1f);
     [SerializeField] private Color disabledColor = new Color(0.40f, 0.38f, 0.36f, 0.7f);
     [SerializeField] private Color cityCardColor = new Color(0.70f, 0.75f, 0.90f, 1f);
+    [Tooltip("Cards you cannot pick right now because the quota is full. Dimmed but still hoverable - you still need to read them to decide whether to swap a pick.")]
+    [SerializeField] private Color unavailableColor = new Color(0.45f, 0.42f, 0.40f, 0.75f);
+
+    [Header("Refused Feedback")]
+    [SerializeField] private float shakeDistance = 10f;
+    [SerializeField] private float shakeDuration = 0.25f;
 
     [Tooltip("Smallest the card label may auto-shrink to. The hand layout also scales cards down, so this is the real readability floor.")]
     [SerializeField] private float minLabelFontSize = 20f;
@@ -65,6 +71,9 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     private Quaternion _restRotation = Quaternion.identity;
     private bool _hasReceivedInitialPosition;
     private bool _isHovered;
+    private bool _isUnavailable;
+    private Vector2 _shakeOffset;
+    private Coroutine _shakeRoutine;
     private int _restSiblingIndex = -1;
     private RectTransform _rectTransform;
     private TileData _linkedTile;
@@ -133,7 +142,7 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
             ? Mathf.Clamp01((_currentScale / _restScale - 1f) / (hoverScale - 1f))
             : 0f;
         float lift = hoverProgress * hoverLift;
-        Vector2 targetPos = _restPosition + new Vector2(0, lift);
+        Vector2 targetPos = _restPosition + new Vector2(0, lift) + _shakeOffset;
         
         _rectTransform.anchoredPosition = Vector2.Lerp(_rectTransform.anchoredPosition, targetPos, Time.deltaTime * hoverLerpSpeed);
         _rectTransform.localRotation = Quaternion.Lerp(_rectTransform.localRotation, _restRotation, Time.deltaTime * hoverLerpSpeed);
@@ -178,6 +187,45 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     /// restored after a hover temporarily brings it to the front.
     /// </summary>
     public void SetRestSiblingIndex(int index) => _restSiblingIndex = index;
+
+    /// <summary>
+    /// Marks the card as un-pickable because the quota is full. Deliberately NOT
+    /// the same as Disable(): the card stays interactive so it can still be hovered
+    /// and read in the inspector - you need to read cards you cannot take in order
+    /// to decide whether to swap one of your picks.
+    /// </summary>
+    public void SetUnavailable(bool unavailable)
+    {
+        if (_isUnavailable == unavailable) return;
+        _isUnavailable = unavailable;
+        UpdateVisuals();
+    }
+
+    /// <summary>Wobble to signal a refused click (the wrong-password idiom).</summary>
+    private void Shake()
+    {
+        if (!gameObject.activeInHierarchy) return;
+        if (_shakeRoutine != null) StopCoroutine(_shakeRoutine);
+        _shakeRoutine = StartCoroutine(ShakeRoutine());
+    }
+
+    private System.Collections.IEnumerator ShakeRoutine()
+    {
+        float elapsed = 0f;
+        while (elapsed < shakeDuration)
+        {
+            elapsed += Time.deltaTime;
+            float progress = elapsed / shakeDuration;
+            // Decaying oscillation, so it settles rather than stopping dead.
+            float damping = 1f - progress;
+            _shakeOffset = new Vector2(
+                Mathf.Sin(progress * Mathf.PI * 6f) * shakeDistance * damping, 0f);
+            yield return null;
+        }
+
+        _shakeOffset = Vector2.zero;
+        _shakeRoutine = null;
+    }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
@@ -337,6 +385,8 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         transform.localScale = Vector3.one;
         _restScale = 1f;
         _isHovered = false;
+        _isUnavailable = false;
+        _shakeOffset = Vector2.zero;
         _linkedTile = null;
     }
 
@@ -372,23 +422,34 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         if (_isDisabled) return;
 
-        if (!_isHighlighted)
+        // One click picks, one click releases. The old intermediate "selected"
+        // state existed only because picks auto-submitted on the second click;
+        // with an explicit Confirm button it was a third visual language for
+        // nothing. States are now: normal, picked, unavailable.
+        if (_isConfirmed)
         {
-            _isHighlighted = true;
-            SetHighlight(true);
-            UpdateVisuals();
-            _selectionListener?.OnCardSelected(this);
-
-            // Animation feedback
-            if (ServiceLocator.TryGetService<CardAnimator>(out var animator))
-                animator.PlaySelectFeedback(this);
-        }
-        else if (!_isConfirmed)
-        {
-            _isConfirmed = true;
+            _isConfirmed = false;
+            _isHighlighted = false;
             SetHighlight(false);
             UpdateVisuals();
-            _selectionListener?.OnCardConfirmed(this);
+            _selectionListener?.OnCardUnconfirmed(this);
+        }
+        else
+        {
+            // Ask first: the handler refuses once the quota is full, and a refused
+            // card must not paint itself as picked. Shake instead of doing nothing -
+            // a silent click reads as a broken game.
+            if (_selectionListener != null && !_selectionListener.OnCardConfirmed(this))
+            {
+                Shake();
+                return;
+            }
+
+            _isConfirmed = true;
+            _isHighlighted = false;
+            SetHighlight(false);
+            UpdateVisuals();
+            _selectionListener?.OnCardSelected(this);
 
             // Animation feedback
             if (ServiceLocator.TryGetService<CardAnimator>(out var animator))
@@ -522,6 +583,10 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         else if (_isConfirmed)
         {
             background.color = confirmedColor;
+        }
+        else if (_isUnavailable)
+        {
+            background.color = unavailableColor;
         }
         else if (_isHighlighted)
         {

@@ -83,11 +83,16 @@ there for why.*
 > art (Milestone D) is real work with real value — it is deliberately parked,
 > not forgotten.
 
-- [ ] **B1. Disconnect handling** ← **NEXT** — a player dropping mid-game must
-      not strand the others (minimum: detect + end gracefully with a message).
-      Solo work, no scheduling needed — do it while B3b is being arranged.
-- [ ] **B2. Minimal lobby** — main menu scene; Create Game (4-letter room
-      code) / Join Game (enter code); player names; fresh map seed per game.
+- [x] **B1. Disconnect handling** — `4568eea`, verified both directions with two
+      instances. `DisconnectWatcher` ends the game naming who dropped; the
+      results panel shows the reason instead of a winner and hides Play Again.
+      Found on the way: the bug was worse than a missing message — phase
+      timers are master-authoritative, so a **master** dropping mid-phase left
+      nobody to end the phase and the game hung permanently. Sends no network
+      message by design: Photon tells every remaining client directly, which is
+      what makes the master-drop case work at all.
+- [ ] **B2. Minimal lobby** ← **NEXT** — main menu scene; Create Game (4-letter
+      room code) / Join Game (enter code); player names; fresh map seed per game.
       Replaces the hardcoded LocalTestRoom. *Biggest remaining engineering.*
 - [x] ~~**B3a. Remote smoke test**~~ — build sent to a friend, ran
       out-of-the-box on his machine; 1 full round played over the internet

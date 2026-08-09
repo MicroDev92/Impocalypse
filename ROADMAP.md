@@ -91,9 +91,44 @@ there for why.*
       nobody to end the phase and the game hung permanently. Sends no network
       message by design: Photon tells every remaining client directly, which is
       what makes the master-drop case work at all.
-- [ ] **B2. Minimal lobby** ← **NEXT** — main menu scene; Create Game (4-letter
-      room code) / Join Game (enter code); player names; fresh map seed per game.
-      Replaces the hardcoded LocalTestRoom. *Biggest remaining engineering.*
+- [ ] **B2. Minimal lobby** ← **NEXT** — replaces the hardcoded LocalTestRoom.
+      *Biggest remaining engineering.*
+
+  **Shape:** `Launcher` becomes the main menu; **`GameRoom` survives** as the
+  waiting room. It already does its job and its join-refresh bug was just fixed
+  — the scene split matches the actual states, so don't merge them.
+
+  - [ ] **B2.1 Split connect from join** — `OnConnectedToMaster` currently
+        auto-joins `LocalTestRoom`, which is the whole problem. Connect on
+        launch; join only on player action. Adds `CreateRoom` / `JoinRoom` /
+        `LeaveRoom` / `SetRoomOpen` to `INetworkService` (+ MockNetworkService).
+        Room-code generator with collision retry via `OnCreateRoomFailed`.
+        Everyone loads GameRoom on join, not just the master.
+  - [ ] **B2.2 Main menu UI** — name field (persisted to the existing
+        `nickname` PlayerPrefs key), Create Game, Join Game + code entry,
+        status line. Built by an editor command like the other UI
+        (`Editor/GameSceneUISetup.cs` pattern).
+        **Keep a Quick Play button** wired to a fixed dev room — solo editor
+        testing happens constantly and one-click start must not be lost.
+  - [ ] **B2.3 GameRoom updates** — show the room code big (the host reads it
+        out); Leave button back to the menu; **master sets `IsOpen = false` on
+        Start**, which kills the whole class of "late joiner dragged into a game
+        in progress with no state".
+  - [ ] **B2.4 Fresh seed on Play Again** *(optional — ship without it if
+        it fights back)*. A new room gets a new seed for free, since the seed is
+        baked at creation. Only replaying inside the same room repeats the map.
+        Fix: master sets `mapSeed`, waits for `OnRoomPropertiesUpdate`, THEN
+        calls LoadScene. Ordering is guaranteed because PUN implements
+        `AutomaticallySyncScene` as a room property too, so clients receive the
+        seed before the scene switch.
+
+  > **Room codes: 4 characters, alphabet excluding I, O, 0 and 1.** Codes get
+  > read aloud over Discord. Normalise input to uppercase — Photon room names
+  > are case-sensitive, players won't be.
+  >
+  > **Don't set room properties after creation and then load a scene.** The seed
+  > desync in the first 2-player playtest was exactly this race. Bake at
+  > creation, or confirm via callback before loading (B2.4).
 - [x] ~~**B3a. Remote smoke test**~~ — build sent to a friend, ran
       out-of-the-box on his machine; 1 full round played over the internet
       with territories, scores and board state in sync on both ends.

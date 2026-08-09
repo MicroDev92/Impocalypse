@@ -25,6 +25,9 @@ namespace World
         [Range(0f, 0.4f)] public float sideMargin = 0.16f;
         public float gridPadding = 0.03f;
 
+        [Tooltip("Extra vertical shift for the board, in world units. Positive moves the board UP the screen. Use this to reclaim dead space under the top bar WITHOUT shrinking the board (unlike cardPanelHeight, which trades size for clearance).")]
+        public float boardVerticalNudge = 0f;
+
         [Header("Zoom Settings")]
         public float zoomSensitivity = 0.05f;
         public float minZoom = 4f;
@@ -124,7 +127,12 @@ namespace World
             float horizontalOffset = (0.5f - (1f - resourcePanelWidth) / 2f) * (lens.OrthographicSize * 2f * aspect);
             float verticalOffset = (0.5f - (cardPanelHeight + availableHeightRatio / 2f + gridPadding)) * (lens.OrthographicSize * 2f);
 
-            transform.position = new Vector3(gridCenterX + horizontalOffset, gridCenterY + verticalOffset, -10f);
+            // Moving the camera DOWN raises the board on screen, so the nudge is
+            // subtracted rather than added.
+            transform.position = new Vector3(
+                gridCenterX + horizontalOffset,
+                gridCenterY + verticalOffset - boardVerticalNudge,
+                -10f);
         }
 
         private Camera GetActiveCamera()

@@ -19,6 +19,10 @@ namespace Construction
     /// </summary>
     public class ConstructionUIHandler : MonoBehaviour
     {
+        [Tooltip("Smallest the building row may shrink to when the stock is large. Below this buttons stay this size and the row may overflow.")]
+        [Range(0.3f, 1f)]
+        [SerializeField] private float minButtonScale = 0.55f;
+
         [Header("Card Art")]
         [Tooltip("Same art the draft hand uses, so a building looks identical in hand and while constructing.")]
         [SerializeField] private CardArtSet cardArt = new CardArtSet();
@@ -137,6 +141,12 @@ namespace Construction
 
             foreach (var group in groups)
                 CreateCityCardButton(group.First(), group.Count());
+
+            // Measure only once every button exists, and only after Unity has laid
+            // them out - reading rect sizes before the rebuild returns stale values.
+            if (cityCardContainer is RectTransform containerRect)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(containerRect);
+            FitButtonsToContainer();
         }
 
         /// <summary>Gameplay identity ignoring unique ids - identical cards share a stack.</summary>
@@ -207,6 +217,57 @@ namespace Construction
             ApplyButtonArt(buttonObj, card);
 
             _cityCardButtons.Add(buttonObj);
+        }
+
+        /// <summary>
+        /// Shrinks the whole button row so a large building stock stays on screen,
+        /// the same auto-fit rule the draft hand uses. A player who drafted ten
+        /// buildings could otherwise push the last ones off the edge - and a
+        /// building you cannot click is a building you cannot place.
+        /// </summary>
+        private void FitButtonsToContainer()
+        {
+            if (cityCardContainer is not RectTransform containerRect) return;
+
+            int count = _cityCardButtons.Count;
+            if (count == 0)
+            {
+                containerRect.localScale = Vector3.one;
+                return;
+            }
+
+            float available = containerRect.rect.width;
+            if (available <= 1f) return; // layout not built yet
+
+            float buttonWidth = 150f;
+            var firstRect = _cityCardButtons[0].GetComponent<RectTransform>();
+            if (firstRect != null && firstRect.rect.width > 1f) buttonWidth = firstRect.rect.width;
+
+            float spacing = 8f;
+            if (cityCardContainer.TryGetComponent<HorizontalLayoutGroup>(out var hlg))
+            {
+                spacing = hlg.spacing + hlg.padding.left + hlg.padding.right;
+
+                // Centre the row like the draft hand does, rather than letting it
+                // pile up against one edge as the buttons shrink.
+                hlg.childAlignment = TextAnchor.MiddleCenter;
+            }
+
+            float needed = count * buttonWidth + (count - 1) * spacing;
+            float scale = needed > available ? available / needed : 1f;
+            scale = Mathf.Clamp(scale, minButtonScale, 1f);
+
+            // Scaling collapses toward the pivot, so a non-centred pivot would drag
+            // the row sideways as it shrinks. Force a centred pivot without moving
+            // the rect: shifting the pivot needs an equal compensating shift.
+            if (!Mathf.Approximately(containerRect.pivot.x, 0.5f))
+            {
+                float deltaPivot = 0.5f - containerRect.pivot.x;
+                containerRect.pivot = new Vector2(0.5f, containerRect.pivot.y);
+                containerRect.anchoredPosition += new Vector2(deltaPivot * containerRect.rect.width, 0f);
+            }
+
+            containerRect.localScale = new Vector3(scale, scale, 1f);
         }
 
         /// <summary>

@@ -942,7 +942,7 @@ Transform:
   m_GameObject: {fileID: 961739749}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 5.5, y: 5.5, z: -10}
+  m_LocalPosition: {x: 5.5, y: 3.335294, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1372,7 +1372,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1213055147}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f453f694addf4275988fac205bc91968, type: 3}
   m_Name: 
@@ -1402,10 +1402,11 @@ MonoBehaviour:
   gridDimensions: {x: 12, y: 12}
   tileSize: 1
   headerHeight: 0.05
-  cardPanelHeight: 0.27
+  cardPanelHeight: 0.25
   resourcePanelWidth: 0
   sideMargin: 0.16
   gridPadding: 0.01
+  boardVerticalNudge: 0
   zoomSensitivity: 0.05
   minZoom: 4
   maxZoom: 10
@@ -1461,7 +1462,7 @@ Transform:
   m_GameObject: {fileID: 1213055147}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 5.5, y: 3.735294, z: -10}
+  m_LocalPosition: {x: 5.5, y: 3.335294, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1657,6 +1658,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c4b37e53ca233141ae86700b9c97621, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Construction.ConstructionUIHandler
+  minButtonScale: 0.55
   cardArt:
     citadel: {fileID: 8392797238846179811, guid: 59f9bde1e5835a64d8e390fc1ae4dc40, type: 3}
     farm: {fileID: 8015055741400221070, guid: 59f9bde1e5835a64d8e390fc1ae4dc40, type: 3}
@@ -2241,10 +2243,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1541052996}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.15}
-  m_AnchorMax: {x: 0.5, y: 0.15}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 700, y: 150}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 0}
+  m_AnchoredPosition: {x: 0, y: 150}
+  m_SizeDelta: {x: 1100, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2035433341
 MonoBehaviour:
@@ -2265,8 +2267,8 @@ MonoBehaviour:
     m_Bottom: 0
   m_ChildAlignment: 4
   m_Spacing: 10
-  m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 1
+  m_ChildForceExpandWidth: 0
+  m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 0
   m_ChildControlHeight: 0
   m_ChildScaleWidth: 0
@@ -2896,17 +2898,9 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4643307035087369172, guid: 934d89ac4c3537546a48ec383b8b2424, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 26
-      objectReference: {fileID: 0}
     - target: {fileID: 4826873029056928941, guid: 934d89ac4c3537546a48ec383b8b2424, type: 3}
       propertyPath: m_Name
       value: LeftSidebar
-      objectReference: {fileID: 0}
-    - target: {fileID: 6652433471093188246, guid: 934d89ac4c3537546a48ec383b8b2424, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -26
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

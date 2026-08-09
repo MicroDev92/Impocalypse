@@ -716,6 +716,83 @@ public static class GameSceneUISetup
     }
 
     // ==========================================
+    // FOCUSED: add the live Domains list
+    // ==========================================
+
+    [MenuItem("GameObject/UI/Impocalypse - Add Domains Panel", false, 26)]
+    private static void AddDomainsPanel()
+    {
+        var leftSidebar = GameObject.Find("LeftSidebar");
+        if (leftSidebar == null)
+        {
+            Debug.LogError("[GameSceneUISetup] LeftSidebar not found. Add the sidebars first.");
+            return;
+        }
+
+        var existing = leftSidebar.transform.Find("DomainsPanel");
+        if (existing != null) Undo.DestroyObjectImmediate(existing.gameObject);
+
+        // Sits directly above the Pacts panel at the bottom of the sidebar.
+        const float pactsHeight = 150f;
+        const float panelHeight = 190f;
+
+        var panel = CreateBorderedPanel(leftSidebar.transform, "DomainsPanel");
+        var rect = panel.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0, 0);
+        rect.anchorMax = new Vector2(1, 0);
+        rect.pivot = new Vector2(0.5f, 0);
+        rect.sizeDelta = new Vector2(-PanelPadding * 2, panelHeight);
+        rect.anchoredPosition = new Vector2(0, PanelPadding * 2 + pactsHeight);
+
+        var header = CreateTextObject(panel.transform, "DomainsHeader", "Your Domains", 14, FontStyles.Bold);
+        SetAnchored(header, new Vector2(0, 1), new Vector2(1, 1), new Vector2(8, -6), new Vector2(-8, -6), 22f);
+        header.GetComponent<TMP_Text>().color = TextAccent;
+
+        // Rows container - the list grows and shrinks as domains merge and split.
+        var listObj = new GameObject("DomainsList", typeof(RectTransform), typeof(VerticalLayoutGroup));
+        listObj.transform.SetParent(panel.transform, false);
+        var listRect = listObj.GetComponent<RectTransform>();
+        listRect.anchorMin = new Vector2(0, 0);
+        listRect.anchorMax = new Vector2(1, 1);
+        listRect.offsetMin = new Vector2(8, 6);
+        listRect.offsetMax = new Vector2(-8, -30);
+
+        var vlg = listObj.GetComponent<VerticalLayoutGroup>();
+        vlg.spacing = 2;
+        vlg.childAlignment = TextAnchor.UpperLeft;
+        vlg.childControlWidth = true;
+        vlg.childControlHeight = true;    // or row preferred heights are ignored
+        vlg.childForceExpandWidth = true;
+        vlg.childForceExpandHeight = false; // flexible height would spread the rows out
+
+        var empty = CreateTextObject(panel.transform, "DomainsEmpty", "claim tiles to form a domain", 12, FontStyles.Italic);
+        var emptyRect = empty.GetComponent<RectTransform>();
+        emptyRect.anchorMin = new Vector2(0, 0);
+        emptyRect.anchorMax = new Vector2(1, 1);
+        emptyRect.offsetMin = new Vector2(8, 6);
+        emptyRect.offsetMax = new Vector2(-8, -30);
+        var emptyTmp = empty.GetComponent<TMP_Text>();
+        emptyTmp.color = TextSecondary;
+        emptyTmp.alignment = TextAlignmentOptions.TopLeft;
+
+        var ui = panel.AddComponent<UI.DomainListUI>();
+        var so = new SerializedObject(ui);
+        so.FindProperty("listContainer").objectReferenceValue = listObj.transform;
+        so.FindProperty("headerText").objectReferenceValue = header.GetComponent<TMP_Text>();
+        so.FindProperty("emptyText").objectReferenceValue = emptyTmp;
+
+        var rowPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/FiefDetail.prefab");
+        if (rowPrefab != null) so.FindProperty("rowPrefab").objectReferenceValue = rowPrefab;
+        so.ApplyModifiedProperties();
+
+        Undo.RegisterCreatedObjectUndo(panel, "Add Domains Panel");
+        Selection.activeGameObject = panel;
+        Debug.Log("[GameSceneUISetup] Domains panel added above the Pacts panel." +
+                  (rowPrefab == null ? " NOTE: assign the row prefab manually." : "") +
+                  " Shorten PlayerListContainer's bottom offset if they overlap.");
+    }
+
+    // ==========================================
     // FOCUSED: add the Game Over results screen
     // ==========================================
 

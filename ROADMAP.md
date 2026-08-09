@@ -104,12 +104,24 @@ there for why.*
         `LeaveRoom` / `SetRoomOpen` to `INetworkService` (+ MockNetworkService).
         Room-code generator with collision retry via `OnCreateRoomFailed`.
         Everyone loads GameRoom on join, not just the master.
-  - [ ] **B2.2 Main menu UI** — name field (persisted to the existing
-        `nickname` PlayerPrefs key), Create Game, Join Game + code entry,
-        status line. Built by an editor command like the other UI
-        (`Editor/GameSceneUISetup.cs` pattern).
-        **Keep a Quick Play button** wired to a fixed dev room — solo editor
-        testing happens constantly and one-click start must not be lost.
+  - [ ] **B2.2 Main menu UI** — built by an editor command like the other UI
+        (`Editor/GameSceneUISetup.cs` pattern). Three ways in:
+        - **Quick Play** — `JoinRandomRoom`, create one on failure. The best
+          playtest tool available: "everyone click Quick Play at 8pm" beats
+          coordinating codes. Doubles as the one-click editor path, which
+          solo testing needs constantly.
+        - **Create Game** — private room, code shown to read out.
+        - **Join Game** — code entry.
+
+        **Public vs private is one flag:** Quick Play rooms are
+        `IsVisible = true` (findable by matchmaking); code rooms are
+        `IsVisible = false`. Every room gets a code either way, so a Quick Play
+        host can still invite by code. Composes with B2.3: rooms closed on Start
+        are skipped by random matchmaking for free.
+
+        **Name field lives HERE, not in Options.** It persists to the existing
+        `nickname` PlayerPrefs key. Buried in a settings screen nobody touches
+        it, and a playtest of four `Player_1234`s defeats the point of B2.
   - [ ] **B2.3 GameRoom updates** — show the room code big (the host reads it
         out); Leave button back to the menu; **master sets `IsOpen = false` on
         Start**, which kills the whole class of "late joiner dragged into a game
@@ -122,6 +134,12 @@ there for why.*
         `AutomaticallySyncScene` as a room property too, so clients receive the
         seed before the scene switch.
 
+  > **Options screen: deliberately deferred, reserve the button's slot.**
+  > Nothing real goes in it yet — volume has no audio until D6, and
+  > resolution/fullscreen are marginal on desktop and ignored on WebGL. It earns
+  > its place the moment sound lands. The name field is NOT a reason to build it
+  > (see B2.2).
+  >
   > **Room codes: 4 characters, alphabet excluding I, O, 0 and 1.** Codes get
   > read aloud over Discord. Normalise input to uppercase — Photon room names
   > are case-sensitive, players won't be.

@@ -71,7 +71,40 @@ anything. Those live in the Parking Lot until after launch.
         ("9 tiles · Str 0 × Wealth 3 = 0"), so a domain scoring nothing for
         want of a citadel is obvious while you play.
 
-- [ ] **A3. Juice slice** *(can slide later — even after B4)*
+- [ ] **A3. Board depth pass** ← **NEXT**
+  *The board reads flatter than the UI around it. The cause is objects floating
+  on paint, not the tile art — so the fix is depth and layering, never more
+  texture detail (the board already carries coordinates, terrain, resources,
+  ownership, highlights and buildings; more detail makes it harder to read).*
+
+  - [ ] **A3.1 Object shadows + owner rings** — a soft ellipse under every imp
+        and building marker, plus a player-coloured disc under imps. Biggest
+        single gain, two shared sprites, no tileset changes. The ring also
+        answers "whose imp is that?" at a glance.
+  - [ ] **A3.2 Bevel + seam overlay** — ONE reusable overlay sprite over every
+        cell (light top edge, dark bottom, thin dark border), fitted by the
+        existing `FitToCell` pipeline. Turns painted squares into slabs and
+        deepens the grid without regenerating any terrain. Keep it subtle —
+        too strong and the board reads as bathroom tiling.
+  - [ ] **A3.3 Terrain variants** — 2 variants per terrain, picked on the
+        seeded stream. Machinery already exists (Ashlands variant B + seeded
+        rotation/mirroring); this just extends it and kills visible repetition.
+  - [ ] **A3.4 Imps restyled** — current sprites are legacy assets in a
+        different art language entirely; they're the most-repeated object on
+        screen and the worst mismatch. Chunky cartoon devils matching the tile
+        register, ¾ view, thick outlines, one per player colour.
+  - [ ] **A3.5 Buildings restyled** — same silhouettes (they read well at board
+        scale, already verified), but brighter and simpler to match the tiles.
+        Currently painted like miniatures next to cartoon ground.
+
+  > **Rejected deliberately: irregular / chipped per-tile slab masks.**
+  > Tiles are full-bleed *by design* so adjacent same terrain fuses — that's why
+  > the Styx reads as a river and groves clump, and why clustering and the
+  > companion rule exist. Per-tile silhouettes would fragment those regions back
+  > into 100 separate stones. This game is about connectivity; the board must
+  > read as continuous regions. Favour blending over mosaic.
+
+- [ ] **A4. Juice slice** *(hold until after a playtest)*
   - SFX + music
   - Animations: imp hop-to-corner, marker pop-in, card deal, harvest feedback
   - Hellgate adaptive placement (centered when alone on a tile)

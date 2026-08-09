@@ -100,9 +100,17 @@ namespace Core.Events
     {
         public Dictionary<int, int> PlayerScores { get; }
 
-        public GameEndedEvent(Dictionary<int, int> playerScores)
+        /// <summary>
+        /// Set when the game ended early (a disconnect) rather than by playing out
+        /// all four rounds. Listeners show this instead of crowning a winner - the
+        /// scores are real, but nobody won.
+        /// </summary>
+        public string EndReason { get; }
+
+        public GameEndedEvent(Dictionary<int, int> playerScores, string endReason = null)
         {
             PlayerScores = playerScores;
+            EndReason = endReason;
         }
     }
 

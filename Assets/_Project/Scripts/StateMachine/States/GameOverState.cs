@@ -15,6 +15,14 @@ namespace StateMachine.States
 
         private IEventBus _eventBus;
 
+        /// <summary>
+        /// Non-null when the game was abandoned (someone disconnected) instead of
+        /// finishing. Set by DisconnectWatcher *before* the state change, because
+        /// Enter() announces the result immediately and must not name a winner
+        /// for a game nobody won.
+        /// </summary>
+        public string EndReason { get; set; }
+
         public override void Enter()
         {
             Debug.Log("[GameOverState] Entering game over state");
@@ -27,10 +35,21 @@ namespace StateMachine.States
         public override void Exit()
         {
             Debug.Log("[GameOverState] Exiting game over state");
+
+            // The state instance is registered once and reused, so a stale reason
+            // would mislabel the next game's ending.
+            EndReason = null;
         }
 
         private void DisplayResults()
         {
+            if (!string.IsNullOrEmpty(EndReason))
+            {
+                _eventBus?.Publish(new ShowStatusEvent($"Game ended — {EndReason}"));
+                Debug.Log($"[GameOverState] Game abandoned: {EndReason}");
+                return;
+            }
+
             var scoringState = ServiceLocator.GetService<GameStateMachine>()?.GetState<ScoringState>();
             var scores = scoringState?.GetScores();
             var networkService = ServiceLocator.GetService<INetworkService>();

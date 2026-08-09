@@ -93,6 +93,11 @@ namespace Core.Bootstrap
                 }
                 Debug.Log("[GameBootstrapper] PoolManager initialized");
             }
+
+            // Disconnect handling. Created here rather than placed in the scene so
+            // it can't be lost to a prefab edit or a scene that was set up before
+            // this existed - a watcher that is only usually present is no watcher.
+            DisconnectWatcher.EnsureExists();
         }
 
         private void InitializeStateMachine()

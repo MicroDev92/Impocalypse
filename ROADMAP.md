@@ -81,24 +81,7 @@ anything. Those live in the Parking Lot until after launch.
         and building marker, plus a player-coloured disc under imps. Biggest
         single gain, two shared sprites, no tileset changes. The ring also
         answers "whose imp is that?" at a glance.
-  - [ ] **A3.2 Edge-aware lips** — the board's angle problem. Buildings and imps
-        are drawn in ¾ view but sit on ground drawn at 0°, so they read as
-        pasted onto paint. Fix: give each terrain region a front face.
-        **Rule: draw a lip only where a tile's southern neighbour is a different
-        terrain** (the board's outer edge is the same rule with no neighbour).
-        Interior tiles stay flat and full-bleed, so Styx remains one uniform
-        sheet of water and each region gains a bank where it meets the land.
-        - ~1 lip sprite per terrain (bank / cliff / shore), not a 16-sprite
-          auto-tiling set.
-        - Neighbour data already exists — `GridGenerator` reads left/below
-          for clustering.
-        - Sorting is ONE constant: a lip only hangs into the row directly
-          below, and no two lips overlap. Bump tile labels above it.
-        - Per-terrain knob: dropping the lip on Styx makes water read as
-          *sunken* rather than raised, which is what a lake wants.
-        - Judge afterwards whether any within-region bevel is still needed —
-          probably a much lighter one, if at all.
-  - [ ] **A3.2b Scatter props + board lighting** — bones, skulls, rocks, dead
+  - [ ] **A3.2 Scatter props + board lighting** — bones, skulls, rocks, dead
         trees strewn on tiles (seeded, non-interactive, they get shadows too),
         plus a vignette and a single global grade. Cheap, no tileset changes,
         and a large part of why reference mockups look "alive" — mockup boards
@@ -115,19 +98,19 @@ anything. Those live in the Parking Lot until after launch.
         scale, already verified), but brighter and simpler to match the tiles.
         Currently painted like miniatures next to cartoon ground.
 
-  > **Rejected: a lip on every tile (per-tile slabs).** It bands the board
-  > horizontally and reads as a staircase — and it breaks the uniform Styx.
-  > Terrain must fuse: the water is meant to look like one lake or river.
-  > Region-edge lips (A3.2) give the same thickness without either problem.
+  > **The ground stays flat, top-down, and full-bleed. Settled — don't reopen.**
   >
-  > **Rejected: true isometric.** Not mainly on cost. Cards *are* coordinates —
-  > a player reads "Ashlands · C7" and must find C7 in about a second. A square
-  > grid with row/column labels beats a diamond lattice at that decisively.
+  > Explored and rejected, in order: a lip on every tile (bands the board into a
+  > staircase); lips only on region edges (still looked wrong); true isometric.
+  > Terrain must FUSE — the Styx is meant to read as one uniform lake or river,
+  > and anything that gives tiles their own silhouette fights that.
   >
-  > *Correction to an earlier note here: terrain fusion is thematic, not
-  > mechanical. Domains are formed by owned adjacency and shown by imps and
-  > markers. Keeping regions continuous is a taste call — and it's the one
-  > we're making.*
+  > Isometric is out on gameplay, not cost: cards *are* coordinates, a player
+  > reads "Ashlands · C7" and must find C7 in about a second, and a square grid
+  > with row/column labels beats a diamond lattice at that decisively.
+  >
+  > Depth comes from what sits ON the board — shadows, props, lighting, and
+  > style-matched objects — never from reshaping the ground.
 
 - [ ] **A4. Juice slice** *(hold until after a playtest)*
   - SFX + music

@@ -36,7 +36,10 @@ anything. Those live in the Parking Lot until after launch.
 
 ---
 
-## Milestone A — Finish the Art Pass
+## ✅ Milestone A — Art Pass Foundations (complete)
+
+*The board's remaining visual work moved to Milestone D, deliberately — see
+there for why.*
 
 - [x] **A1. UI theme slice**
   - Panel / button / icon art, 9-sliced; `UITheme` central lookup with graceful
@@ -46,14 +49,13 @@ anything. Those live in the Parking Lot until after launch.
   - *Residual (judge during a real multiplayer session, not solo):* sidebar
     width + frame thickness, whether the stone frames earn their space
 
-- [ ] **A2. GameScene UX iteration** ← **NEXT**
+- [x] **A2. GameScene UX iteration**
   *Layout and clarity, not decoration. Ordered by value-per-effort.*
   - [x] **Hand: fan → flat row.** Evenly spaced, auto-shrinks to fit, bottom
         aligned, strict draw order. Retired the burying/clipping bug class.
   - [x] **Card thumbnails** — territory cards draw their own tile's sprite;
         others use a shared `CardArtSet` (hand + construction buttons).
         Labels are captions only now; rules moved to the inspector.
-  - [ ] **Domains list** ← **NEXT** (see below)
   - [x] **Pick counter** in the top bar, beside the phase and countdown.
   - [x] **Explicit Confirm Picks** — plus one-click pick/release, dimmed
         unavailable cards, and a shake on refused clicks.
@@ -71,60 +73,19 @@ anything. Those live in the Parking Lot until after launch.
         ("9 tiles · Str 0 × Wealth 3 = 0"), so a domain scoring nothing for
         want of a citadel is obvious while you play.
 
-- [ ] **A3. Board depth pass** ← **NEXT**
-  *The board reads flatter than the UI around it. The cause is objects floating
-  on paint, not the tile art — so the fix is depth and layering, never more
-  texture detail (the board already carries coordinates, terrain, resources,
-  ownership, highlights and buildings; more detail makes it harder to read).*
-
-  - [ ] **A3.1 Object shadows + owner rings** — a soft ellipse under every imp
-        and building marker, plus a player-coloured disc under imps. Biggest
-        single gain, two shared sprites, no tileset changes. The ring also
-        answers "whose imp is that?" at a glance.
-  - [ ] **A3.2 Scatter props + board lighting** — bones, skulls, rocks, dead
-        trees strewn on tiles (seeded, non-interactive, they get shadows too),
-        plus a vignette and a single global grade. Cheap, no tileset changes,
-        and a large part of why reference mockups look "alive" — mockup boards
-        are never bare, and one consistent light unifies mismatched elements
-        better than any single sprite.
-  - [ ] **A3.3 Terrain variants** — 2 variants per terrain, picked on the
-        seeded stream. Machinery already exists (Ashlands variant B + seeded
-        rotation/mirroring); this just extends it and kills visible repetition.
-  - [ ] **A3.4 Imps restyled** — current sprites are legacy assets in a
-        different art language entirely; they're the most-repeated object on
-        screen and the worst mismatch. Chunky cartoon devils matching the tile
-        register, ¾ view, thick outlines, one per player colour.
-  - [ ] **A3.5 Buildings restyled** — same silhouettes (they read well at board
-        scale, already verified), but brighter and simpler to match the tiles.
-        Currently painted like miniatures next to cartoon ground.
-
-  > **The ground stays flat, top-down, and full-bleed. Settled — don't reopen.**
-  >
-  > Explored and rejected, in order: a lip on every tile (bands the board into a
-  > staircase); lips only on region edges (still looked wrong); true isometric.
-  > Terrain must FUSE — the Styx is meant to read as one uniform lake or river,
-  > and anything that gives tiles their own silhouette fights that.
-  >
-  > Isometric is out on gameplay, not cost: cards *are* coordinates, a player
-  > reads "Ashlands · C7" and must find C7 in about a second, and a square grid
-  > with row/column labels beats a diamond lattice at that decisively.
-  >
-  > Depth comes from what sits ON the board — shadows, props, lighting, and
-  > style-matched objects — never from reshaping the ground.
-
-- [ ] **A4. Juice slice** *(hold until after a playtest)*
-  - SFX + music
-  - Animations: imp hop-to-corner, marker pop-in, card deal, harvest feedback
-  - Hellgate adaptive placement (centered when alone on a tile)
-
 > **Mockup discipline:** reference mockups are cheap, implementations are not.
 > Take the *decisions* (flat row, thumbnails, pick counter, legend); don't
 > chase pixel-perfect panel ornamentation.
 
-## Milestone B — Playtest-Ready Plumbing
+## Milestone B — Playtest-Ready Plumbing ← **YOU ARE HERE**
 
-- [ ] **B1. Disconnect handling** — a player dropping mid-game must not
-      strand the others (minimum: detect + end gracefully with a message)
+> Nothing visual happens until this milestone is done. The board's remaining
+> art (Milestone D) is real work with real value — it is deliberately parked,
+> not forgotten.
+
+- [ ] **B1. Disconnect handling** ← **NEXT** — a player dropping mid-game must
+      not strand the others (minimum: detect + end gracefully with a message).
+      Solo work, no scheduling needed — do it while B3b is being arranged.
 - [ ] **B2. Minimal lobby** — main menu scene; Create Game (4-letter room
       code) / Join Game (enter code); player names; fresh map seed per game.
       Replaces the hardcoded LocalTestRoom. *Biggest remaining engineering.*
@@ -133,7 +94,11 @@ anything. Those live in the Parking Lot until after launch.
       with territories, scores and board state in sync on both ends.
       Found + fixed: lobby list didn't refresh for players already waiting.
 - [ ] **B3b. Full remote regression** — complete 4-round game with a remote
-      player, same winner + score on both screens
+      player, same winner + score on both screens. **Start arranging this
+      first**: it's blocked on a friend's calendar, not on code, so it should
+      be in flight while B1 is being written. Only round 1 has ever run over
+      the network — scoring, pacts and winner determination are the least
+      tested code in the project and the most expensive to find broken late.
 - [ ] **B4. WebGL build → itch.io unlisted page** → **🎉 FRIEND PLAYTESTS**
 
 ## Milestone C — Hardening & Balance (playtest-driven)
@@ -145,7 +110,66 @@ anything. Those live in the Parking Lot until after launch.
 - [ ] 3–4 player games verified
 - [ ] Photon capacity check (free tier = 20 CCU; fine through here)
 
-## Milestone D — Steam
+## Milestone D — Board Depth & Life
+
+*Was Milestone A3/A4. Moved here on purpose. Two reasons, and the second is
+the better one: art can't fix a desync in round 3, and playtesters will tell
+you what the board actually needs. If three people say they couldn't tell
+whose imp was whose, owner rings stop being decoration and become a fix —
+art aimed at observed confusion beats art aimed at taste.*
+
+*The board reads flatter than the UI around it. The cause is objects floating
+on paint, not the tile art — so the fix is depth and layering, never more
+texture detail (the board already carries coordinates, terrain, resources,
+ownership, highlights and buildings; more detail makes it harder to read).*
+
+**Cheap tier — no tileset changes, little or no new art:**
+
+- [ ] **D1. Object shadows + owner rings** — a soft ellipse under every imp
+      and building marker, plus a player-coloured ring under imps. Biggest
+      single gain. Sizes derive from each object's own sprite bounds (same
+      art-proofing rule as `TileData.FitToCell`), and both sprites can be
+      generated in code, so this can start with no art at all.
+- [ ] **D2. Scatter props + board lighting** — bones, skulls, rocks, dead
+      trees strewn on tiles (seeded, non-interactive, they get shadows too),
+      plus a vignette and a single global grade. A large part of why reference
+      mockups look "alive" — mockup boards are never bare, and one consistent
+      light unifies mismatched elements better than any single sprite.
+
+> **Judge here.** Screenshot the board. Whether the expensive tier is worth
+> it should be decided against a real screenshot, not a prediction.
+
+**Expensive tier — real art work, decide with playtest evidence:**
+
+- [ ] **D3. Terrain variants** — 2 variants per terrain on the seeded stream.
+      Machinery already exists (Ashlands variant B + seeded rotation/mirroring);
+      this extends it and kills visible repetition.
+- [ ] **D4. Imps restyled** — current sprites are legacy assets in a different
+      art language entirely; the most-repeated object on screen and the worst
+      mismatch. Chunky cartoon devils matching the tile register, ¾ view, thick
+      outlines, one per player colour.
+- [ ] **D5. Buildings restyled** — same silhouettes (they read well at board
+      scale, already verified), but brighter and simpler to match the tiles.
+      Currently painted like miniatures next to cartoon ground.
+- [ ] **D6. Juice** — SFX + music; animations (imp hop-to-corner, marker
+      pop-in, card deal, harvest feedback); hellgate adaptive placement
+      (centred when alone on a tile).
+
+> **The ground stays flat, top-down, and full-bleed. Settled — don't reopen.**
+>
+> Explored and rejected, in order: a lip on every tile (bands the board into a
+> staircase); lips only on region edges (still looked wrong); true isometric.
+> Terrain must FUSE — the Styx is meant to read as one uniform lake or river,
+> and anything that gives tiles their own silhouette fights that.
+>
+> Isometric is out on gameplay, not cost: cards *are* coordinates, a player
+> reads "Ashlands · C7" and must find C7 in about a second, and a square grid
+> with row/column labels beats a diamond lattice at that decisively.
+>
+> Depth comes from what sits ON the board — shadows, props, lighting, and
+> style-matched objects — never from reshaping the ground.
+
+## Milestone E — Steam
 
 - [ ] Steamworks account ($100 one-time)
 - [ ] Store page: capsule art, screenshots, trailer/GIFs (art pass feeds this)

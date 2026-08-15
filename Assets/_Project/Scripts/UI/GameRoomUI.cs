@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using TMPro;
 using _Project.Scripts.Utility;
 using Core.Events;
@@ -15,8 +16,12 @@ public class GameRoomUI : MonoBehaviour
     [SerializeField] private Transform playerListParent;
     [SerializeField] private GameObject playerEntryPrefab;
     [SerializeField] private Button startButton;
+    [SerializeField] private Button leaveButton;
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private TMP_Text roomNameText;
+
+    [Tooltip("Scene to return to when leaving the room.")]
+    [SerializeField] private string mainMenuScene = "Launcher";
 
     private IEventBus _eventBus;
     private INetworkService _networkService;
@@ -41,11 +46,17 @@ public class GameRoomUI : MonoBehaviour
             _networkService.OnPlayerJoined += OnNetworkPlayerJoined;
             _networkService.OnPlayerLeft += OnNetworkPlayerLeft;
             _networkService.OnMasterClientChanged += OnMasterChanged;
+            _networkService.OnRoomLeft += OnRoomLeft;
         }
 
         if (startButton != null)
         {
             startButton.onClick.AddListener(OnStartClicked);
+        }
+
+        if (leaveButton != null)
+        {
+            leaveButton.onClick.AddListener(OnLeaveClicked);
         }
 
         UpdateUI();
@@ -65,8 +76,26 @@ public class GameRoomUI : MonoBehaviour
             _networkService.OnPlayerJoined -= OnNetworkPlayerJoined;
             _networkService.OnPlayerLeft -= OnNetworkPlayerLeft;
             _networkService.OnMasterClientChanged -= OnMasterChanged;
+            _networkService.OnRoomLeft -= OnRoomLeft;
         }
     }
+
+    private void OnLeaveClicked()
+    {
+        // Disable immediately: leaving is a round trip and a second click during it
+        // would ask Photon to leave a room we are already leaving.
+        if (leaveButton != null) leaveButton.interactable = false;
+        if (statusText != null) statusText.text = "Leaving...";
+
+        _networkService?.LeaveRoom();
+    }
+
+    /// <summary>
+    /// Change scene only once Photon confirms. Loading the menu straight from the click
+    /// would arrive there still holding a room we had not finished leaving, and the
+    /// menu's own cleanup would then be racing this one.
+    /// </summary>
+    private void OnRoomLeft() => SceneManager.LoadScene(mainMenuScene);
 
     private void OnNetworkPlayerJoined(int actorNumber, string nickname)
     {
@@ -105,10 +134,15 @@ public class GameRoomUI : MonoBehaviour
 
     private void UpdateUI()
     {
-        // Room name
+        // Room code. Sized up in rich text rather than in the scene: the host reads
+        // this out loud for other people to type, so it has to carry at a glance, and
+        // this keeps the change to the one element that needs it.
         if (roomNameText != null && _networkService != null)
         {
-            roomNameText.text = _networkService.CurrentRoomName ?? "Room";
+            string code = _networkService.CurrentRoomName;
+            roomNameText.text = string.IsNullOrEmpty(code)
+                ? "Room"
+                : $"ROOM CODE  <size=180%><b>{code}</b></size>";
         }
 
         // Status

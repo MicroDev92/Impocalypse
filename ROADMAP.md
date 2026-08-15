@@ -244,6 +244,22 @@ ownership, highlights and buildings; more detail makes it harder to read).*
 - [ ] **D6. Juice** — SFX + music; animations (imp hop-to-corner, marker
       pop-in, card deal, harvest feedback); hellgate adaptive placement
       (centred when alone on a tile).
+- [ ] **D7. GameRoom restyled** — the lobby is still the plain panels-and-list it
+      started as. It works, and its join-refresh bug is fixed, but it does not
+      read as the same product as the menu or the board.
+
+      Deliberately last, and the lowest-value item here: it is the screen players
+      look at for twenty seconds while waiting to start. Doing it after D1–D6
+      also means it inherits a settled visual language rather than inventing one
+      the board work then contradicts.
+
+      The room code and Leave button are **not** part of this — they are B2.3,
+      functional and already in place by then. This is the panels, spacing and
+      colour around them.
+
+      The main menu got styled on the way in only because it did not exist yet;
+      a generator has to place elements somewhere, so it placed them themed.
+      That was not a precedent for restyling screens that already work.
 
 > **The ground stays flat, top-down, and full-bleed. Settled — don't reopen.**
 >

@@ -31,7 +31,10 @@ public class MockNetworkService : MonoBehaviour, INetworkService
     public int LocalPlayerId => mockLocalPlayerId;
     public string LocalPlayerName => mockPlayerName;
     public int PlayerCount => _mockPlayers.Count;
-    public string CurrentRoomName => "MockRoom";
+    public string CurrentRoomName => _mockRoomName;
+    public bool IsInRoom => _mockRoomName != null;
+
+    private string _mockRoomName;
 
     // ============================================
     // INetworkService - EVENTS
@@ -44,6 +47,7 @@ public class MockNetworkService : MonoBehaviour, INetworkService
     public event Action<int, string> OnMasterClientChanged;
     public event Action<byte, object, int> OnEventReceived;
     public event Action OnRoomJoined;
+    public event Action OnRoomLeft;
     public event Action<string> OnRoomJoinFailed;
 
     // ============================================
@@ -134,7 +138,9 @@ public class MockNetworkService : MonoBehaviour, INetworkService
         Debug.Log("[MockNetworkService] Connect called (simulated)");
         simulateAsConnected = true;
         OnConnectedToServer?.Invoke();
-        OnRoomJoined?.Invoke();
+
+        // No room join here: connecting and joining are separate steps now, and a mock
+        // that still fused them would hide exactly the bug this split exists to prevent.
     }
 
     public void Disconnect()
@@ -153,6 +159,57 @@ public class MockNetworkService : MonoBehaviour, INetworkService
     {
         Debug.Log($"[MockNetworkService] SetPlayerName: {nickname}");
         _mockPlayers[LocalPlayerId] = nickname;
+    }
+
+    // ============================================
+    // INetworkService - ROOMS
+    // ============================================
+
+    public void QuickPlay()
+    {
+        Debug.Log("[MockNetworkService] QuickPlay (simulated) - always hosts, nothing to match");
+        EnterMockRoom(RoomCode.Generate());
+    }
+
+    public void CreateRoom(bool isPublic)
+    {
+        Debug.Log($"[MockNetworkService] CreateRoom isPublic={isPublic} (simulated)");
+        EnterMockRoom(RoomCode.Generate());
+    }
+
+    public void JoinRoom(string code)
+    {
+        string normalized = RoomCode.Normalize(code);
+
+        if (!RoomCode.IsValid(normalized))
+        {
+            Debug.Log($"[MockNetworkService] JoinRoom rejected bad code: '{code}'");
+            OnRoomJoinFailed?.Invoke($"Enter a {RoomCode.Length}-letter code");
+            return;
+        }
+
+        Debug.Log($"[MockNetworkService] JoinRoom: {normalized} (simulated - always succeeds)");
+        EnterMockRoom(normalized);
+    }
+
+    public void LeaveRoom()
+    {
+        if (_mockRoomName == null) return;
+
+        Debug.Log("[MockNetworkService] LeaveRoom (simulated)");
+        _mockRoomName = null;
+        OnRoomLeft?.Invoke();
+    }
+
+    public void SetRoomOpen(bool open)
+    {
+        Debug.Log($"[MockNetworkService] SetRoomOpen: {open} (simulated)");
+    }
+
+    private void EnterMockRoom(string code)
+    {
+        _mockRoomName = code;
+        OnRoomJoined?.Invoke();
     }
 
     private readonly Dictionary<string, object> _roomProperties = new();

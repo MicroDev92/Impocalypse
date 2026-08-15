@@ -38,9 +38,16 @@ public interface INetworkService
     int PlayerCount { get; }
 
     /// <summary>
-    /// Current room name, or null if not in a room.
+    /// Current room name, or null if not in a room. For rooms created through
+    /// <see cref="CreateRoom"/> or <see cref="QuickPlay"/> this is the room code.
     /// </summary>
     string CurrentRoomName { get; }
+
+    /// <summary>
+    /// Whether the client is in a room. Being connected is not the same thing:
+    /// after B2 a client sits connected on the main menu without a room.
+    /// </summary>
+    bool IsInRoom { get; }
 
     // ============================================
     // PLAYER INFO
@@ -111,6 +118,44 @@ public interface INetworkService
     /// <param name="sceneName">Scene name to load</param>
     void LoadScene(string sceneName);
 
+    // ============================================
+    // ROOMS
+    // ============================================
+
+    /// <summary>
+    /// Joins any open public room, hosting a new one if none is found. This is the
+    /// whole of matchmaking: first player in becomes the host, the rest land on them.
+    /// </summary>
+    void QuickPlay();
+
+    /// <summary>
+    /// Creates a room under a freshly generated code, retrying if the code is taken.
+    /// Read the code back from <see cref="CurrentRoomName"/> once joined.
+    /// </summary>
+    /// <param name="isPublic">
+    /// True to make the room findable by <see cref="QuickPlay"/>. False for a private
+    /// room reachable only by someone who was given the code.
+    /// </param>
+    void CreateRoom(bool isPublic);
+
+    /// <summary>
+    /// Joins an existing room by code. Input is normalised, so case and stray
+    /// characters are the caller's convenience, not the caller's problem.
+    /// Failures arrive on <see cref="OnRoomJoinFailed"/> with a readable message.
+    /// </summary>
+    void JoinRoom(string code);
+
+    /// <summary>
+    /// Leaves the current room but stays connected, ready to join another.
+    /// </summary>
+    void LeaveRoom();
+
+    /// <summary>
+    /// Opens or closes the room to new players (master client only). Closing on game
+    /// start is what stops a late joiner being dragged into a game already running.
+    /// </summary>
+    void SetRoomOpen(bool open);
+
     /// <summary>
     /// Sets the local player's nickname.
     /// </summary>
@@ -171,8 +216,13 @@ public interface INetworkService
     event Action OnRoomJoined;
 
     /// <summary>
-    /// Fired when failed to join a room.
-    /// Parameters: error message
+    /// Fired when the local client leaves a room but stays connected.
+    /// </summary>
+    event Action OnRoomLeft;
+
+    /// <summary>
+    /// Fired when failed to join or create a room.
+    /// Parameters: error message, already phrased for display
     /// </summary>
     event Action<string> OnRoomJoinFailed;
 }

@@ -16,10 +16,15 @@ public class NetworkService : MonoBehaviourPunCallbacks, INetworkService, IOnEve
 {
     [Header("Connection Settings")]
     [SerializeField] private string gameVersion = "1.0";
-    [SerializeField] private string defaultRoomName = "LocalTestRoom";
     [SerializeField] private byte maxPlayersPerRoom = 4;
     [SerializeField] private bool autoConnect = true;
     [SerializeField] private string lobbySceneName = "GameRoom";
+
+    /// <summary>A taken code is vanishingly unlikely; this only stops a runaway loop.</summary>
+    private const int MaxCreateAttempts = 5;
+
+    private bool _pendingRoomIsPublic;
+    private int _createAttempts;
 
     // Cached player list for interface
     private List<int> _cachedPlayerIds = new();
@@ -72,6 +77,7 @@ public class NetworkService : MonoBehaviourPunCallbacks, INetworkService, IOnEve
     public string LocalPlayerName => PhotonNetwork.LocalPlayer?.NickName ?? string.Empty;
     public int PlayerCount => PhotonNetwork.CurrentRoom?.PlayerCount ?? 0;
     public string CurrentRoomName => PhotonNetwork.CurrentRoom?.Name;
+    public bool IsInRoom => PhotonNetwork.InRoom;
 
     // ============================================
     // INetworkService - PLAYER INFO
@@ -119,6 +125,7 @@ public class NetworkService : MonoBehaviourPunCallbacks, INetworkService, IOnEve
     public event Action<int, string> OnMasterClientChanged;
     public event Action<byte, object, int> OnEventReceived;
     public event Action OnRoomJoined;
+    public event Action OnRoomLeft;
     public event Action<string> OnRoomJoinFailed;
 
     // ============================================
@@ -262,6 +269,105 @@ public class NetworkService : MonoBehaviourPunCallbacks, INetworkService, IOnEve
         Debug.Log($"[NetworkService] Set player name to: {nickname}");
     }
 
+    // ============================================
+    // INetworkService - ROOMS
+    // ============================================
+
+    public void QuickPlay()
+    {
+        if (!EnsureConnected("quick play")) return;
+
+        Debug.Log("[NetworkService] Quick Play: looking for an open game");
+        PhotonNetwork.JoinRandomRoom();
+    }
+
+    public void CreateRoom(bool isPublic)
+    {
+        if (!EnsureConnected("create a room")) return;
+
+        _pendingRoomIsPublic = isPublic;
+        _createAttempts = 0;
+        TryCreateRoom();
+    }
+
+    public void JoinRoom(string code)
+    {
+        if (!EnsureConnected("join a room")) return;
+
+        string normalized = RoomCode.Normalize(code);
+
+        if (!RoomCode.IsValid(normalized))
+        {
+            OnRoomJoinFailed?.Invoke($"Enter a {RoomCode.Length}-letter code");
+            return;
+        }
+
+        Debug.Log($"[NetworkService] Joining room by code: {normalized}");
+        PhotonNetwork.JoinRoom(normalized);
+    }
+
+    public void LeaveRoom()
+    {
+        if (!PhotonNetwork.InRoom) return;
+
+        Debug.Log("[NetworkService] Leaving room");
+        PhotonNetwork.LeaveRoom();
+    }
+
+    public void SetRoomOpen(bool open)
+    {
+        if (PhotonNetwork.CurrentRoom == null) return;
+
+        if (!IsMasterClient)
+        {
+            Debug.LogWarning("[NetworkService] Only the master client can open/close the room");
+            return;
+        }
+
+        PhotonNetwork.CurrentRoom.IsOpen = open;
+        Debug.Log($"[NetworkService] Room {(open ? "opened" : "closed")} to new players");
+    }
+
+    private void TryCreateRoom()
+    {
+        _createAttempts++;
+        string code = RoomCode.Generate();
+
+        Debug.Log($"[NetworkService] Creating {(_pendingRoomIsPublic ? "public" : "private")} room: {code}");
+        PhotonNetwork.CreateRoom(code, BuildRoomOptions(_pendingRoomIsPublic), TypedLobby.Default);
+    }
+
+    /// <summary>
+    /// The map seed is baked in at CREATION time: room properties set here are
+    /// delivered to every client as part of joining, so they are guaranteed present
+    /// before any scene loads. (Setting them later via SetCustomProperties races the
+    /// scene switch - learned the hard way.)
+    /// </summary>
+    private RoomOptions BuildRoomOptions(bool isPublic) => new RoomOptions
+    {
+        MaxPlayers = maxPlayersPerRoom,
+        IsOpen = true,
+
+        // Visibility is the only difference between the two kinds of room: public
+        // ones are what Quick Play matches against, private ones can only be reached
+        // by someone who was told the code.
+        IsVisible = isPublic,
+
+        CustomRoomProperties = new Hashtable
+        {
+            { "mapSeed", UnityEngine.Random.Range(int.MinValue, int.MaxValue) }
+        }
+    };
+
+    private bool EnsureConnected(string action)
+    {
+        if (IsConnected) return true;
+
+        Debug.LogWarning($"[NetworkService] Cannot {action}: not connected");
+        OnRoomJoinFailed?.Invoke("Not connected");
+        return false;
+    }
+
     public void SetRoomProperty(string key, object value)
     {
         if (PhotonNetwork.CurrentRoom == null)
@@ -291,20 +397,25 @@ public class NetworkService : MonoBehaviourPunCallbacks, INetworkService, IOnEve
         Debug.Log("[NetworkService] Connected to Master Server");
         OnConnectedToServer?.Invoke();
 
-        // Auto-join default room. The map seed is baked in at CREATION time: room
-        // properties set here are delivered to every client as part of joining, so
-        // they are guaranteed present before any scene loads. (Setting them later via
-        // SetCustomProperties races the scene switch - learned the hard way.)
-        PhotonNetwork.JoinOrCreateRoom(defaultRoomName, new RoomOptions
-        {
-            MaxPlayers = maxPlayersPerRoom,
-            IsOpen = true,
-            IsVisible = true,
-            CustomRoomProperties = new Hashtable
-            {
-                { "mapSeed", UnityEngine.Random.Range(int.MinValue, int.MaxValue) }
-            }
-        }, TypedLobby.Default);
+        // Deliberately no room join here. Connecting and joining used to be one step,
+        // which is what forced every client into the same hardcoded room. The player
+        // now chooses Quick Play / Create / Join from the menu and we sit here until
+        // they do.
+    }
+
+    public override void OnJoinRandomFailed(short returnCode, string message)
+    {
+        // Nobody to join, so host instead. This fallback IS Quick Play's matchmaking:
+        // whoever presses first hosts a public room and everyone after them matches
+        // into it.
+        Debug.Log($"[NetworkService] No open game found ({message}) - hosting one instead");
+        CreateRoom(isPublic: true);
+    }
+
+    public override void OnLeftRoom()
+    {
+        Debug.Log("[NetworkService] Left room");
+        OnRoomLeft?.Invoke();
     }
 
     public override void OnJoinedRoom()
@@ -318,8 +429,11 @@ public class NetworkService : MonoBehaviourPunCallbacks, INetworkService, IOnEve
 
         OnRoomJoined?.Invoke();
 
-        // Load lobby scene if configured
-        if (!string.IsNullOrEmpty(lobbySceneName) && IsMasterClient)
+        // Everyone loads the lobby themselves, host or not. PUN's AutomaticallySyncScene
+        // only carries scenes loaded through PhotonNetwork.LoadLevel, and this hop
+        // deliberately is not one - so the host loading the lobby brings nobody along,
+        // and a joiner arriving later still needs to get there under their own steam.
+        if (!string.IsNullOrEmpty(lobbySceneName))
         {
             SceneManager.LoadScene(lobbySceneName);
         }
@@ -328,13 +442,29 @@ public class NetworkService : MonoBehaviourPunCallbacks, INetworkService, IOnEve
     public override void OnJoinRoomFailed(short returnCode, string message)
     {
         Debug.LogError($"[NetworkService] Failed to join room: {message} (Code: {returnCode})");
-        OnRoomJoinFailed?.Invoke(message);
+
+        // Photon's own text is written for a log, not for someone who just mistyped
+        // four letters.
+        string friendly = message;
+        if (returnCode == ErrorCode.GameDoesNotExist) friendly = "No game with that code";
+        else if (returnCode == ErrorCode.GameFull) friendly = "That game is full";
+        else if (returnCode == ErrorCode.GameClosed) friendly = "That game has already started";
+
+        OnRoomJoinFailed?.Invoke(friendly);
     }
 
     public override void OnCreateRoomFailed(short returnCode, string message)
     {
+        // Someone else is already using the code we rolled. Roll another.
+        if (returnCode == ErrorCode.GameIdAlreadyExists && _createAttempts < MaxCreateAttempts)
+        {
+            Debug.Log($"[NetworkService] Room code taken, retrying ({_createAttempts}/{MaxCreateAttempts})");
+            TryCreateRoom();
+            return;
+        }
+
         Debug.LogError($"[NetworkService] Failed to create room: {message} (Code: {returnCode})");
-        OnRoomJoinFailed?.Invoke(message);
+        OnRoomJoinFailed?.Invoke("Could not create a game");
     }
 
     public override void OnPlayerEnteredRoom(Player newPlayer)

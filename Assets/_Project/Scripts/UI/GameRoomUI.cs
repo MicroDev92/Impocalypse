@@ -159,6 +159,12 @@ public class GameRoomUI : MonoBehaviour
     {
         if (_networkService?.IsMasterClient == true)
         {
+            // Close the room before loading. Once the host is in GameScene, PUN's scene
+            // sync would drag any late joiner straight into a running game holding no
+            // state of their own; a closed room turns that into a clean refusal at the
+            // menu instead.
+            _networkService.SetRoomOpen(false);
+
             // Map seed lives in the room's creation properties (see NetworkService) -
             // setting it here would race the scene switch and desync the maps.
             _networkService.LoadScene("GameScene");

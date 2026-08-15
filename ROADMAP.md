@@ -98,13 +98,19 @@ there for why.*
   waiting room. It already does its job and its join-refresh bug was just fixed
   — the scene split matches the actual states, so don't merge them.
 
-  - [ ] **B2.1 Split connect from join** — `OnConnectedToMaster` currently
+  - [x] **B2.1 Split connect from join** — `523c6e7`. `OnConnectedToMaster` used to
         auto-joins `LocalTestRoom`, which is the whole problem. Connect on
         launch; join only on player action. Adds `CreateRoom` / `JoinRoom` /
         `LeaveRoom` / `SetRoomOpen` to `INetworkService` (+ MockNetworkService).
         Room-code generator with collision retry via `OnCreateRoomFailed`.
         Everyone loads GameRoom on join, not just the master.
-  - [ ] **B2.2 Main menu UI** — built by an editor command like the other UI
+  - [x] **B2.2 Main menu UI** — `1c5978a`, layout tuned in `86e1414`/`520fb5f`.
+        Verified with all five checks: connect, bad code refused, Quick Play pair,
+        Create-then-Join by code, and a started game refusing a late joiner with
+        "That game has already started" — which proved the closed-room guard
+        properly, since a code gets an explicit refusal where Quick Play could
+        only wander off into a new room.
+        Built by an editor command like the other UI
         (`Editor/GameSceneUISetup.cs` pattern). Three ways in:
         - **Quick Play** — `JoinRandomRoom`, create one on failure. The best
           playtest tool available: "everyone click Quick Play at 8pm" beats
@@ -122,7 +128,7 @@ there for why.*
         **Name field lives HERE, not in Options.** It persists to the existing
         `nickname` PlayerPrefs key. Buried in a settings screen nobody touches
         it, and a playtest of four `Player_1234`s defeats the point of B2.
-  - [ ] **B2.3 GameRoom updates** — show the room code big (the host reads it
+  - [ ] **B2.3 GameRoom updates** ← **NEXT** — show the room code big (the host reads it
         out); Leave button back to the menu; **master sets `IsOpen = false` on
         Start**, which kills the whole class of "late joiner dragged into a game
         in progress with no state".

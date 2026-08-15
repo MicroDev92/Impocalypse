@@ -232,6 +232,31 @@ determination all worked. Everything below is on top of a working game.
       the top bar but testers did not notice it — wants a highlight *in addition
       to* the bar. Feature, not a defect.
 
+- [ ] **C-h. Construction phase: no card hover, and a sidebar showing stale
+      draft info.** Two causes, and they suggest one rule that also settles C-c
+      and C-d.
+
+      *No hover:* `Card.OnPointerEnter` (`Card.cs:232`) is wrapped in
+      `if (!_isDisabled)`, so a disabled card publishes no `CardInspectedEvent`,
+      gets no scale and lights no tile. This directly contradicts the tooltip on
+      the field above it (`Card.cs:34`): "Dimmed but still hoverable - you still
+      need to read them to decide whether to swap a pick." The intent was right;
+      the code never matched it. Hits the draft too — once your quota is full,
+      the remaining cards become unreadable.
+
+      *Stale sidebar:* `TileInfoPanel` subscribes to tile and card events but not
+      to `GamePhaseChangedEvent`, so the last `CardInspectedEvent` of the draft
+      simply stays on screen through Construction. Actively misinforming rather
+      than merely empty.
+
+      **The rule to apply across all of these:** *reading a card is always
+      allowed; changing your picks is allowed only before you confirm.* Hover,
+      inspector and tile highlight are information and should never be gated on
+      pick state — selection and the pick affordance are the only things that
+      lock. That resolves C-c (cards must stop being selectable after confirm,
+      but stay readable), C-d (hover-derived state needs tearing down at phase
+      end) and both halves of C-h without any of them contradicting each other.
+
 **Results screen**
 
 - [ ] **C-f. GameOver score panels overlap.** Both players' entries render on top

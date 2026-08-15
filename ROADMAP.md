@@ -193,6 +193,59 @@ there for why.*
 
 ## Milestone C — Hardening & Balance (playtest-driven)
 
+### Found in playtest 1 (2 players, 2 full games, 2026-08-15)
+
+Two complete 4-round games over the network. Scoring, parchments and winner
+determination all worked. Everything below is on top of a working game.
+
+**The picks cluster — a player's decision can be taken from them. Fix first.**
+
+- [ ] **C-a. Pick timer discards your selection and picks at random.** Select two
+      cards, let the timer run out, and `AutoPickForMissingPlayers`
+      (`DraftService.cs:314`) submits two *random* cards instead of the two you
+      chose. Not a bug in that method: selection is client-side, so the master
+      genuinely does not know what you highlighted — it only knows what was
+      submitted. Fix belongs on the client: auto-submit the current selection
+      shortly before the master's deadline. Late submissions are already handled
+      (`DraftService.cs:678`), so beating the deadline by a second is safe.
+- [ ] **C-b. Confirm sometimes unavailable on the standalone build.**
+      Intermittent, so it needs a repro before a fix. Two candidates: the button
+      is driven by `PickSelectionChangedEvent`, and a `CardsDealtEvent` arriving
+      after a selection resets it to non-interactable (`PickPromptUI.Refresh`);
+      or `_selection` fails its ServiceLocator lookup. Instrument both before
+      changing anything. Compounds C-a: no confirm means the timer robs you.
+
+**Draft feedback**
+
+- [ ] **C-c. Cards stay interactive after picks are confirmed.** Covers both
+      "I can unselect after confirming" and "hovering other cards shrinks them".
+      The *model* is already correct — `SubmitPicks` calls `LockSelections` and
+      `OnCardUnconfirmed` honours it, which is why the right cards still get
+      played. It is the view that ignores `SelectionsLocked`. One root cause,
+      both symptoms.
+- [ ] **C-d. Board highlight survives the timer.** Hover a territory card, let
+      the timer elapse; the board highlight stays lit after random picks land.
+      Draft-phase-end needs to clear hover state.
+- [ ] **C-e. Drafted cards are invisible until they matter.** A drafted building
+      cannot be seen until the Build phase and a pact not until it reaches the
+      pacts panel, so players lose track of what they took. Provisions do show in
+      the top bar but testers did not notice it — wants a highlight *in addition
+      to* the bar. Feature, not a defect.
+
+**Results screen**
+
+- [ ] **C-f. GameOver score panels overlap.** Both players' entries render on top
+      of each other (see playtest screenshot: "Andjela" legible through
+      "Aleksa"). Suspect `ScoreContainer`'s VerticalLayoutGroup runs with
+      `childControlHeight = false` (`GameSceneUISetup.cs:905`) while entries grow
+      with their fief detail lines, so tall entries overlap the next.
+- [ ] **C-g. Breakdown reads as if scoring is broken — it is not.** The panel
+      shows the **final round's** fief breakdown next to a **cumulative** total,
+      unlabelled: "Domain 1 = 24, Domain 2 = 1" beside "58 Infamy". Verified
+      correct — `ScoringState.CalculateScores` scores the whole board every
+      round and `GameManager.AddRoundScores` accumulates, so a round-1 citadel
+      does score in all four rounds. Only the labelling misleads.
+
 - [ ] Fix what friends find (this list writes itself)
 - [ ] Camp priority resolution (lowest number wins simultaneous claims —
       currently first-come at master)

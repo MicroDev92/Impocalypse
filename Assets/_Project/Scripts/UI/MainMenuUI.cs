@@ -57,6 +57,13 @@ public class MainMenuUI : MonoBehaviour
         if (joinGameButton != null) joinGameButton.onClick.AddListener(OnJoinGame);
         if (quitButton != null) quitButton.onClick.AddListener(OnQuit);
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // Application.Quit does nothing in a browser - there is no application to quit,
+        // and a button that visibly does nothing reads as a broken game. The tab is the
+        // quit button here.
+        if (quitButton != null) quitButton.gameObject.SetActive(false);
+#endif
+
         if (_network != null)
         {
             _network.OnConnectedToServer += OnConnected;

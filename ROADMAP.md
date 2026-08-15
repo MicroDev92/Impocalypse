@@ -180,8 +180,12 @@ there for why.*
       run remotely. It is now the best-tested path in the game rather than the
       worst. The seven issues it surfaced are C-a…C-h — all on top of a game
       that plays start to finish.
-- [ ] **B4. "Which one am I?" — mark the local player, then delete
-      CurrentTurnPanel.** Before B5, not after: four friends with similar names
+- [x] **B4.** `ca9b494`. **"Which one am I?" — marked the local player, then deleted
+      CurrentTurnPanel.** The local card is suffixed "(you)"; the panel is gone from
+      both builders. **One step left in Unity:** the live GameScene still has the
+      old panel object, so delete `CurrentTurnPanel` under `LeftSidebar` by hand
+      (or re-run the sidebar generator) and stretch `PlayerListContainer` to fill.
+      Before B5, not after: four friends with similar names
       need to find themselves on screen, and right now nothing in the player
       list says which card is yours.
 

@@ -212,6 +212,39 @@ there for why.*
       visual work was meant to prevent.
 - [ ] **B5. WebGL build → itch.io unlisted page** → **🎉 FRIEND PLAYTESTS**
 
+  **Already verified, nothing to do:** WebGLSupport module is installed; all
+  three scenes are in Build Settings and enabled with Launcher first; there is no
+  threading anywhere in project code (WebGL is single-threaded); and PUN2 forces
+  `WebSocketSecure` on WebGL in `LoadBalancingClient.cs:839` and `:1236`, so the
+  `Protocol: 0` (UDP) in PhotonServerSettings is overridden at connect time.
+  Photon on WebGL works. `Application.Quit` is handled (`d6892de`).
+
+  - [ ] **Set `FixedRegion` to `eu` in PhotonServerSettings. Do not skip this.**
+        It is currently empty, which means each client picks its region by ping.
+        A development build pins to the dev region (`eu`); a release build does
+        not. So a WebGL release build and your editor can land in *different
+        regions and never see each other's rooms* — both connect fine, both
+        press the right buttons, no error is shown anywhere. Latency is
+        irrelevant to a game with 45-second timers, so fixing the region costs
+        nothing and removes the failure entirely.
+  - [ ] **Enable Decompression Fallback** (Player Settings → WebGL → Publishing
+        Settings). Currently off with Brotli compression, which needs the server
+        to send the right `Content-Encoding` header. With the fallback on, Unity
+        ships its own decompressor and the build loads regardless of how itch
+        serves it. Costs a little size and first-load time; buys reliability,
+        which is the only thing that matters for a playtest.
+  - [ ] Build (`File > Build Settings > WebGL > Switch Platform`, then Build).
+        First switch is slow — the whole asset library re-imports.
+  - [ ] Zip the **contents** of the build folder (`index.html` at the zip root,
+        not inside a subfolder) and upload to itch.io.
+  - [ ] itch.io: Kind of project = **HTML**; tick *"This file will be played in
+        the browser"*; viewport ~960×540 with the fullscreen button enabled
+        (canvas reference is 1920×1080); leave the page as **Draft** and share
+        its secret URL.
+  - [ ] Smoke-test the uploaded build yourself in a browser *before* sending the
+        link: menu loads → status reaches Ready → Quick Play reaches the lobby.
+        A build that fails to load looks identical to a game that is broken.
+
 ## Milestone C — Hardening & Balance (playtest-driven)
 
 ### Found in playtest 1 (2 players, 2 full games, 2026-08-15)

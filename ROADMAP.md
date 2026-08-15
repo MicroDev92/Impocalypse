@@ -294,8 +294,11 @@ determination all worked. Everything below is on top of a working game.
       does score in all four rounds. Only the labelling misleads.
 
 - [ ] Fix what friends find (this list writes itself)
-- [ ] Camp priority resolution (lowest number wins simultaneous claims —
-      currently first-come at master)
+- [ ] **Camp priority resolution** (lowest number wins simultaneous claims —
+      currently first-come at master). **Promoted by Milestone F**: first-come
+      at master means the host wins ties, since their claim carries no network
+      latency. A wrinkle between friends; a fairness defect in a ranked game.
+      Cheaper to fix now than to invalidate results over later.
 - [ ] Balance tuning: Cluster Strength, timer durations, terrain quotas
 - [ ] 3–4 player games verified
 - [ ] Photon capacity check (free tier = 20 CCU; fine through here)
@@ -385,27 +388,67 @@ ownership, highlights and buildings; more detail makes it harder to read).*
 
 ---
 
+## Milestone F — Competitive
+
+*Post-1.0 and deliberately so. Nothing here should pull work out of 1.0 — the
+game has to be good before it is ranked, and a ladder on an unbalanced game just
+measures who found the strongest opening first.*
+
+**The head start.** Three properties the game already has, for free, from
+decisions already made:
+
+- The map is deterministic from a seed every client holds.
+- Every board-visible action is broadcast to everyone (`CityPlaced`,
+  `SpawnImps`, `AssignPlayerIdentities`), and `RevealParchments` sends all
+  scoring cards to all players at the end.
+- Therefore **any client can independently recompute the final score.**
+
+That is most of a competitive integrity story already. Verification is "recompute
+and compare", not a rewrite, and a match is reconstructible from its seed plus
+its event stream — so replays and dispute resolution are cheap here in a way they
+usually are not.
+
+**What is actually missing** is an authority that is not a player, and identity.
+
+- [ ] **F1. Server-authoritative scoring.** The prerequisite for all of it.
+      Scoring is master-authoritative today: correct for friends on Discord,
+      fine through 1.0, because a modified host can only win one casual game.
+      A *recorded* score changes that — a host who fabricates one poisons
+      everybody else's honest results too. Not fixable by changing netcode
+      vendor (Fusion and NGO trust the host in host mode as well); it needs
+      authority off the players' machines. **Costs money and devops forever** —
+      that is the real price of a competitive mode, and it should be a decision
+      rather than something discovered later.
+- [ ] **F2. Identity** — Steamworks (SteamID). **Do not build an account
+      system:** Milestone E already puts the game on a platform that supplies
+      identity and a Leaderboards API.
+- [ ] **F3. Ranked ladder + leaderboards.** After F1, never before. A leaderboard
+      shipped on host-authoritative scoring is one nobody should trust, and
+      withdrawing it after people have competed on it is worse than never
+      having had it.
+- [ ] **F4. Match records / replays.** Cheap given the head start above: seed +
+      event stream is a full match. Doubles as anti-cheat evidence and as the
+      thing that makes balance arguments settleable.
+- [ ] **F5. Tournaments.** Sits on top of F1–F4. Furthest out.
+
+> **What this ambition changes BEFORE 1.0 — one item, and it is already on the
+> list.** Milestone C's *camp priority resolution* (lowest number wins
+> simultaneous claims; currently first-come at master) stops being a wrinkle and
+> becomes a fairness defect: first-come-at-master means **the host wins ties**,
+> because their claim has no network latency. Tolerable between friends,
+> disqualifying in a ranked game. Competitive intent promotes that from "nice to
+> have" to "required", and it is far cheaper to fix now than to invalidate a
+> season of results over later.
+>
+> Nothing else moves. Balance work (Milestone C) matters more for a competitive
+> game than a casual one, but it was already there and playtests drive it either
+> way.
+
 ## Parking Lot (post-1.0, or "when it hurts")
 
 - Bots / single-player mode
 - Mobile port (touch pass + UI density; architecture already ports)
-- **Persistent identity / leaderboards / tournaments.** Never planned, only
-  excluded ("ranked anything" in the North Star). Recording the two things that
-  would otherwise be discovered too late:
-
-  1. **Don't build an account system.** Milestone E is Steam, and Steamworks
-     supplies identity (SteamID) and a Leaderboards API. Writing login,
-     accounts and a stats backend before that would be building something the
-     platform hands over.
-  2. **A leaderboard is the trigger for the host-authority problem.** Scoring is
-     master-authoritative today, which is correct for friends on Discord and
-     fine right through 1.0 — a modified host could only win one casual game.
-     The moment a score is *recorded* somewhere permanent, a host who fabricates
-     one poisons the whole table. That is not fixed by changing netcode vendor;
-     it needs server-authoritative scoring, which is a project in its own right.
-
-  Sequence, if it ever happens: server-authoritative scoring FIRST, leaderboard
-  second. The other order ships a leaderboard nobody should trust.
+- Persistent identity / leaderboards / tournaments → **promoted to Milestone F.**
 - True auto-tiling art (merged lakes/ranges with edge-matched variants)
 - Lair sprite usage (burrow on owned tiles / capital mechanic / menu art)
 - Sky-tower strict-BK rule (gate occupies building slot) — house rule stands

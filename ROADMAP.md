@@ -413,6 +413,17 @@ ownership, highlights and buildings; more detail makes it harder to read).*
 
 ## Milestone E — Steam
 
+- [ ] **Revisit `FixedRegion`** — B5 pins it to `eu`, and it is a project-wide
+      Photon setting rather than a per-platform one, so the Steam build inherits
+      it. Fine for a friend group; it puts the whole world on EU servers for a
+      release. Latency barely matters at 45-second timers, but the underlying
+      constraint does: **Photon rooms are per-region, so a room code only works
+      inside one region.** Let clients auto-pick their best region and two
+      friends on different continents type the same code and never find each
+      other — the same silent failure the pin was added to prevent, at a larger
+      scale. Options: keep a global pin; let players choose a region in the
+      (still unbuilt) Options screen and show it beside the code; or encode the
+      region into the code itself. Decide here, not by accident.
 - [ ] Steamworks account ($100 one-time)
 - [ ] Store page: capsule art, screenshots, trailer/GIFs (art pass feeds this)
 - [ ] Wishlist window (a few weeks minimum before launch)

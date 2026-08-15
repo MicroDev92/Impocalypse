@@ -277,7 +277,7 @@ determination all worked. Everything below is on top of a working game.
 
 **Results screen**
 
-- [ ] **C-f. GameOver score panels overlap.** Both players' entries render on top
+- [x] **C-f.** `7e041d3`. **GameOver score panels overlapped.** Both players' entries rendered on top
       of each other (see playtest screenshot: "Andjela" legible through
       "Aleksa"). Suspect `ScoreContainer`'s VerticalLayoutGroup runs with
       `childControlHeight = false` (`GameSceneUISetup.cs:905`) while entries grow

@@ -118,6 +118,8 @@ public class GameOverUI : MonoBehaviour
 
         if (sorted == null) return;
 
+        EnsureScoreListStacks();
+
         // Create score entries
         foreach (var kvp in sorted)
         {
@@ -131,6 +133,33 @@ public class GameOverUI : MonoBehaviour
 
             CreateEntry(playerName, kvp.Value, fiefs);
         }
+
+        // Entries size themselves from their fief lines, and a layout group does not
+        // re-run when a child resizes after the fact. Without this the first frame
+        // positions everything at the pre-fit height and the list never recovers.
+        if (scoreContainer is RectTransform containerRect)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(containerRect);
+    }
+
+    /// <summary>
+    /// Makes the container control its children's heights.
+    ///
+    /// With <c>childControlHeight = false</c> the group positions each entry by its
+    /// RectTransform height and ignores the height the entry actually wants — so an
+    /// entry with several fief lines simply drew over the player below it. That is why
+    /// the results screen showed both players stacked on top of each other.
+    /// </summary>
+    private void EnsureScoreListStacks()
+    {
+        if (scoreContainer == null) return;
+
+        var layout = scoreContainer.GetComponent<VerticalLayoutGroup>();
+        if (layout == null) layout = scoreContainer.gameObject.AddComponent<VerticalLayoutGroup>();
+
+        layout.childControlHeight = true;
+        layout.childForceExpandHeight = false;
+        layout.childControlWidth = true;
+        if (layout.spacing < 8f) layout.spacing = 8f;
     }
 
     private void Hide()

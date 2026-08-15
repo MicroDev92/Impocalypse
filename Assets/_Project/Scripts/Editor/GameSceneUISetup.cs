@@ -902,7 +902,10 @@ public static class GameSceneUISetup
         scVlg.childForceExpandWidth = true;
         scVlg.childForceExpandHeight = false;
         scVlg.childControlWidth = true;
-        scVlg.childControlHeight = false;
+        // Must control height: score entries grow with their fief breakdown, and a group
+        // that ignores child heights positions them by their prefab rect instead - so a
+        // tall entry draws straight over the player below it.
+        scVlg.childControlHeight = true;
 
         var playAgain = CreateButton(panel.transform, "PlayAgainButton", "Play Again", 200f, 48f);
         var paRect = playAgain.GetComponent<RectTransform>();

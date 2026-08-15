@@ -27,6 +27,14 @@ public class ScoreEntry : MonoBehaviour
     /// <param name="fiefDetailPrefab">Prefab for fief detail lines (can be null)</param>
     public void SetData(string playerName, int roundScore, int cumulative, List<Fief> fiefs, GameObject fiefDetailPrefab)
     {
+        // The results list controls entry heights now (GameOverUI.EnsureScoreListStacks).
+        // A ContentSizeFitter on a child whose height is controlled fights the parent
+        // layout and makes Unity complain; this entry's own VerticalLayoutGroup already
+        // reports the right preferred height, so switching the fitter off loses nothing.
+        var fitter = GetComponent<ContentSizeFitter>();
+        if (fitter != null)
+            fitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
+
         if (playerNameText != null)
             playerNameText.text = playerName;
 

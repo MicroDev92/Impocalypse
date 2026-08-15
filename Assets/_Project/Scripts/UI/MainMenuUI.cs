@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -22,6 +23,9 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private Button quitButton;
 
+    [Tooltip("How long to wait for the server before saying so on the status line.")]
+    [SerializeField] private float connectTimeoutSeconds = 15f;
+
     private INetworkService _network;
 
     /// <summary>True while a join is in flight, so the menu cannot fire a second one.</summary>
@@ -29,7 +33,11 @@ public class MainMenuUI : MonoBehaviour
 
     private void Start()
     {
-        ServiceLocator.TryGetService(out _network);
+        if (!ServiceLocator.TryGetService(out _network))
+        {
+            Debug.LogError("[MainMenuUI] No INetworkService registered - this menu cannot start " +
+                           "a game. Check that NetworkManager is present in this scene.");
+        }
 
         if (nameInput != null)
         {
@@ -52,11 +60,14 @@ public class MainMenuUI : MonoBehaviour
         if (_network != null)
         {
             _network.OnConnectedToServer += OnConnected;
+            _network.OnDisconnectedFromServer += OnDisconnected;
             _network.OnRoomJoinFailed += OnJoinFailed;
 
             // Coming back from a finished game we can still be sitting in the old room,
             // and nothing on this screen works until we are out of it.
             if (_network.IsInRoom) _network.LeaveRoom();
+
+            if (!_network.IsConnected) StartCoroutine(WatchForConnection());
         }
 
         UpdateInteractable();
@@ -68,7 +79,29 @@ public class MainMenuUI : MonoBehaviour
         if (_network != null)
         {
             _network.OnConnectedToServer -= OnConnected;
+            _network.OnDisconnectedFromServer -= OnDisconnected;
             _network.OnRoomJoinFailed -= OnJoinFailed;
+        }
+    }
+
+    /// <summary>
+    /// Photon normally reports a failed connection through OnDisconnected, but a menu
+    /// that can sit on "Connecting..." indefinitely tells the player nothing on the
+    /// occasions when it does not. This puts a floor under that.
+    /// </summary>
+    private IEnumerator WatchForConnection()
+    {
+        float deadline = Time.realtimeSinceStartup + connectTimeoutSeconds;
+
+        while (_network != null && !_network.IsConnected)
+        {
+            if (Time.realtimeSinceStartup > deadline)
+            {
+                if (!_busy) SetStatus("Could not reach the server");
+                yield break;
+            }
+
+            yield return null;
         }
     }
 
@@ -191,10 +224,25 @@ public class MainMenuUI : MonoBehaviour
         if (nameInput != null) nameInput.interactable = !_busy;
     }
 
+    private void OnDisconnected(string reason)
+    {
+        _busy = false;
+        UpdateInteractable();
+        SetStatus("Disconnected");
+    }
+
     private void RefreshIdleStatus()
     {
         if (_busy) return;
-        SetStatus(_network != null && _network.IsConnected ? "Ready" : "Connecting...");
+
+        if (_network == null)
+        {
+            // Saying "Connecting..." here would be a lie - nothing is connecting.
+            SetStatus("Network unavailable");
+            return;
+        }
+
+        SetStatus(_network.IsConnected ? "Ready" : "Connecting...");
     }
 
     private char ValidateCodeChar(string text, int charIndex, char addedChar)

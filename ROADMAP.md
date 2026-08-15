@@ -389,6 +389,23 @@ ownership, highlights and buildings; more detail makes it harder to read).*
 
 - Bots / single-player mode
 - Mobile port (touch pass + UI density; architecture already ports)
+- **Persistent identity / leaderboards / tournaments.** Never planned, only
+  excluded ("ranked anything" in the North Star). Recording the two things that
+  would otherwise be discovered too late:
+
+  1. **Don't build an account system.** Milestone E is Steam, and Steamworks
+     supplies identity (SteamID) and a Leaderboards API. Writing login,
+     accounts and a stats backend before that would be building something the
+     platform hands over.
+  2. **A leaderboard is the trigger for the host-authority problem.** Scoring is
+     master-authoritative today, which is correct for friends on Discord and
+     fine right through 1.0 — a modified host could only win one casual game.
+     The moment a score is *recorded* somewhere permanent, a host who fabricates
+     one poisons the whole table. That is not fixed by changing netcode vendor;
+     it needs server-authoritative scoring, which is a project in its own right.
+
+  Sequence, if it ever happens: server-authoritative scoring FIRST, leaderboard
+  second. The other order ships a leaderboard nobody should trust.
 - True auto-tiling art (merged lakes/ranges with edge-matched variants)
 - Lair sprite usage (burrow on owned tiles / capital mechanic / menu art)
 - Sky-tower strict-BK rule (gate occupies building slot) — house rule stands

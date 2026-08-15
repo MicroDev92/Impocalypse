@@ -59,16 +59,18 @@ there for why.*
   - [x] **Pick counter** in the top bar, beside the phase and countdown.
   - [x] **Explicit Confirm Picks** — plus one-click pick/release, dimmed
         unavailable cards, and a shake on refused clicks.
-  - [ ] **Phase legend** — OPTIONAL. Hovering a card explains more than a static
-        legend would; decide after a playtest whether anyone's actually lost.
-  - [ ] *Polish tail (only if a playtest asks for it):* richer tile inspector
-        (potential value, connected citadels); construction phase could reuse
-        the same dim/shake affordances as the draft.
+  - [x] **Phase legend** — **CLOSED, not needed.** Playtest 1 was the test this
+        was waiting on: nobody was confused about phases. What testers actually
+        lost track of was *what they had drafted* — a different problem, now C-e.
+  - [x] *Polish tail* — **answered by playtest 1**, and both halves moved to
+        Milestone C rather than staying conditional here: construction reusing
+        the draft's affordances is C-h, richer inspector is C-e.
   - [x] **Inspector shows cards too** — hovering a card fills the right panel
         with its name, art and full rules. Cards in hand are too small to carry
         an explanation, so this is where "what does a Hellgate do?" is answered;
         it also gives the mostly-empty right sidebar a job during the draft.
-  - [ ] **Richer tile inspector** — potential value, connected citadels.
+  - [x] **Richer tile inspector** — moved to C-e, where the playtest evidence for
+        it lives. Not open work here.
   - [x] **Domains list** — live in the left sidebar, showing the real maths
         ("9 tiles · Str 0 × Wealth 3 = 0"), so a domain scoring nothing for
         want of a citadel is obvious while you play.
@@ -78,6 +80,18 @@ there for why.*
 > chase pixel-perfect panel ornamentation.
 
 ## Milestone B — Playtest-Ready Plumbing ← **YOU ARE HERE**
+
+> **Status, 2026-08-15.** B1, B2 and B3b are done — the game now has a lobby, it
+> survives a disconnect, and it has been played start to finish over a network
+> twice. **Two items stand between here and friends playing it: B4 and B5.**
+>
+> Milestone C opened early on purpose, not by drift: playtest 1 surfaced two bugs
+> (C-a, C-b) that let a timer take a player's decision away, and shipping a
+> friend playtest with those in would have wasted the playtest. They are fixed.
+>
+> **The rest of C waits for B5 unless it would spoil a playtest.** By that test,
+> only C-c/C-d/C-h (one change) and C-f (the results screen looks broken) come
+> before B5. C-e and C-g come after.
 
 > Nothing visual happens until this milestone is done. The board's remaining
 > art (Milestone D) is real work with real value — it is deliberately parked,
@@ -91,7 +105,8 @@ there for why.*
       nobody to end the phase and the game hung permanently. Sends no network
       message by design: Photon tells every remaining client directly, which is
       what makes the master-drop case work at all.
-- [ ] **B2. Minimal lobby** ← **NEXT** — replaces the hardcoded LocalTestRoom.
+- [x] **B2. Minimal lobby** — done bar the optional B2.4. Replaced the hardcoded
+      LocalTestRoom.
       *Biggest remaining engineering.*
 
   **Shape:** `Launcher` becomes the main menu; **`GameRoom` survives** as the
@@ -128,7 +143,8 @@ there for why.*
         **Name field lives HERE, not in Options.** It persists to the existing
         `nickname` PlayerPrefs key. Buried in a settings screen nobody touches
         it, and a playtest of four `Player_1234`s defeats the point of B2.
-  - [ ] **B2.3 GameRoom updates** ← **NEXT** — show the room code big (the host reads it
+  - [x] **B2.3 GameRoom updates** — `512b7e6`, Leave button verified in the scene.
+        Show the room code big (the host reads it
         out); Leave button back to the menu; **master sets `IsOpen = false` on
         Start**, which kills the whole class of "late joiner dragged into a game
         in progress with no state".
@@ -157,12 +173,13 @@ there for why.*
       out-of-the-box on his machine; 1 full round played over the internet
       with territories, scores and board state in sync on both ends.
       Found + fixed: lobby list didn't refresh for players already waiting.
-- [ ] **B3b. Full remote regression** — complete 4-round game with a remote
-      player, same winner + score on both screens. **Start arranging this
-      first**: it's blocked on a friend's calendar, not on code, so it should
-      be in flight while B1 is being written. Only round 1 has ever run over
-      the network — scoring, pacts and winner determination are the least
-      tested code in the project and the most expensive to find broken late.
+- [x] **B3b. Full remote regression** — **PASSED, 2026-08-15.** Two complete
+      4-round 2-player games over the network (editor + standalone on a second
+      machine). Scoring, parchments and winner determination all ran and agreed.
+      This was the project's biggest unknown: before it, only round 1 had ever
+      run remotely. It is now the best-tested path in the game rather than the
+      worst. The seven issues it surfaced are C-a…C-h — all on top of a game
+      that plays start to finish.
 - [ ] **B4. "Which one am I?" — mark the local player, then delete
       CurrentTurnPanel.** Before B5, not after: four friends with similar names
       need to find themselves on screen, and right now nothing in the player
@@ -200,7 +217,7 @@ determination all worked. Everything below is on top of a working game.
 
 **The picks cluster — a player's decision can be taken from them. Fix first.**
 
-- [ ] **C-a. Pick timer discards your selection and picks at random.** Select two
+- [x] **C-a.** `726fc26`. **Pick timer discarded your selection and picked at random.** Select two
       cards, let the timer run out, and `AutoPickForMissingPlayers`
       (`DraftService.cs:314`) submits two *random* cards instead of the two you
       chose. Not a bug in that method: selection is client-side, so the master
@@ -208,7 +225,8 @@ determination all worked. Everything below is on top of a working game.
       submitted. Fix belongs on the client: auto-submit the current selection
       shortly before the master's deadline. Late submissions are already handled
       (`DraftService.cs:678`), so beating the deadline by a second is safe.
-- [ ] **C-b. Confirm sometimes unavailable on the standalone build.**
+- [x] **C-b.** `726fc26`, fixed structurally — needs confirming in playtest 2 that
+      it never recurs. **Confirm sometimes unavailable on the standalone build.**
       Intermittent, so it needs a repro before a fix. Two candidates: the button
       is driven by `PickSelectionChangedEvent`, and a `CardsDealtEvent` arriving
       after a selection resets it to non-interactable (`PickPromptUI.Refresh`);

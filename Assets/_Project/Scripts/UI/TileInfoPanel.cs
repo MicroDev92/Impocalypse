@@ -65,6 +65,7 @@ public class TileInfoPanel : MonoBehaviour
             _eventBus.Subscribe<TileOwnerChangedEvent>(OnTileOwnerChanged);
             _eventBus.Subscribe<CityPlacedEvent>(OnCityPlaced);
             _eventBus.Subscribe<CardInspectedEvent>(OnCardInspected);
+            _eventBus.Subscribe<GamePhaseChangedEvent>(OnPhaseChanged);
         }
 
         ShowEmptyState();
@@ -78,6 +79,7 @@ public class TileInfoPanel : MonoBehaviour
             _eventBus.Unsubscribe<TileOwnerChangedEvent>(OnTileOwnerChanged);
             _eventBus.Unsubscribe<CityPlacedEvent>(OnCityPlaced);
             _eventBus.Unsubscribe<CardInspectedEvent>(OnCardInspected);
+            _eventBus.Unsubscribe<GamePhaseChangedEvent>(OnPhaseChanged);
         }
     }
 
@@ -212,6 +214,14 @@ public class TileInfoPanel : MonoBehaviour
     }
 
     private void OnCardInspected(CardInspectedEvent evt) => ShowCardInfo(evt.Card, evt.Art);
+
+    /// <summary>
+    /// A card's rules are only meaningful for the hand it came from. Without this the
+    /// last card hovered during the draft stayed in the panel right through
+    /// Construction, confidently describing something the player no longer holds -
+    /// worse than showing nothing.
+    /// </summary>
+    private void OnPhaseChanged(GamePhaseChangedEvent evt) => ClearSelection();
 
     /// <summary>
     /// Shows a hand card's name, art and full rules. Tile stat rows are hidden -

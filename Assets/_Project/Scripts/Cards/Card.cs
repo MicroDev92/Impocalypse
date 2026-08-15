@@ -227,22 +227,28 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         _shakeRoutine = null;
     }
 
+    /// <summary>
+    /// Reading a card is always allowed; only PICKING one is gated, and that is
+    /// enforced in OnCardClicked and on the Button itself.
+    ///
+    /// This whole method used to sit behind <c>if (!_isDisabled)</c>, which is why
+    /// Construction had no hover at all, and why the unpickable cards went unreadable
+    /// in the draft at exactly the moment you need to read them to decide whether to
+    /// swap a pick - contradicting the tooltip on the field that dims them.
+    /// </summary>
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (!_isDisabled)
-        {
-            _isHovered = true;
-            _targetScale = _restScale * hoverScale;
-            _linkedTile?.Highlight(true);
+        _isHovered = true;
+        _targetScale = _restScale * hoverScale;
+        _linkedTile?.Highlight(true);
 
-            // Cards are too small to carry their own rules text - hovering sends
-            // them to the inspector panel, which has room to explain them.
-            if (cardData != null && ServiceLocator.TryGetService<IEventBus>(out var bus))
-                bus.Publish(new CardInspectedEvent(cardData, thumbnail != null ? thumbnail.sprite : null));
+        // Cards are too small to carry their own rules text - hovering sends
+        // them to the inspector panel, which has room to explain them.
+        if (cardData != null && ServiceLocator.TryGetService<IEventBus>(out var bus))
+            bus.Publish(new CardInspectedEvent(cardData, thumbnail != null ? thumbnail.sprite : null));
 
-            // Move to front of sibling list so it's not covered
-            transform.SetAsLastSibling();
-        }
+        // Move to front of sibling list so it's not covered
+        transform.SetAsLastSibling();
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -395,6 +401,13 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         coordinate = "";
         cardData = null;
         _selectionListener = null;
+
+        // Turn the tile's highlight off BEFORE letting go of the tile. ResetState()
+        // nulls _linkedTile, so the SetHighlight below it had nothing left to switch
+        // off - which is how a hovered tile stayed lit on the board after the draft
+        // timer took the cards away.
+        SetHighlight(false);
+
         _linkedTile = null;
         ResetState();
 
@@ -414,7 +427,7 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
             resourceLabel.gameObject.SetActive(false);
         }
 
-        SetHighlight(false);
+        // (Highlight is cleared at the top, while we still hold the tile.)
         UpdateVisuals();
     }
 
@@ -428,11 +441,17 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         // nothing. States are now: normal, picked, unavailable.
         if (_isConfirmed)
         {
+            // Ask first, repaint second. Flipping our own state before the handler had
+            // a say meant a locked selection could still be visually un-picked: the
+            // model correctly kept the pick and played it, while the card sat there
+            // showing it released.
+            if (_selectionListener != null && !_selectionListener.OnCardUnconfirmed(this))
+                return;
+
             _isConfirmed = false;
             _isHighlighted = false;
             SetHighlight(false);
             UpdateVisuals();
-            _selectionListener?.OnCardUnconfirmed(this);
         }
         else
         {
@@ -470,7 +489,13 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     public void Disable()
     {
         _isDisabled = true;
-        _targetScale = 1f;
+
+        // _restScale, not a hardcoded 1: the hand layout shrinks cards to fit, so 1
+        // disagreed with OnPointerExit (which resets to _restScale) and the card
+        // visibly changed size as the pointer crossed it - the "hovering shrinks the
+        // other cards" from playtest 1.
+        _targetScale = _isHovered ? _restScale * hoverScale : _restScale;
+
         if (button != null) button.interactable = false;
 
         SetHighlight(false);

@@ -128,16 +128,16 @@ namespace Cards
         }
 
         /// <summary>Takes a pick back before it has been submitted.</summary>
-        public void OnCardUnconfirmed(Card card)
+        public bool OnCardUnconfirmed(Card card)
         {
-            if (_selectionsLocked || card == null) return;
+            if (_selectionsLocked || card == null) return false;
 
-            if (_confirmedCards.Remove(card))
-            {
-                _selectedCards.Remove(card);
-                Debug.Log($"[CardSelectionHandler] Card unconfirmed: {card.coordinate} ({_confirmedCards.Count}/{maxPicks})");
-                PublishSelectionChanged();
-            }
+            if (!_confirmedCards.Remove(card)) return false;
+
+            _selectedCards.Remove(card);
+            Debug.Log($"[CardSelectionHandler] Card unconfirmed: {card.coordinate} ({_confirmedCards.Count}/{maxPicks})");
+            PublishSelectionChanged();
+            return true;
         }
 
         /// <summary>

@@ -27,7 +27,13 @@ namespace Cards
         /// Called when a confirmed card is clicked again to take the pick back.
         /// Picks are only submitted explicitly, so a misclick must be undoable.
         /// </summary>
-        void OnCardUnconfirmed(Card card);
+        /// <returns>
+        /// False if the release was refused - picks are already submitted and locked.
+        /// Same contract as <see cref="OnCardConfirmed"/>: the card must then leave its
+        /// visual state alone, or it shows itself released while the pick is still very
+        /// much in play.
+        /// </returns>
+        bool OnCardUnconfirmed(Card card);
 
         /// <summary>
         /// Called when a card is deselected.

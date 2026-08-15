@@ -476,6 +476,24 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         }
     }
 
+    /// <summary>
+    /// Paints this card as picked without a click having happened. Used when the pick
+    /// timer fills a player's remaining slots for them: those cards really were
+    /// submitted, so leaving them looking untouched would have the hand contradict
+    /// what was actually sent.
+    ///
+    /// View only - the handler has already accepted the pick by the time this is called.
+    /// </summary>
+    public void ShowAsPicked()
+    {
+        if (_isConfirmed) return;
+
+        _isConfirmed = true;
+        _isHighlighted = false;
+        SetHighlight(false);
+        UpdateVisuals();
+    }
+
     public void Deselect()
     {
         if (_isConfirmed) return;

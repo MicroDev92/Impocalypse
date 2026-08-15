@@ -190,7 +190,11 @@ namespace Cards
                 foreach (var card in fillers)
                 {
                     if (_selectionsLocked || _confirmedCards.Count >= maxPicks) break;
-                    OnCardConfirmed(card);
+
+                    // Paint it too: OnCardConfirmed updates the model, but the card's own
+                    // picked state is otherwise only ever set by a click, so a slot filled
+                    // by the timer would be submitted while still looking untouched.
+                    if (OnCardConfirmed(card)) card.ShowAsPicked();
                 }
             }
 

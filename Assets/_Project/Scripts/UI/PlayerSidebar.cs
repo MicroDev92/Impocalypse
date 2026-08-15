@@ -9,16 +9,18 @@ using Core.Events;
 using Players;
 
 /// <summary>
-/// Left sidebar panel showing current turn info and player score cards.
+/// Left sidebar panel showing the player score cards.
 /// Each player card displays: name, score, territory count, and per-resource counts.
+/// The local player's card is suffixed "(you)".
+///
+/// There used to be a CurrentTurnPanel above the list. It was removed: it read
+/// "Current Turn" but always showed the LOCAL player, because a simultaneous draft
+/// has no turns to indicate. Its instruction line duplicated PickPromptUI and the
+/// phase banner, and its only unique job - telling you which player you were - now
+/// belongs to the list itself.
 ///
 /// Hierarchy expected (created by UISetupMenu):
 ///   PlayerSidebar
-///   ├── CurrentTurnPanel
-///   │   ├── TurnLabel         ("Current Turn")
-///   │   ├── PlayerIcon        (Image)
-///   │   ├── PlayerNameText    ("Player Name")
-///   │   └── TurnStatusText    ("Your turn!" / "Waiting...")
 ///   └── PlayerListContainer   (VerticalLayoutGroup)
 ///       └── [PlayerCard prefabs instantiated at runtime]
 ///
@@ -37,12 +39,6 @@ using Players;
 /// </summary>
 public class PlayerSidebar : MonoBehaviour
 {
-    [Header("Current Turn")]
-    [SerializeField] private GameObject currentTurnPanel;
-    [SerializeField] private Image turnPlayerIcon;
-    [SerializeField] private TMP_Text turnPlayerName;
-    [SerializeField] private TMP_Text turnStatusText;
-
     [Header("Player List")]
     [SerializeField] private Transform playerListContainer;
     [SerializeField] private GameObject playerCardPrefab;
@@ -90,13 +86,15 @@ public class PlayerSidebar : MonoBehaviour
 
     private void OnPhaseChanged(GamePhaseChangedEvent evt)
     {
-        UpdateCurrentTurn();
         RefreshAllStats();
     }
 
+    /// <summary>
+    /// Nothing to do per round any more now the turn panel is gone; the stats refresh
+    /// on their own events. Kept subscribed so a round-scoped need has a home.
+    /// </summary>
     private void OnRoundStarted(RoundStartedEvent evt)
     {
-        UpdateCurrentTurn();
     }
 
     private void OnImpSpawned(ImpSpawnedEvent evt)
@@ -132,8 +130,6 @@ public class PlayerSidebar : MonoBehaviour
         {
             CreatePlayerCard(player);
         }
-
-        UpdateCurrentTurn();
     }
 
     private void CreatePlayerCard(PlayerData player)
@@ -156,7 +152,10 @@ public class PlayerSidebar : MonoBehaviour
             playerColor = colorPalette.GetPrimaryColor(player.ImpColor);
         }
 
-        cardUI.Initialize(player, playerColor, theme);
+        var network = ServiceLocator.GetService<INetworkService>();
+        bool isLocal = network != null && player.ActorNumber == network.LocalPlayerId;
+
+        cardUI.Initialize(player, playerColor, theme, isLocal);
         _playerCards[player.ActorNumber] = cardUI;
 
         RefreshPlayerStats(player.ActorNumber);
@@ -208,46 +207,4 @@ public class PlayerSidebar : MonoBehaviour
         cardUI.UpdateStats(score, territories, wood, carrot, fish);
     }
 
-    // ==========================================
-    // CURRENT TURN
-    // ==========================================
-
-    private void UpdateCurrentTurn()
-    {
-        if (currentTurnPanel == null) return;
-
-        var playerService = ServiceLocator.GetService<IPlayerService>();
-        var gameManager = ServiceLocator.GetService<IGameManager>();
-        var localPlayer = playerService?.GetLocalPlayer();
-
-        if (localPlayer == null)
-        {
-            currentTurnPanel.SetActive(false);
-            return;
-        }
-
-        currentTurnPanel.SetActive(true);
-
-        if (turnPlayerName != null)
-            turnPlayerName.text = localPlayer.Nickname;
-
-        if (turnStatusText != null)
-        {
-            var phase = gameManager?.CurrentPhase ?? GamePhase.Lobby;
-            turnStatusText.text = phase switch
-            {
-                GamePhase.Draft => "Pick your cards",
-                GamePhase.Build => "Build your structures",
-                GamePhase.Scoring => "Scoring...",
-                GamePhase.GameOver => "Game Over",
-                _ => "Waiting..."
-            };
-        }
-
-        // Tint the icon with player color
-        if (turnPlayerIcon != null && colorPalette != null && !string.IsNullOrEmpty(localPlayer.ImpColor))
-        {
-            turnPlayerIcon.color = colorPalette.GetPrimaryColor(localPlayer.ImpColor);
-        }
-    }
 }

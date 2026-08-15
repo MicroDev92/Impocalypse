@@ -114,36 +114,18 @@ public static class GameSceneUISetup
         // turn, player cards, pacts) carry the stone framing instead.
         leftSidebar.GetComponent<Image>().color = new Color(BgColor.r, BgColor.g, BgColor.b, 0.9f);
 
-        // Current Turn Panel (top of left sidebar)
-        var currentTurnPanel = CreateBorderedPanel(leftSidebar.transform, "CurrentTurnPanel");
-        var turnRect = currentTurnPanel.GetComponent<RectTransform>();
-        turnRect.anchorMin = new Vector2(0, 1);
-        turnRect.anchorMax = new Vector2(1, 1);
-        turnRect.pivot = new Vector2(0.5f, 1);
-        turnRect.sizeDelta = new Vector2(-PanelPadding * 2, 80);
-        turnRect.anchoredPosition = new Vector2(0, -PanelPadding);
-
-        var turnLabel = CreateTextObject(currentTurnPanel.transform, "TurnLabel", "Current Turn", 13, FontStyles.Normal);
-        SetAnchored(turnLabel, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -5), new Vector2(0, -5), 20f);
-        turnLabel.GetComponent<TMP_Text>().color = TextSecondary;
-        turnLabel.GetComponent<TMP_Text>().alignment = TextAlignmentOptions.TopLeft;
-
-        var turnPlayerName = CreateTextObject(currentTurnPanel.transform, "TurnPlayerName", "Player Name", 18, FontStyles.Bold);
-        SetAnchored(turnPlayerName, new Vector2(0, 0.3f), new Vector2(1, 0.7f), new Vector2(10, 0), new Vector2(-10, 0));
-        turnPlayerName.GetComponent<TMP_Text>().color = TextPrimary;
-
-        var turnStatus = CreateTextObject(currentTurnPanel.transform, "TurnStatusText", "Pick your cards", 13, FontStyles.Italic);
-        SetAnchored(turnStatus, new Vector2(0, 0), new Vector2(1, 0.3f), new Vector2(10, 5), new Vector2(-10, 0));
-        turnStatus.GetComponent<TMP_Text>().color = TextSecondary;
-
-        // Player List Container (below current turn)
+        // The player list owns the whole sidebar now. CurrentTurnPanel used to sit
+        // above it saying "Current Turn" while always showing the LOCAL player - a
+        // simultaneous draft has no turns - and its instruction line duplicated
+        // PickPromptUI and the phase banner. Identifying yourself moved into the list,
+        // where the local card is suffixed "(you)".
         var playerListContainer = new GameObject("PlayerListContainer", typeof(RectTransform), typeof(VerticalLayoutGroup));
         playerListContainer.transform.SetParent(leftSidebar.transform, false);
         var plcRect = playerListContainer.GetComponent<RectTransform>();
         plcRect.anchorMin = new Vector2(0, 0);
         plcRect.anchorMax = new Vector2(1, 1);
         plcRect.offsetMin = new Vector2(PanelPadding, PanelPadding);
-        plcRect.offsetMax = new Vector2(-PanelPadding, -(80 + PanelPadding * 2 + 8));
+        plcRect.offsetMax = new Vector2(-PanelPadding, -PanelPadding);
 
         var plcVlg = playerListContainer.GetComponent<VerticalLayoutGroup>();
         plcVlg.spacing = 8;
@@ -156,9 +138,6 @@ public static class GameSceneUISetup
         // Add PlayerSidebar component
         var sidebarComponent = leftSidebar.AddComponent<PlayerSidebar>();
         var sidebarSO = new SerializedObject(sidebarComponent);
-        sidebarSO.FindProperty("currentTurnPanel").objectReferenceValue = currentTurnPanel;
-        sidebarSO.FindProperty("turnPlayerName").objectReferenceValue = turnPlayerName.GetComponent<TMP_Text>();
-        sidebarSO.FindProperty("turnStatusText").objectReferenceValue = turnStatus.GetComponent<TMP_Text>();
         sidebarSO.FindProperty("playerListContainer").objectReferenceValue = playerListContainer.transform;
         sidebarSO.ApplyModifiedProperties();
 
@@ -378,38 +357,20 @@ public static class GameSceneUISetup
         leftRect.offsetMin = new Vector2(0, BottomBarHeight);
         leftRect.offsetMax = new Vector2(SidebarWidth, -TopBarHeight);
         // Sidebars stay a quiet dark backdrop on purpose: an ornate frame around a
-        // mostly-empty column is visual noise. The widgets sitting on them (current
-        // turn, player cards, pacts) carry the stone framing instead.
+        // mostly-empty column is visual noise. The widgets sitting on them (player
+        // cards, pacts) carry the stone framing instead.
         leftSidebar.GetComponent<Image>().color = new Color(BgColor.r, BgColor.g, BgColor.b, 0.9f);
 
-        var currentTurnPanel = CreateBorderedPanel(leftSidebar.transform, "CurrentTurnPanel");
-        var turnRect = currentTurnPanel.GetComponent<RectTransform>();
-        turnRect.anchorMin = new Vector2(0, 1);
-        turnRect.anchorMax = new Vector2(1, 1);
-        turnRect.pivot = new Vector2(0.5f, 1);
-        turnRect.sizeDelta = new Vector2(-PanelPadding * 2, 80);
-        turnRect.anchoredPosition = new Vector2(0, -PanelPadding);
-
-        var turnLabel = CreateTextObject(currentTurnPanel.transform, "TurnLabel", "Current Turn", 13, FontStyles.Normal);
-        SetAnchored(turnLabel, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -5), new Vector2(0, -5), 20f);
-        turnLabel.GetComponent<TMP_Text>().color = TextSecondary;
-        turnLabel.GetComponent<TMP_Text>().alignment = TextAlignmentOptions.TopLeft;
-
-        var turnPlayerName = CreateTextObject(currentTurnPanel.transform, "TurnPlayerName", "Player Name", 18, FontStyles.Bold);
-        SetAnchored(turnPlayerName, new Vector2(0, 0.3f), new Vector2(1, 0.7f), new Vector2(10, 0), new Vector2(-10, 0));
-        turnPlayerName.GetComponent<TMP_Text>().color = TextPrimary;
-
-        var turnStatus = CreateTextObject(currentTurnPanel.transform, "TurnStatusText", "Pick your cards", 13, FontStyles.Italic);
-        SetAnchored(turnStatus, new Vector2(0, 0), new Vector2(1, 0.3f), new Vector2(10, 5), new Vector2(-10, 0));
-        turnStatus.GetComponent<TMP_Text>().color = TextSecondary;
-
+        // See the note in CreateGameSceneUI: CurrentTurnPanel was removed from both
+        // builders. Leaving it in only one is worse than leaving it in both - the
+        // sidebar would then depend on which menu command was last run.
         var playerListContainer = new GameObject("PlayerListContainer", typeof(RectTransform), typeof(VerticalLayoutGroup));
         playerListContainer.transform.SetParent(leftSidebar.transform, false);
         var plcRect = playerListContainer.GetComponent<RectTransform>();
         plcRect.anchorMin = new Vector2(0, 0);
         plcRect.anchorMax = new Vector2(1, 1);
         plcRect.offsetMin = new Vector2(PanelPadding, PanelPadding);
-        plcRect.offsetMax = new Vector2(-PanelPadding, -(80 + PanelPadding * 2 + 8));
+        plcRect.offsetMax = new Vector2(-PanelPadding, -PanelPadding);
 
         var plcVlg = playerListContainer.GetComponent<VerticalLayoutGroup>();
         plcVlg.spacing = 8;
@@ -421,9 +382,6 @@ public static class GameSceneUISetup
 
         var sidebarComponent = leftSidebar.AddComponent<PlayerSidebar>();
         var sidebarSO = new SerializedObject(sidebarComponent);
-        sidebarSO.FindProperty("currentTurnPanel").objectReferenceValue = currentTurnPanel;
-        sidebarSO.FindProperty("turnPlayerName").objectReferenceValue = turnPlayerName.GetComponent<TMP_Text>();
-        sidebarSO.FindProperty("turnStatusText").objectReferenceValue = turnStatus.GetComponent<TMP_Text>();
         sidebarSO.FindProperty("playerListContainer").objectReferenceValue = playerListContainer.transform;
         sidebarSO.ApplyModifiedProperties();
 

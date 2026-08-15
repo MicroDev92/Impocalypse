@@ -49,14 +49,18 @@ public class PlayerCardUI : MonoBehaviour
 
     public PlayerData PlayerData => _playerData;
 
-    public void Initialize(PlayerData data, Color playerColor, GameTheme theme)
+    public void Initialize(PlayerData data, Color playerColor, GameTheme theme, bool isLocalPlayer = false)
     {
         _playerData = data;
         _playerColor = playerColor;
 
         if (playerNameText != null)
         {
-            playerNameText.text = data.Nickname;
+            // The colour bars tell players apart from each other but not you from them,
+            // and four friends with similar names cannot otherwise find themselves on
+            // screen. Text rather than styling on purpose: it survives any later
+            // restyle of this card, and it cannot be missed.
+            playerNameText.text = isLocalPlayer ? $"{data.Nickname}  (you)" : data.Nickname;
             if (theme != null) playerNameText.color = theme.textPrimary;
         }
 

@@ -49,4 +49,11 @@ public static class RoomCode
     }
 
     public static bool IsValid(string code) => Normalize(code).Length == Length;
+
+    /// <summary>
+    /// Whether a character is one a code can contain. Lets an input field reject a
+    /// keystroke outright instead of silently rewriting it into a letter the player
+    /// did not type.
+    /// </summary>
+    public static bool IsInAlphabet(char c) => Alphabet.IndexOf(c) >= 0;
 }

@@ -33,8 +33,11 @@ public static class MainMenuSetup
     private static readonly Color TextAccent = new(0.95f, 0.55f, 0.15f, 1f);
     private static readonly Color ButtonPrimary = new(0.85f, 0.35f, 0.08f, 1f);
 
-    private const float ColumnWidth = 420f;
-    private const float ButtonHeight = 64f;
+    // Sized so the menu holds the middle of a 1920x1080 canvas rather than floating in
+    // it - at 420 wide the whole cluster read as a small island in an empty room.
+    private const float ColumnWidth = 560f;
+    private const float ButtonHeight = 80f;
+    private const float MenuFontSize = 26f;
 
     [MenuItem("GameObject/UI/Impocalypse - Add Main Menu", false, 28)]
     private static void AddMainMenu()
@@ -45,6 +48,16 @@ public static class MainMenuSetup
         {
             Debug.LogWarning("[MainMenuSetup] No EventSystem in this scene - the buttons will " +
                              "not respond to clicks. Add one via GameObject > UI > Event System.");
+        }
+
+        // Re-running replaces rather than stacks. The other generators in this project
+        // leave duplicates piled on each other, and this one gets re-run every time the
+        // layout is nudged - there is no reason to inherit that.
+        var previous = canvas.transform.Find("MainMenu");
+        if (previous != null)
+        {
+            Undo.DestroyObjectImmediate(previous.gameObject);
+            Debug.Log("[MainMenuSetup] Replaced the existing MainMenu.");
         }
 
         var root = new GameObject("MainMenu", typeof(RectTransform));
@@ -73,33 +86,33 @@ public static class MainMenuSetup
         var nameRowRect = nameRow.GetComponent<RectTransform>();
         nameRowRect.anchorMin = nameRowRect.anchorMax = new Vector2(0.5f, 0.5f);
         nameRowRect.pivot = new Vector2(0.5f, 0.5f);
-        nameRowRect.sizeDelta = new Vector2(ColumnWidth, 52);
-        nameRowRect.anchoredPosition = new Vector2(0, 150);
+        nameRowRect.sizeDelta = new Vector2(ColumnWidth, 60);
+        nameRowRect.anchoredPosition = new Vector2(0, 190);
 
-        var nameLabel = CreateTextObject(nameRow.transform, "Label", "NAME", 18, FontStyles.Bold);
+        var nameLabel = CreateTextObject(nameRow.transform, "Label", "NAME", 20, FontStyles.Bold);
         var nameLabelRect = nameLabel.GetComponent<RectTransform>();
         nameLabelRect.anchorMin = nameLabelRect.anchorMax = new Vector2(0f, 0.5f);
         nameLabelRect.pivot = new Vector2(0f, 0.5f);
-        nameLabelRect.sizeDelta = new Vector2(90, 52);
+        nameLabelRect.sizeDelta = new Vector2(100, 60);
         nameLabelRect.anchoredPosition = Vector2.zero;
         nameLabel.GetComponent<TMP_Text>().color = TextSecondary;
         nameLabel.GetComponent<TMP_Text>().alignment = TextAlignmentOptions.MidlineLeft;
 
-        var nameInput = CreateInputField(nameRow.transform, "NameInput", "Your name", 20);
+        var nameInput = CreateInputField(nameRow.transform, "NameInput", "Your name", 22);
         var nameInputRect = nameInput.GetComponent<RectTransform>();
         nameInputRect.anchorMin = nameInputRect.anchorMax = new Vector2(1f, 0.5f);
         nameInputRect.pivot = new Vector2(1f, 0.5f);
-        nameInputRect.sizeDelta = new Vector2(320, 52);
+        nameInputRect.sizeDelta = new Vector2(430, 60);
         nameInputRect.anchoredPosition = Vector2.zero;
         nameInput.GetComponent<TMP_InputField>().characterLimit = 12;
 
         // ---- Quick Play ----
-        var quickPlay = CreateButton(root.transform, "QuickPlayButton", "QUICK PLAY", ColumnWidth, ButtonHeight);
-        PlaceCentered(quickPlay, 60);
+        var quickPlay = CreateButton(root.transform, "QuickPlayButton", "QUICK PLAY", ColumnWidth, ButtonHeight, MenuFontSize);
+        PlaceCentered(quickPlay, 80);
 
         // ---- Create Game ----
-        var createGame = CreateButton(root.transform, "CreateGameButton", "CREATE GAME", ColumnWidth, ButtonHeight);
-        PlaceCentered(createGame, -20);
+        var createGame = CreateButton(root.transform, "CreateGameButton", "CREATE GAME", ColumnWidth, ButtonHeight, MenuFontSize);
+        PlaceCentered(createGame, -30);
 
         // ---- Join row ----
         var joinRow = new GameObject("JoinRow", typeof(RectTransform));
@@ -108,19 +121,19 @@ public static class MainMenuSetup
         joinRowRect.anchorMin = joinRowRect.anchorMax = new Vector2(0.5f, 0.5f);
         joinRowRect.pivot = new Vector2(0.5f, 0.5f);
         joinRowRect.sizeDelta = new Vector2(ColumnWidth, ButtonHeight);
-        joinRowRect.anchoredPosition = new Vector2(0, -100);
+        joinRowRect.anchoredPosition = new Vector2(0, -140);
 
-        var joinGame = CreateButton(joinRow.transform, "JoinGameButton", "JOIN GAME", 250f, ButtonHeight);
+        var joinGame = CreateButton(joinRow.transform, "JoinGameButton", "JOIN GAME", 340f, ButtonHeight, MenuFontSize);
         var joinRect = joinGame.GetComponent<RectTransform>();
         joinRect.anchorMin = joinRect.anchorMax = new Vector2(0f, 0.5f);
         joinRect.pivot = new Vector2(0f, 0.5f);
         joinRect.anchoredPosition = Vector2.zero;
 
-        var codeInput = CreateInputField(joinRow.transform, "CodeInput", "CODE", 24);
+        var codeInput = CreateInputField(joinRow.transform, "CodeInput", "CODE", 30);
         var codeRect = codeInput.GetComponent<RectTransform>();
         codeRect.anchorMin = codeRect.anchorMax = new Vector2(1f, 0.5f);
         codeRect.pivot = new Vector2(1f, 0.5f);
-        codeRect.sizeDelta = new Vector2(150, ButtonHeight);
+        codeRect.sizeDelta = new Vector2(190, ButtonHeight);
         codeRect.anchoredPosition = Vector2.zero;
 
         var codeField = codeInput.GetComponent<TMP_InputField>();
@@ -135,12 +148,12 @@ public static class MainMenuSetup
         statusRect.anchorMin = statusRect.anchorMax = new Vector2(0.5f, 0.5f);
         statusRect.pivot = new Vector2(0.5f, 0.5f);
         statusRect.sizeDelta = new Vector2(700, 40);
-        statusRect.anchoredPosition = new Vector2(0, -180);
+        statusRect.anchoredPosition = new Vector2(0, -215);
         status.GetComponent<TMP_Text>().alignment = TextAlignmentOptions.Center;
         status.GetComponent<TMP_Text>().color = TextSecondary;
 
         // ---- Bottom row ----
-        var options = CreateButton(root.transform, "OptionsButton", "Options", 200f, 48f);
+        var options = CreateButton(root.transform, "OptionsButton", "Options", 220f, 52f, 18f);
         var optRect = options.GetComponent<RectTransform>();
         optRect.anchorMin = optRect.anchorMax = new Vector2(0.5f, 0f);
         optRect.pivot = new Vector2(1f, 0f);
@@ -151,7 +164,7 @@ public static class MainMenuSetup
         // MainMenuUI does not reference it at all.
         options.GetComponent<Button>().interactable = false;
 
-        var quit = CreateButton(root.transform, "QuitButton", "Quit", 200f, 48f);
+        var quit = CreateButton(root.transform, "QuitButton", "Quit", 220f, 52f, 18f);
         var quitRect = quit.GetComponent<RectTransform>();
         quitRect.anchorMin = quitRect.anchorMax = new Vector2(0.5f, 0f);
         quitRect.pivot = new Vector2(0f, 0f);
@@ -233,7 +246,13 @@ public static class MainMenuSetup
         return obj;
     }
 
-    private static GameObject CreateButton(Transform parent, string name, string text, float width, float height)
+    /// <summary>
+    /// <paramref name="fontSize"/> is explicit because the label has to clear the
+    /// sprite's horns: the 9-slice border is a fixed pixel size, so a 48px-tall button
+    /// has far less usable bar than an 80px one and cannot carry the same text.
+    /// </summary>
+    private static GameObject CreateButton(Transform parent, string name, string text,
+        float width, float height, float fontSize = 20f)
     {
         var obj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
         obj.transform.SetParent(parent, false);
@@ -248,7 +267,7 @@ public static class MainMenuSetup
         btnColors.disabledColor = new Color(0.45f, 0.42f, 0.40f, 1f);
         obj.GetComponent<Button>().colors = btnColors;
 
-        var label = CreateTextObject(obj.transform, "Label", text, 20, FontStyles.Bold);
+        var label = CreateTextObject(obj.transform, "Label", text, Mathf.RoundToInt(fontSize), FontStyles.Bold);
         var labelRect = label.GetComponent<RectTransform>();
         StretchFull(labelRect);
         // The button art's horns occupy the top of the sprite, so the visible stone bar

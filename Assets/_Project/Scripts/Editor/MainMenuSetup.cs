@@ -80,39 +80,44 @@ public static class MainMenuSetup
         title.GetComponent<TMP_Text>().color = TextAccent;
         title.GetComponent<TMP_Text>().characterSpacing = 10f;
 
-        // ---- Name row ----
-        var nameRow = new GameObject("NameRow", typeof(RectTransform));
-        nameRow.transform.SetParent(root.transform, false);
-        var nameRowRect = nameRow.GetComponent<RectTransform>();
-        nameRowRect.anchorMin = nameRowRect.anchorMax = new Vector2(0.5f, 0.5f);
-        nameRowRect.pivot = new Vector2(0.5f, 0.5f);
-        nameRowRect.sizeDelta = new Vector2(ColumnWidth, 60);
-        nameRowRect.anchoredPosition = new Vector2(0, 190);
+        // ---- Name block ----
+        var nameBlock = new GameObject("NameBlock", typeof(RectTransform));
+        nameBlock.transform.SetParent(root.transform, false);
+        var nameBlockRect = nameBlock.GetComponent<RectTransform>();
+        nameBlockRect.anchorMin = nameBlockRect.anchorMax = new Vector2(0.5f, 0.5f);
+        nameBlockRect.pivot = new Vector2(0.5f, 0.5f);
+        nameBlockRect.sizeDelta = new Vector2(ColumnWidth, 92);
+        nameBlockRect.anchoredPosition = new Vector2(0, 145);
 
-        var nameLabel = CreateTextObject(nameRow.transform, "Label", "NAME", 20, FontStyles.Bold);
+        // Label above the field rather than beside it. Inline, the field had to give up
+        // its left 100px to the label, making it the one element in the column whose
+        // left edge did not line up with everything else.
+        var nameLabel = CreateTextObject(nameBlock.transform, "Label", "NAME", 18, FontStyles.Bold);
         var nameLabelRect = nameLabel.GetComponent<RectTransform>();
-        nameLabelRect.anchorMin = nameLabelRect.anchorMax = new Vector2(0f, 0.5f);
-        nameLabelRect.pivot = new Vector2(0f, 0.5f);
-        nameLabelRect.sizeDelta = new Vector2(100, 60);
+        nameLabelRect.anchorMin = new Vector2(0f, 1f);
+        nameLabelRect.anchorMax = new Vector2(1f, 1f);
+        nameLabelRect.pivot = new Vector2(0.5f, 1f);
+        nameLabelRect.sizeDelta = new Vector2(0, 26);
         nameLabelRect.anchoredPosition = Vector2.zero;
         nameLabel.GetComponent<TMP_Text>().color = TextSecondary;
         nameLabel.GetComponent<TMP_Text>().alignment = TextAlignmentOptions.MidlineLeft;
 
-        var nameInput = CreateInputField(nameRow.transform, "NameInput", "Your name", 22);
+        var nameInput = CreateInputField(nameBlock.transform, "NameInput", "Your name", 22);
         var nameInputRect = nameInput.GetComponent<RectTransform>();
-        nameInputRect.anchorMin = nameInputRect.anchorMax = new Vector2(1f, 0.5f);
-        nameInputRect.pivot = new Vector2(1f, 0.5f);
-        nameInputRect.sizeDelta = new Vector2(430, 60);
+        nameInputRect.anchorMin = new Vector2(0f, 0f);
+        nameInputRect.anchorMax = new Vector2(1f, 0f);
+        nameInputRect.pivot = new Vector2(0.5f, 0f);
+        nameInputRect.sizeDelta = new Vector2(0, 60);
         nameInputRect.anchoredPosition = Vector2.zero;
         nameInput.GetComponent<TMP_InputField>().characterLimit = 12;
 
         // ---- Quick Play ----
         var quickPlay = CreateButton(root.transform, "QuickPlayButton", "QUICK PLAY", ColumnWidth, ButtonHeight, MenuFontSize);
-        PlaceCentered(quickPlay, 80);
+        PlaceCentered(quickPlay, 25);
 
         // ---- Create Game ----
         var createGame = CreateButton(root.transform, "CreateGameButton", "CREATE GAME", ColumnWidth, ButtonHeight, MenuFontSize);
-        PlaceCentered(createGame, -30);
+        PlaceCentered(createGame, -85);
 
         // ---- Join row ----
         var joinRow = new GameObject("JoinRow", typeof(RectTransform));
@@ -121,7 +126,7 @@ public static class MainMenuSetup
         joinRowRect.anchorMin = joinRowRect.anchorMax = new Vector2(0.5f, 0.5f);
         joinRowRect.pivot = new Vector2(0.5f, 0.5f);
         joinRowRect.sizeDelta = new Vector2(ColumnWidth, ButtonHeight);
-        joinRowRect.anchoredPosition = new Vector2(0, -140);
+        joinRowRect.anchoredPosition = new Vector2(0, -195);
 
         var joinGame = CreateButton(joinRow.transform, "JoinGameButton", "JOIN GAME", 340f, ButtonHeight, MenuFontSize);
         var joinRect = joinGame.GetComponent<RectTransform>();
@@ -148,7 +153,7 @@ public static class MainMenuSetup
         statusRect.anchorMin = statusRect.anchorMax = new Vector2(0.5f, 0.5f);
         statusRect.pivot = new Vector2(0.5f, 0.5f);
         statusRect.sizeDelta = new Vector2(700, 40);
-        statusRect.anchoredPosition = new Vector2(0, -215);
+        statusRect.anchoredPosition = new Vector2(0, -265);
         status.GetComponent<TMP_Text>().alignment = TextAlignmentOptions.Center;
         status.GetComponent<TMP_Text>().color = TextSecondary;
 

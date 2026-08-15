@@ -82,7 +82,7 @@ public static class UISetupMenu
         titleText.fontStyle = FontStyles.Bold;
         titleText.color = new Color(1f, 0.92f, 0.75f, 1f);
         titleText.alignment = TextAlignmentOptions.Center;
-        titleText.enableWordWrapping = false;
+        titleText.textWrappingMode = TextWrappingModes.NoWrap;
         titleText.characterSpacing = 12f;
         titleText.raycastTarget = false;
 
@@ -98,7 +98,7 @@ public static class UISetupMenu
         subText.fontSize = 22;
         subText.color = new Color(0.8f, 0.75f, 0.65f, 1f);
         subText.alignment = TextAlignmentOptions.Center;
-        subText.enableWordWrapping = false;
+        subText.textWrappingMode = TextWrappingModes.NoWrap;
         subText.raycastTarget = false;
 
         // Add the PhaseAnnouncementBanner component and wire references
@@ -153,7 +153,7 @@ public static class UISetupMenu
         }
 
         // Look for any ScreenSpaceOverlay canvas
-        foreach (var canvas in Object.FindObjectsOfType<Canvas>())
+        foreach (var canvas in Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None))
         {
             if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
                 return canvas;

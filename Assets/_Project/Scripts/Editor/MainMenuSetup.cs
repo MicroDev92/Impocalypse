@@ -228,7 +228,6 @@ public static class MainMenuSetup
         tmp.color = TextPrimary;
         UITheme.ApplyFont(tmp, fontSize);
         tmp.raycastTarget = false;
-        // The older generators still use enableWordWrapping, which Unity 6 deprecated.
         tmp.textWrappingMode = TextWrappingModes.NoWrap;
         tmp.overflowMode = TextOverflowModes.Ellipsis;
         return obj;

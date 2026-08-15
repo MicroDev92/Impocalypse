@@ -1098,7 +1098,7 @@ public static class GameSceneUISetup
         tmp.color = TextPrimary;
         UITheme.ApplyFont(tmp, fontSize); // display font for headings, default for small text
         tmp.raycastTarget = false;
-        tmp.enableWordWrapping = false;
+        tmp.textWrappingMode = TextWrappingModes.NoWrap;
         tmp.overflowMode = TextOverflowModes.Ellipsis;
         return obj;
     }

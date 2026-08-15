@@ -163,7 +163,33 @@ there for why.*
       be in flight while B1 is being written. Only round 1 has ever run over
       the network — scoring, pacts and winner determination are the least
       tested code in the project and the most expensive to find broken late.
-- [ ] **B4. WebGL build → itch.io unlisted page** → **🎉 FRIEND PLAYTESTS**
+- [ ] **B4. "Which one am I?" — mark the local player, then delete
+      CurrentTurnPanel.** Before B5, not after: four friends with similar names
+      need to find themselves on screen, and right now nothing in the player
+      list says which card is yours.
+
+      The panel is mislabelled rather than merely redundant. `UpdateCurrentTurn`
+      (`PlayerSidebar.cs:215`) calls `GetLocalPlayer()`, so it always shows YOU
+      and never points at another player — it cannot, because a simultaneous
+      draft has no turns to indicate. Its other content is covered twice over:
+      `PickPromptUI` says "Pick 2 cards — Selected 1/2" with the Confirm button
+      during Draft, and the phase banner already reads DRAFT PHASE /
+      CONSTRUCTION.
+
+      **Order matters: add the marking first, delete second.** `PlayerCardUI` has
+      no local-player marking of any kind — the colour bars separate players from
+      each other but not you from them. Delete the panel first and there is
+      briefly no way to identify yourself at all. A "(you)" suffix or a brighter
+      card frame is enough.
+
+      Touches: `PlayerCardUI.cs`, `PlayerSidebar.cs` (the `currentTurnPanel`
+      field and `UpdateCurrentTurn`), and `GameSceneUISetup.cs` in **two** places
+      — the panel is built at both `:118` and `:385`.
+
+      **Scope guard:** the minimal version only. Restyling the sidebar around the
+      ~90px this frees up is Milestone D — that drift is exactly what parking
+      visual work was meant to prevent.
+- [ ] **B5. WebGL build → itch.io unlisted page** → **🎉 FRIEND PLAYTESTS**
 
 ## Milestone C — Hardening & Balance (playtest-driven)
 

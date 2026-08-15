@@ -165,6 +165,44 @@ namespace Cards
             PublishSelectionChanged();
         }
 
+        /// <summary>
+        /// Commits whatever the player has already chosen, filling the remainder at
+        /// random only for picks they never made. Called as the pick timer runs out.
+        ///
+        /// A timer must not throw away a decision that was already taken. Before this,
+        /// time running out discarded the player's entire selection and the master
+        /// picked on their behalf (<c>DraftService.AutoPickForMissingPlayers</c>), so
+        /// two carefully chosen cards silently became two arbitrary ones.
+        /// </summary>
+        public void ForceSubmitCurrentSelection()
+        {
+            if (_selectionsLocked) return;
+
+            // Top up through the ordinary confirm path so bookkeeping, events and card
+            // visuals all behave exactly as if the player had clicked them.
+            var fillers = _cardFactory?.ActiveCards?
+                .Where(c => c != null && !_confirmedCards.Contains(c))
+                .OrderBy(_ => UnityEngine.Random.value)
+                .ToList();
+
+            if (fillers != null)
+            {
+                foreach (var card in fillers)
+                {
+                    if (_selectionsLocked || _confirmedCards.Count >= maxPicks) break;
+                    OnCardConfirmed(card);
+                }
+            }
+
+            // OnCardConfirmed submits by itself under the legacy no-explicit-confirm
+            // flow, so it may already be locked by the time we get here.
+            if (_selectionsLocked || _confirmedCards.Count == 0) return;
+
+            LockSelections();
+            NotifyAllPicksMade();
+            PublishSelectionChanged();
+        }
+
         private void PublishSelectionChanged()
         {
             RefreshCardAvailability();

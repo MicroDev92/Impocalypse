@@ -61,14 +61,31 @@ namespace UI
         private void OnCardsDealt(CardsDealtEvent evt)
         {
             SetVisible(true);
-            Refresh(0, _selection?.MaxPicks ?? 2, false);
+            Refresh();
         }
 
-        private void OnSelectionChanged(PickSelectionChangedEvent evt) =>
-            Refresh(evt.Selected, evt.Required, evt.CanSubmit);
+        private void OnSelectionChanged(PickSelectionChangedEvent evt) => Refresh();
 
-        private void Refresh(int selected, int required, bool canSubmit)
+        private void OnEnable() => Refresh();
+
+        /// <summary>
+        /// Reads the handler rather than trusting an event payload.
+        ///
+        /// Confirm used to be driven purely by whatever the last event happened to
+        /// carry, so a CardsDealtEvent arriving after a selection left the button dead
+        /// while the model considered the picks perfectly submittable. That matches the
+        /// intermittent "cannot confirm" from playtest 1: deriving from the single
+        /// source of truth removes the whole class of drift rather than one ordering
+        /// of it.
+        /// </summary>
+        private void Refresh()
         {
+            if (_selection == null) ServiceLocator.TryGetService(out _selection);
+
+            int required = _selection?.MaxPicks ?? 2;
+            int selected = _selection?.ConfirmedCards?.Count ?? 0;
+            bool canSubmit = _selection?.CanSubmit ?? false;
+
             if (promptText != null)
             {
                 promptText.text = canSubmit

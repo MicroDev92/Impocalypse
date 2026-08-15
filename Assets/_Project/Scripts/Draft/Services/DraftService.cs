@@ -288,6 +288,8 @@ namespace Draft.Services
 
         private void Update()
         {
+            TickLocalAutoSubmit();
+
             if (!_pickTimerActive || !IsMasterClient) return;
 
             _pickTimer -= Time.deltaTime;
@@ -295,6 +297,54 @@ namespace Draft.Services
 
             _pickTimerActive = false;
             AutoPickForMissingPlayers();
+        }
+
+        // ==========================================
+        // LOCAL AUTO-SUBMIT (runs on every client)
+        // ==========================================
+
+        /// <summary>
+        /// How far ahead of the master's deadline each client commits its own selection.
+        /// Wide enough to absorb latency and a slow frame, short enough that it only
+        /// fires when the player really has run out of time.
+        /// </summary>
+        private const float LocalAutoSubmitMargin = 2f;
+
+        private float _localSubmitTimer;
+        private bool _localSubmitTimerActive;
+
+        private void StartLocalSubmitTimer()
+        {
+            _localSubmitTimer = Mathf.Max(1f, GameTiming.DraftPickSeconds - LocalAutoSubmitMargin);
+            _localSubmitTimerActive = true;
+        }
+
+        private void StopLocalSubmitTimer() => _localSubmitTimerActive = false;
+
+        /// <summary>
+        /// Runs on every client, master included. <see cref="AutoPickForMissingPlayers"/>
+        /// stays as the backstop for players who are genuinely absent; this makes sure a
+        /// player who IS here and has chosen gets their own cards submitted instead of
+        /// random ones. The master cannot do this for them - selection is client-side,
+        /// so the master only ever learns what was submitted, never what was highlighted.
+        /// </summary>
+        private void TickLocalAutoSubmit()
+        {
+            if (!_localSubmitTimerActive) return;
+
+            if (_hasSubmittedPicks)
+            {
+                _localSubmitTimerActive = false;
+                return;
+            }
+
+            _localSubmitTimer -= Time.deltaTime;
+            if (_localSubmitTimer > 0f) return;
+
+            _localSubmitTimerActive = false;
+
+            Debug.Log("[DraftService] Pick timer nearly up - committing this player's own selection");
+            _selectionHandler?.ForceSubmitCurrentSelection();
         }
 
         private void StartPickTimer()
@@ -382,6 +432,11 @@ namespace Draft.Services
         {
             Debug.Log("[DraftService] Draft ended - advancing to Build phase");
             StopPickTimer();
+
+            // Runs on every client, so this is where the local deadline dies too -
+            // otherwise it could still fire for a player the master already auto-picked
+            // for, submitting into a draft that is over.
+            StopLocalSubmitTimer();
 
             // Draft end is decided master-side (ProcessAllPicks) - tell everyone else.
             if (IsMasterClient)
@@ -638,6 +693,11 @@ namespace Draft.Services
             // Reset for new round
             _hasSubmittedPicks = false;
             _selectionHandler?.ResetSelections();
+
+            // This client now holds a hand, so its own deadline starts here. Close enough
+            // to when the master started its timer - the gap is one network hop against a
+            // two-second margin.
+            StartLocalSubmitTimer();
 
             // Parse card data
             var cardDatas = serializedCards

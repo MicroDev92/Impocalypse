@@ -235,13 +235,13 @@ determination all worked. Everything below is on top of a working game.
 
 **Draft feedback**
 
-- [ ] **C-c. Cards stay interactive after picks are confirmed.** Covers both
+- [x] **C-c.** `c806f7d`. **Cards stayed interactive after picks were confirmed.** Covers both
       "I can unselect after confirming" and "hovering other cards shrinks them".
       The *model* is already correct — `SubmitPicks` calls `LockSelections` and
       `OnCardUnconfirmed` honours it, which is why the right cards still get
       played. It is the view that ignores `SelectionsLocked`. One root cause,
       both symptoms.
-- [ ] **C-d. Board highlight survives the timer.** Hover a territory card, let
+- [x] **C-d.** `c806f7d`. **Board highlight survived the timer.** Hover a territory card, let
       the timer elapse; the board highlight stays lit after random picks land.
       Draft-phase-end needs to clear hover state.
 - [ ] **C-e. Drafted cards are invisible until they matter.** A drafted building
@@ -250,7 +250,7 @@ determination all worked. Everything below is on top of a working game.
       the top bar but testers did not notice it — wants a highlight *in addition
       to* the bar. Feature, not a defect.
 
-- [ ] **C-h. Construction phase: no card hover, and a sidebar showing stale
+- [x] **C-h.** `c806f7d`. **Construction phase: no card hover, and a sidebar showing stale
       draft info.** Two causes, and they suggest one rule that also settles C-c
       and C-d.
 

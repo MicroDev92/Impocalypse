@@ -79,19 +79,24 @@ there for why.*
 > Take the *decisions* (flat row, thumbnails, pick counter, legend); don't
 > chase pixel-perfect panel ornamentation.
 
-## Milestone B — Playtest-Ready Plumbing ← **YOU ARE HERE**
+## ✅ Milestone B — Playtest-Ready Plumbing (complete)
 
-> **Status, 2026-08-15.** B1, B2 and B3b are done — the game now has a lobby, it
-> survives a disconnect, and it has been played start to finish over a network
-> twice. **Two items stand between here and friends playing it: B4 and B5.**
+> **DONE 2026-10-20, bar the optional B2.4.** The game is live on an itch.io
+> draft page and playable in a browser by anyone with the secret URL. It has a
+> lobby, three ways in, it survives a disconnect, and it has been played start
+> to finish over a network twice.
 >
 > Milestone C opened early on purpose, not by drift: playtest 1 surfaced two bugs
 > (C-a, C-b) that let a timer take a player's decision away, and shipping a
-> friend playtest with those in would have wasted the playtest. They are fixed.
+> friend playtest with those in would have wasted the playtest. Those plus
+> C-c/C-d/C-f/C-h are fixed; **C-e and C-g deliberately wait for playtest 2**.
 >
-> **The rest of C waits for B5 unless it would spoil a playtest.** By that test,
-> only C-c/C-d/C-h (one change) and C-f (the results screen looks broken) come
-> before B5. C-e and C-g come after.
+> **The open question is no longer technical.** It is whether the loop is fun,
+> and only a 3–4 player session answers it — every game so far has been 2-player,
+> which is the count where a Bunny-Kingdom-style draft is weakest. That same
+> session decides the design debate in Milestone F's notes: whether the game
+> needs mechanics (corruption, souls-as-currency) or just presentation (D3/D6).
+> Do not build either until it has been played.
 
 > Nothing visual happens until this milestone is done. The board's remaining
 > art (Milestone D) is real work with real value — it is deliberately parked,
@@ -210,42 +215,38 @@ there for why.*
       **Scope guard:** the minimal version only. Restyling the sidebar around the
       ~90px this frees up is Milestone D — that drift is exactly what parking
       visual work was meant to prevent.
-- [ ] **B5. WebGL build → itch.io unlisted page** → **🎉 FRIEND PLAYTESTS**
+- [x] **B5. WebGL build → itch.io** — **DONE 2026-10-20. The game is playable
+      in a browser by anyone with the link.** 🎉
 
-  **Already verified, nothing to do:** WebGLSupport module is installed; all
-  three scenes are in Build Settings and enabled with Launcher first; there is no
-  threading anywhere in project code (WebGL is single-threaded); and PUN2 forces
-  `WebSocketSecure` on WebGL in `LoadBalancingClient.cs:839` and `:1236`, so the
-  `Protocol: 0` (UDP) in PhotonServerSettings is overridden at connect time.
-  Photon on WebGL works. `Application.Quit` is handled (`d6892de`).
+  Settings (`9aa53e5`): `FixedRegion: eu` so every build type lands in the same
+  region — a release build picks region by ping while a dev build pins to the dev
+  region, so without this a release build and the editor could sit in different
+  regions and never see each other's rooms, with no error anywhere. Plus
+  Decompression Fallback, so the build loads regardless of how itch serves Brotli.
 
-  - [ ] **Set `FixedRegion` to `eu` in PhotonServerSettings. Do not skip this.**
-        It is currently empty, which means each client picks its region by ping.
-        A development build pins to the dev region (`eu`); a release build does
-        not. So a WebGL release build and your editor can land in *different
-        regions and never see each other's rooms* — both connect fine, both
-        press the right buttons, no error is shown anywhere. Latency is
-        irrelevant to a game with 45-second timers, so fixing the region costs
-        nothing and removes the failure entirely.
-  - [ ] **Enable Decompression Fallback** (Player Settings → WebGL → Publishing
-        Settings). Currently off with Brotli compression, which needs the server
-        to send the right `Content-Encoding` header. With the fallback on, Unity
-        ships its own decompressor and the build loads regardless of how itch
-        serves it. Costs a little size and first-load time; buys reliability,
-        which is the only thing that matters for a playtest.
-  - [ ] Build (`File > Build Settings > WebGL > Switch Platform`, then Build).
-        First switch is slow — the whole asset library re-imports.
-  - [ ] Zip the **contents** of the build folder (`index.html` at the zip root,
-        not inside a subfolder) and upload to itch.io.
-  - [ ] itch.io: Kind of project = **HTML**; tick *"This file will be played in
-        the browser"*; viewport ~960×540 with the fullscreen button enabled
-        (canvas reference is 1920×1080); leave the page as **Draft** and share
-        its secret URL.
-  - [ ] Smoke-test the uploaded build yourself in a browser *before* sending the
-        link: menu loads → status reaches Ready → Quick Play reaches the lobby.
-        A build that fails to load looks identical to a game that is broken.
+  Build: release, not development (`9076f6d`) — **38.5 MB vs 155.9 MB** for the
+  dev build, and no watermark.
 
-## Milestone C — Hardening & Balance (playtest-driven)
+  **Custom WebGL template** (`347e7c4`), because neither stock one works in an
+  itch embed: Default resizes correctly but ships a fullscreen button that does
+  nothing inside an iframe, and Minimal has clean chrome but hardcodes the canvas
+  in pixels, so fullscreen left the game at 960x600 surrounded by black.
+  `Assets/WebGLTemplates/Impocalypse` is Minimal with a viewport-filling canvas.
+
+  Verified before it was assumed: WebGLSupport installed, all three scenes in
+  Build Settings with Launcher first, no threading anywhere in project code, and
+  PUN2 forcing `WebSocketSecure` on WebGL at `LoadBalancingClient.cs:839`/`:1236`
+  — so the `Protocol: 0` (UDP) setting is overridden at connect time.
+
+  **Packaging gotcha worth keeping:** zip with `tar`, not PowerShell 5.1's
+  `Compress-Archive`, which writes Windows backslash separators. itch unzips on
+  Linux, so those land as flat files literally named `Build\...`, `index.html`
+  finds nothing, and you get a blank page indistinguishable from a broken game.
+
+## Milestone C — Hardening & Balance (playtest-driven) ← **YOU ARE HERE**
+
+> **Next action: send the itch link to 3 friends and watch a 4-player game.**
+> Everything else here is downstream of what that session shows.
 
 ### Found in playtest 1 (2 players, 2 full games, 2026-08-15)
 

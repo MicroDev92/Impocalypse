@@ -313,6 +313,17 @@ determination all worked. Everything below is on top of a working game.
       but stay readable), C-d (hover-derived state needs tearing down at phase
       end) and both halves of C-h without any of them contradicting each other.
 
+- [ ] **C-i. First and last hand cards slide under the sidebars.** Seen in the
+      deployed build, 2026-10-20. Caused by the sidebar widening in `df8ca70`:
+      `CardFanLayout.maxFanWidth` is **1350**, which fitted the old 280px
+      sidebars (clear span 1360) and does not fit the new 380px ones (clear span
+      **1160**). Overruns ~95px each side, which is what the screenshot shows.
+
+      One serialised value, not a layout problem: set `maxFanWidth` to ~1120 on
+      the CardFanLayout component (1160 minus a little margin). Worth also
+      deriving it from the sidebar width rather than hardcoding, so the next
+      sidebar change does not silently reintroduce this.
+
 **Results screen**
 
 - [x] **C-f.** `7e041d3`. **GameOver score panels overlapped.** Both players' entries rendered on top

@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "unity-editor-mcp": {
+      "type": "stdio",
+      "command": "unity",
+      "args": ["--no-banner", "mcp", "--project-path", "C:/Unity Repos/Impocalypse"],
+      "env": {}
+    }
+  }
+}

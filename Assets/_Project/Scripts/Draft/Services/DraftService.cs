@@ -613,6 +613,11 @@ namespace Draft.Services
             }
 
             Debug.Log($"[DraftService] Granted cards received: {string.Join(", ", names)}");
+
+            // The store has changed, so anything showing what the player OWNS needs
+            // to hear about it. Without this a drafted Pact sat invisible until some
+            // unrelated refresh fired - usually a later hand.
+            _eventBus?.Publish(new CardsGrantedEvent(localId));
             if (names.Count > 0)
                 _eventBus?.Publish(new ShowStatusEvent($"Gained: {string.Join(", ", names)}"));
         }
@@ -793,6 +798,12 @@ namespace Draft.Services
             }
 
             _pendingPicks[senderActorId] = effectivePicks.ToArray();
+
+            // The master routes its own grants locally and deliberately skips the
+            // GrantCards send below, so the publish in HandleGrantCardsReceived never
+            // runs for the host. Without this the host never sees its own Pacts.
+            if (granted.Count > 0 && senderActorId == (_networkService?.LocalPlayerId ?? -1))
+                _eventBus?.Publish(new CardsGrantedEvent(senderActorId));
 
             // Sync a remote player's granted cards to their own client (the master keeps
             // its authoritative copy; the local player already routed nothing client-side).

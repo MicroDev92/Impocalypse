@@ -26,6 +26,7 @@ namespace UI
             {
                 _eventBus.Subscribe<LocalPicksSubmittedEvent>(OnPicksSubmitted);
                 _eventBus.Subscribe<GamePhaseChangedEvent>(OnPhaseChanged);
+                _eventBus.Subscribe<CardsGrantedEvent>(OnCardsGranted);
             }
             Refresh();
         }
@@ -36,11 +37,13 @@ namespace UI
             {
                 _eventBus.Unsubscribe<LocalPicksSubmittedEvent>(OnPicksSubmitted);
                 _eventBus.Unsubscribe<GamePhaseChangedEvent>(OnPhaseChanged);
+                _eventBus.Unsubscribe<CardsGrantedEvent>(OnCardsGranted);
             }
         }
 
         private void OnPicksSubmitted(LocalPicksSubmittedEvent _) => Refresh();
         private void OnPhaseChanged(GamePhaseChangedEvent _) => Refresh();
+        private void OnCardsGranted(CardsGrantedEvent _) => Refresh();
 
         private void Refresh()
         {

@@ -176,6 +176,25 @@ namespace Core.Events
     /// <summary>
     /// Fired when all players have submitted their picks.
     /// </summary>
+    /// <summary>
+    /// Fired when the local player actually RECEIVES the cards a pick earned them -
+    /// parchments, buildables, Provisions draws.
+    ///
+    /// Distinct from LocalPicksSubmittedEvent, which fires the instant Confirm is
+    /// pressed, before the master has routed anything back. UI showing what you OWN
+    /// must wait for this one; listening to the submit event meant a drafted Pact
+    /// did not appear until some later refresh happened to run.
+    /// </summary>
+    public struct CardsGrantedEvent : IGameEvent
+    {
+        public int ActorNumber { get; }
+
+        public CardsGrantedEvent(int actorNumber)
+        {
+            ActorNumber = actorNumber;
+        }
+    }
+
     public struct AllPicksSubmittedEvent : IGameEvent
     {
         public Dictionary<int, string[]> PlayerPicks { get; }

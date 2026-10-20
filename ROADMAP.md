@@ -492,7 +492,42 @@ usually are not.
 ## Parking Lot (post-1.0, or "when it hurts")
 
 - Bots / single-player mode
-- Mobile port (touch pass + UI density; architecture already ports)
+- **Mobile port** — investigated 2026-10-20 on a real phone. The original note
+  here ("touch pass + UI density; architecture already ports") was right, and a
+  fresh reading that called it a design change was wrong. Recording why.
+
+  **The touch interaction already works.** `Card` implements `IPointerEnterHandler`
+  but clicks go through a `Button`, and on touch those fire at different moments:
+
+  | gesture | result |
+  |---|---|
+  | touch down | `OnPointerEnter` — inspector fills, tile highlights |
+  | hold | stays shown |
+  | release on the card | `Button.onClick` — picks it |
+  | slide off, then release | `OnPointerExit`, no matching up — **no pick** |
+
+  So hold-to-read, release-to-pick, slide-away-to-cancel all work already. The
+  assumption that touch cannot read a card before committing to it is false; it
+  falls out of Unity's event model rather than from design, but it holds. This
+  also satisfies the C-c/C-h rule (reading always allowed, picking gated) without
+  needing separate gestures.
+
+  **What is actually left is density, not design:**
+  - Discoverability — nobody knows to hold. One hint line on touch devices.
+  - Text: 14px against a 1920 reference renders about 4px on a phone.
+  - Touch targets: bottom-row cards land near 30px against a ~44px minimum.
+  - Sidebars take 760 of 1920 and are fixed width; want narrowing or collapsing.
+  - **Pinch zoom is already written** in `Utility/CameraController.cs:247`, which
+    the scene does NOT use — `ModernCameraController` has single-touch pan but no
+    pinch. Port those ~15 lines rather than writing them.
+  - Landscape only, and move the CanvasScaler match from 0.5 toward 1.0 so UI
+    scales with the short axis.
+
+  Estimate: one or two sessions, no rework of the interaction model.
+
+  **Sequencing:** still after the 4-player desktop playtest, which is what says
+  whether any polish is worth buying. But mobile widens the playtest pool a lot —
+  a link works on a phone in a way it does not on a laptop nobody has open.
 - Persistent identity / leaderboards / tournaments → **promoted to Milestone F.**
 - True auto-tiling art (merged lakes/ranges with edge-matched variants)
 - Lair sprite usage (burrow on owned tiles / capital mechanic / menu art)

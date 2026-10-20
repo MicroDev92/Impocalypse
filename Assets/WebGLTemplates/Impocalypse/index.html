@@ -27,6 +27,10 @@
     <canvas id="unity-canvas" width={{{ WIDTH }}} height={{{ HEIGHT }}} tabindex="-1"></canvas>
     <script src="Build/{{{ LOADER_FILENAME }}}"></script>
     <script>
+      // Right-drag pans the board, so stop the browser hijacking it with a
+      // context menu over the canvas.
+      document.querySelector("#unity-canvas").addEventListener("contextmenu", e => e.preventDefault());
+
       createUnityInstance(document.querySelector("#unity-canvas"), {
         arguments: [],
         dataUrl: "Build/{{{ DATA_FILENAME }}}",

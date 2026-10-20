@@ -77,7 +77,13 @@ namespace World
 
         private void OnPanPerformed(InputAction.CallbackContext context)
         {
-            if (Mouse.current?.middleButton.isPressed == true || (Touchscreen.current != null && Touchscreen.current.touches.Count == 1))
+            // Middle OR right drag. Middle alone was effectively no pan at all for
+            // anyone on a laptop trackpad, which has no middle button - and left is
+            // taken by tile selection, so right is the only one left to give.
+            bool held = Mouse.current != null &&
+                        (Mouse.current.middleButton.isPressed || Mouse.current.rightButton.isPressed);
+            bool touch = Touchscreen.current != null && Touchscreen.current.touches.Count == 1;
+            if (held || touch)
             {
                 Vector2 delta = context.ReadValue<Vector2>();
                 // Invert delta for "grab and pull" feel

@@ -139,13 +139,17 @@ public static class GameRoomSetup
         sRect.pivot = new Vector2(0.5f, 0.5f);
         sRect.anchoredPosition = new Vector2(0, -320);
 
-        // Leave sits top-left, far from Start: opposite intentions should not be
-        // adjacent, where a misclick drops you out of the room.
+        // Leave sits centred below Start. It was top-left on the argument that
+        // opposite intentions should not be adjacent - but that is the GameScene's
+        // stakes, not the lobby's: leaving a room here costs a rejoin with the code,
+        // not everyone's game. The 44px gap and the smaller button carry the
+        // hierarchy. Start is host-only (GameRoomUI.UpdateStartButton), so a guest
+        // sees Leave alone with empty space above it, which reads fine.
         var leave = CreateButton(root.transform, "LeaveButton", "LEAVE", 180f, 52f, 18);
         var lvRect = leave.GetComponent<RectTransform>();
-        lvRect.anchorMin = lvRect.anchorMax = new Vector2(0f, 1f);
-        lvRect.pivot = new Vector2(0f, 1f);
-        lvRect.anchoredPosition = new Vector2(30, -30);
+        lvRect.anchorMin = lvRect.anchorMax = new Vector2(0.5f, 0.5f);
+        lvRect.pivot = new Vector2(0.5f, 0.5f);
+        lvRect.anchoredPosition = new Vector2(0, -430);
 
         var so = new SerializedObject(ui);
         so.FindProperty("playerListParent").objectReferenceValue = listContainer.transform;

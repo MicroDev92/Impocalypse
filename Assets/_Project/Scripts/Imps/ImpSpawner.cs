@@ -31,6 +31,12 @@ namespace Imps
         [SerializeField] private float dropDuration = 0.35f;
         [Tooltip("Extra delay per imp when several land in the same frame, so a batch reads as a cascade rather than a blink. 0 disables staggering.")]
         [SerializeField] private float dropStagger = 0.07f;
+        [Tooltip("How far the imp sinks past its tile before settling back.")]
+        [SerializeField] private float overshootDepth = 0.12f;
+        [Tooltip("Max sideways offset an imp starts from, so a batch does not fall down identical vertical lines.")]
+        [SerializeField] private float driftRange = 0.18f;
+        [Tooltip("Max tilt in degrees during the fall, righting itself on landing. Rotation rather than squash on purpose: scale is shared state owned by the building-tuck logic.")]
+        [SerializeField] private float tiltDegrees = 14f;
 
         private int _lastArrivalFrame = -1;
         private int _arrivalsThisFrame;
@@ -232,8 +238,23 @@ namespace Imps
         {
             var tr = imp.transform;
             Vector3 landing = tr.position;
-            Vector3 start = landing + Vector3.up * dropHeight;
+
+            // A little lateral offset and tilt, so imps do not all fall down the same
+            // dead-straight line. Purely visual and local-only, so Random is safe.
+            float drift = Random.Range(-driftRange, driftRange);
+            float tilt = Random.Range(-tiltDegrees, tiltDegrees);
+            Vector3 start = landing + Vector3.up * dropHeight + Vector3.right * drift;
+
+            // Overshoot slightly, then settle back. Landing dead on the mark reads as a
+            // transform finishing; overshooting reads as something with weight.
+            Vector3 overshoot = landing + Vector3.down * overshootDepth;
+
+            Quaternion startRot = Quaternion.Euler(0f, 0f, tilt);
+            Quaternion landRot = Quaternion.Euler(0f, 0f, -tilt * 0.25f);
+            Quaternion restRot = tr.localRotation;
+
             tr.position = start;
+            tr.localRotation = startRot;
 
             float waited = 0f;
             while (waited < delay)
@@ -243,23 +264,43 @@ namespace Imps
                 yield return null;
             }
 
-            float elapsed = 0f;
-            while (elapsed < dropDuration)
+            float fall = dropDuration * 0.78f;
+            float settle = Mathf.Max(0.04f, dropDuration - fall);
+
+            float t = 0f;
+            while (t < fall)
             {
                 // Imps are pooled, so one can be returned mid-drop (camp eviction, round
-                // end). Bail rather than writing a position onto an imp that is now
-                // somebody else on another tile.
+                // end). Bail rather than writing a pose onto an imp that is now somebody
+                // else on another tile.
                 if (!StillAirborne(imp)) yield break;
 
-                elapsed += Time.deltaTime;
-                float k = Mathf.Clamp01(elapsed / dropDuration);
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(t / fall);
                 // Accelerate downward: a falling imp reads as arriving, one that eases
                 // out reads as sliding.
-                tr.position = Vector3.LerpUnclamped(start, landing, k * k);
+                tr.position = Vector3.LerpUnclamped(start, overshoot, k * k);
+                tr.localRotation = Quaternion.Slerp(startRot, landRot, k);
                 yield return null;
             }
 
-            if (StillAirborne(imp)) tr.position = landing;
+            t = 0f;
+            while (t < settle)
+            {
+                if (!StillAirborne(imp)) yield break;
+
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(t / settle);
+                // Ease out of the recoil so it decays rather than snapping.
+                float e = 1f - (1f - k) * (1f - k);
+                tr.position = Vector3.LerpUnclamped(overshoot, landing, e);
+                tr.localRotation = Quaternion.Slerp(landRot, restRot, e);
+                yield return null;
+            }
+
+            if (!StillAirborne(imp)) yield break;
+            tr.position = landing;
+            tr.localRotation = restRot;
         }
 
         private static bool StillAirborne(Imp imp) => imp != null && imp.gameObject.activeInHierarchy;

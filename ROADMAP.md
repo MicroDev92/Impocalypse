@@ -313,7 +313,7 @@ determination all worked. Everything below is on top of a working game.
       but stay readable), C-d (hover-derived state needs tearing down at phase
       end) and both halves of C-h without any of them contradicting each other.
 
-- [ ] **C-i. First and last hand cards slide under the sidebars.** Seen in the
+- [x] **C-i.** `pending`. **First and last hand cards slid under the sidebars.** Seen in the
       deployed build, 2026-10-20. Caused by the sidebar widening in `df8ca70`:
       `CardFanLayout.maxFanWidth` is **1350**, which fitted the old 280px
       sidebars (clear span 1360) and does not fit the new 380px ones (clear span

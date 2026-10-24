@@ -526,7 +526,7 @@ MonoBehaviour:
   fanAngle: 0
   arcHeight: 0
   cardGap: 14
-  maxFanWidth: 1300
+  maxFanWidth: 1120
   minCardScale: 0.85
   maxCardScale: 1
   bottomOffset: 130

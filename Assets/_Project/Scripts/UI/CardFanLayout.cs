@@ -29,8 +29,8 @@ public class CardFanLayout : MonoBehaviour
     [SerializeField] private float arcHeight = 0f;
     [Tooltip("Gap between neighbouring cards, in card-width-independent pixels.")]
     [SerializeField] private float cardGap = 14f;
-    [Tooltip("Total width the hand may occupy. Cards shrink to fit inside it.")]
-    [SerializeField] private float maxFanWidth = 1350f;
+    [Tooltip("Total width the hand may occupy. Cards shrink to fit inside it. MUST stay under the clear span between the sidebars: 1920 canvas - 380 left - 380 right = 1160, so 1120 leaves a 40px margin. Widening the sidebars without lowering this is what put the first and last cards underneath them.")]
+    [SerializeField] private float maxFanWidth = 1120f;
 
     [Header("Auto-fit")]
     [Tooltip("Smallest the cards may shrink to when the hand is large. Below this they stop shrinking and start overlapping instead.")]

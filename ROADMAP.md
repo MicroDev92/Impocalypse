@@ -466,7 +466,10 @@ usually are not.
 
 **What is actually missing** is an authority that is not a player, and identity.
 
-- [ ] **F1. Server-authoritative scoring.** The prerequisite for all of it.
+- [ ] **F1. Server-authoritative scoring.** **Cheapest preparation, available now:
+      write game rules as plain C# rather than MonoBehaviours.** `ParchmentEvaluator`
+      already has zero `UnityEngine` references and would drop into a server unchanged;
+      `DraftService` and `ConstructionService` would not. See CLAUDE.md Conventions. The prerequisite for all of it.
       Scoring is master-authoritative today: correct for friends on Discord,
       fine through 1.0, because a modified host can only win one casual game.
       A *recorded* score changes that — a host who fabricates one poisons

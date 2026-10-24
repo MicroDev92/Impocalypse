@@ -153,6 +153,12 @@ Game settings via ScriptableObjects in `Config/`:
 - Use `using Core.Events;` for event types
 - Prefer EventBus over direct references for cross-system communication
 - Prefer interfaces over concrete types for service access
+- **Game rules go in plain C# classes, not MonoBehaviours.** `ParchmentEvaluator`
+  (zero `UnityEngine` references) and `FiefCalculator` are the model; `DraftService`
+  and `ConstructionService` are the counter-example. Rules written this way drop into
+  a headless authoritative server unchanged - which is what a competitive mode would
+  need (Milestone F). Costs nothing today; the alternative is rewriting the rules
+  later, under pressure, to escape Unity.
 
 ## Coordinate System
 

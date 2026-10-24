@@ -24,6 +24,17 @@ namespace Imps
         [Tooltip("Sorting order for a tucked imp - should beat the building marker's (default 100) so the imp stands in front of its new home.")]
         [SerializeField] private int tuckedSortingOrder = 101;
 
+        [Header("Arrival")]
+        [Tooltip("How far above its tile an imp starts before dropping in. Provisions claims tiles the player never clicked, so motion is the only thing that says WHERE it happened.")]
+        [SerializeField] private float dropHeight = 2.2f;
+        [Tooltip("Seconds for the drop. Long enough to follow, short enough not to delay play.")]
+        [SerializeField] private float dropDuration = 0.35f;
+        [Tooltip("Extra delay per imp when several land in the same frame, so a batch reads as a cascade rather than a blink. 0 disables staggering.")]
+        [SerializeField] private float dropStagger = 0.07f;
+
+        private int _lastArrivalFrame = -1;
+        private int _arrivalsThisFrame;
+
         private ImpFactory _impFactory;
         private IEventBus _eventBus;
         private IGridService _gridService;
@@ -164,6 +175,9 @@ namespace Imps
 
                 // Camp flow: the tile already has its building when the imp arrives.
                 SyncImpPose(coordinate);
+
+                // Animate last: SyncImpPose has just written the landing position.
+                AnimateArrival(imp);
             }
 
             return imp;
@@ -188,6 +202,67 @@ namespace Imps
             else
                 RestorePose(imp, tile.transform.position);
         }
+
+        // ==========================================
+        // ARRIVAL
+        // ==========================================
+
+        /// <summary>
+        /// Drops the imp in from above its tile.
+        ///
+        /// Provisions resolves at pick time and claims tiles the player never clicked,
+        /// so the only signal was a counter in the top bar - missable even by someone
+        /// who knows it exists. A counter cannot say WHERE; motion can.
+        /// </summary>
+        private void AnimateArrival(Imp imp)
+        {
+            if (imp == null || dropDuration <= 0f || dropHeight <= 0f) return;
+
+            if (Time.frameCount != _lastArrivalFrame)
+            {
+                _lastArrivalFrame = Time.frameCount;
+                _arrivalsThisFrame = 0;
+            }
+
+            StartCoroutine(DropIn(imp, dropStagger * _arrivalsThisFrame));
+            _arrivalsThisFrame++;
+        }
+
+        private System.Collections.IEnumerator DropIn(Imp imp, float delay)
+        {
+            var tr = imp.transform;
+            Vector3 landing = tr.position;
+            Vector3 start = landing + Vector3.up * dropHeight;
+            tr.position = start;
+
+            float waited = 0f;
+            while (waited < delay)
+            {
+                if (!StillAirborne(imp)) yield break;
+                waited += Time.deltaTime;
+                yield return null;
+            }
+
+            float elapsed = 0f;
+            while (elapsed < dropDuration)
+            {
+                // Imps are pooled, so one can be returned mid-drop (camp eviction, round
+                // end). Bail rather than writing a position onto an imp that is now
+                // somebody else on another tile.
+                if (!StillAirborne(imp)) yield break;
+
+                elapsed += Time.deltaTime;
+                float k = Mathf.Clamp01(elapsed / dropDuration);
+                // Accelerate downward: a falling imp reads as arriving, one that eases
+                // out reads as sliding.
+                tr.position = Vector3.LerpUnclamped(start, landing, k * k);
+                yield return null;
+            }
+
+            if (StillAirborne(imp)) tr.position = landing;
+        }
+
+        private static bool StillAirborne(Imp imp) => imp != null && imp.gameObject.activeInHierarchy;
 
         private void TuckPose(Imp imp, Vector3 tileCenter)
         {

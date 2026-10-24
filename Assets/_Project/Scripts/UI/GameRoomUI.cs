@@ -139,10 +139,10 @@ public class GameRoomUI : MonoBehaviour
         // this keeps the change to the one element that needs it.
         if (roomNameText != null && _networkService != null)
         {
-            string code = _networkService.CurrentRoomName;
-            roomNameText.text = string.IsNullOrEmpty(code)
-                ? "Room"
-                : $"ROOM CODE  <size=180%><b>{code}</b></size>";
+            // The generator gives the code its own large element with a separate
+            // "ROOM CODE" label above it, so the rich-text wrapper that used to
+            // size it up here is no longer needed.
+            roomNameText.text = _networkService.CurrentRoomName ?? "----";
         }
 
         // Status
@@ -172,10 +172,17 @@ public class GameRoomUI : MonoBehaviour
         foreach (var actorNumber in playerIds)
         {
             GameObject entry = Instantiate(playerEntryPrefab, playerListParent);
-            TMP_Text text = entry.GetComponent<TMP_Text>();
+            TMP_Text text = entry.GetComponentInChildren<TMP_Text>();
             if (text != null)
             {
-                text.text = _networkService.GetPlayerName(actorNumber) ?? $"Player {actorNumber}";
+                string label = _networkService.GetPlayerName(actorNumber) ?? $"Player {actorNumber}";
+            
+                // Who you are, and who can start the game. Those are the two questions
+                // this screen exists to answer, and a column of bare names answers neither.
+                if (actorNumber == _networkService.LocalPlayerId) label += "  (you)";
+                if (_networkService.IsPlayerMaster(actorNumber)) label += "  · HOST";
+            
+                text.text = label;
             }
         }
     }

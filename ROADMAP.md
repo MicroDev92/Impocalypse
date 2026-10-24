@@ -602,7 +602,13 @@ usually are not.
 
   **Plan, cheapest first:**
 
-  1. **Landscape gate.** Detect portrait, show a rotate-to-play overlay. Legitimate and
+  1. **Landscape gate** - **possibly already solved by itch, no code needed.** Ticking
+     "Mobile friendly" in the embed options reveals an **Orientation** dropdown; set to
+     Landscape (done 2026-10-24). Verify on a real phone before building anything in
+     Unity: orientation lock support varies by browser and iOS Safari historically does
+     not honour it, so this may hint rather than enforce. Only build the in-game overlay
+     if itch turns out not to hold it. Original plan was:
+     Detect portrait, show a rotate-to-play overlay. Legitimate and
      common for a board game, and the landscape layout is already close to working.
      Small: one overlay plus an orientation check.
   2. **Text density pass in landscape.** Raise font sizes only, leaving layout alone.

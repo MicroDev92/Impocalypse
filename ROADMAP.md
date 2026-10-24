@@ -611,8 +611,20 @@ usually are not.
   3. **Collapsible sidebars** - only if landscape still feels cramped after 1 and 2.
      This is the one that is real work, and it may never be needed.
 
-  **Open question that decides the plan:** confirm the bad screenshot was portrait. If
-  it was landscape, step 1 does not help and the problem is bigger than this entry says.
+  **CONFIRMED 2026-10-24 on an iPhone: portrait is cramped, landscape fits normally.**
+  So step 1 (landscape gate) is the fix, and steps 2 and 3 may not be needed at all.
+
+  **Separate iPhone finding: the fullscreen button does nothing in Safari.** Not a bug
+  in the build - itch fullscreen calls the Fullscreen API, and iPhone Safari support for
+  it on non-video elements has been unreliable for years (Apple claimed it in 17.2;
+  developers reported it not working; iPad works, iPhone does not). Nothing to fix in
+  Unity. Things worth trying, cheapest first:
+
+  - itch embed option **"Click to launch in fullscreen"** instead of "Embed in page".
+    Zero code, different mechanism, may sidestep the API entirely.
+  - Longer term, off itch: Unity ships a **PWA** WebGL template (`Base/PWA`, alongside
+    Default and Minimal). PWA plus Add to Home Screen is the only real chrome-free
+    experience on iPhone - but it needs hosting that is not an itch iframe.
 
   **Sequencing:** still after the 4-player desktop playtest, which is what says
   whether any polish is worth buying. But mobile widens the playtest pool a lot —

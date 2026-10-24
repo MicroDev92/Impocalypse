@@ -27,16 +27,31 @@ public class TileClickInspector : MonoBehaviour
 
     private void Update()
     {
+        // Mouse OR touch. Gating on Mouse.current alone meant tiles were simply dead
+        // on a touch-only device: Mouse.current is null there, so this returned before
+        // doing anything. Buttons still worked, because Unity UI routes touch through
+        // the EventSystem - which is why the tablet looked fine until you tapped the board.
+        Vector2 screenPos;
         var mouse = Mouse.current;
-        if (mouse == null || !mouse.leftButton.wasPressedThisFrame) return;
+        var touch = Touchscreen.current;
 
-        // Ignore clicks that land on UI (sidebars, buttons, cards).
+        if (mouse != null && mouse.leftButton.wasPressedThisFrame)
+        {
+            screenPos = mouse.position.ReadValue();
+        }
+        else if (touch != null && touch.primaryTouch.press.wasPressedThisFrame)
+        {
+            screenPos = touch.primaryTouch.position.ReadValue();
+        }
+        else return;
+
+        // Ignore taps that land on UI (sidebars, buttons, cards).
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
 
         if (_camera == null) _camera = Camera.main;
         if (_camera == null || _gridService == null) return;
 
-        Vector3 world = _camera.ScreenToWorldPoint(mouse.position.ReadValue());
+        Vector3 world = _camera.ScreenToWorldPoint(screenPos);
         var gridPos = new Vector2Int(Mathf.RoundToInt(world.x), Mathf.RoundToInt(world.y));
 
         // GetTileByPosition only returns playable tiles (border/coordinate tiles are excluded),

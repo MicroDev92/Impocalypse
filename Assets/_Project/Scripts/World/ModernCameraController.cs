@@ -30,6 +30,8 @@ namespace World
 
         [Header("Zoom Settings")]
         public float zoomSensitivity = 0.05f;
+        [Tooltip("How strongly a pinch zooms, scaled by viewport height so a phone and a tablet feel the same.")]
+        public float pinchSensitivity = 14f;
         public float minZoom = 4f;
         public float maxZoom = 10f;
 
@@ -64,8 +66,12 @@ namespace World
             _eventBus?.Unsubscribe<GamePhaseChangedEvent>(OnPhaseChanged);
         }
 
+        private float _pinchPrev = -1f;
+
         private void Update()
         {
+            TickPinch();
+
             if (Screen.width != _lastScreenSize.x || Screen.height != _lastScreenSize.y)
             {
                 _lastScreenSize = new Vector2(Screen.width, Screen.height);
@@ -82,7 +88,11 @@ namespace World
             // taken by tile selection, so right is the only one left to give.
             bool held = Mouse.current != null &&
                         (Mouse.current.middleButton.isPressed || Mouse.current.rightButton.isPressed);
-            bool touch = Touchscreen.current != null && Touchscreen.current.touches.Count == 1;
+            // ActiveTouchCount, not touches.Count: Touchscreen.touches is the array of
+            // touch CONTROLS the device exposes - normally 10 - regardless of how many
+            // fingers are down. Comparing it to 1 was never true, so touch pan had never
+            // worked on any device despite the binding being present.
+            bool touch = ActiveTouchCount() == 1;
             if (held || touch)
             {
                 Vector2 delta = context.ReadValue<Vector2>();
@@ -93,6 +103,43 @@ namespace World
                 float sensitivity = _cmCamera.Lens.OrthographicSize / viewportHeight * 2f;
                 transform.position += worldDelta * sensitivity;
             }
+        }
+
+        private static int ActiveTouchCount()
+        {
+            var ts = Touchscreen.current;
+            if (ts == null) return 0;
+            int n = 0;
+            foreach (var t in ts.touches) if (t.press.isPressed) n++;
+            return n;
+        }
+
+        /// <summary>
+        /// Pinch to zoom. The Zoom action is bound to mouse scroll only, and a pinch is
+        /// not expressible as a binding anyway - it is the change in distance between two
+        /// touches, so it has to be measured here.
+        /// </summary>
+        private void TickPinch()
+        {
+            var ts = Touchscreen.current;
+            if (ts == null || ActiveTouchCount() < 2) { _pinchPrev = -1f; return; }
+
+            Vector2 a = ts.touches[0].position.ReadValue();
+            Vector2 b = ts.touches[1].position.ReadValue();
+            float dist = Vector2.Distance(a, b);
+
+            if (_pinchPrev > 0f)
+            {
+                // Scale by viewport height so the same finger travel zooms the same
+                // amount on a phone and a tablet.
+                float delta = (dist - _pinchPrev) / Mathf.Max(1f, Screen.height);
+                var lens = _cmCamera.Lens;
+                lens.OrthographicSize = Mathf.Clamp(
+                    lens.OrthographicSize - delta * pinchSensitivity, minZoom, maxZoom);
+                _cmCamera.Lens = lens;
+            }
+
+            _pinchPrev = dist;
         }
 
         private void OnZoomPerformed(InputAction.CallbackContext context)

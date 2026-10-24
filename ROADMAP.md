@@ -575,6 +575,45 @@ usually are not.
 
   Estimate: one or two sessions, no rework of the interaction model.
 
+  **Update 2026-10-24 — touch input fixed, and the problem is narrower than thought.**
+
+  Tested on a Galaxy tablet: it looks better there than on desktop. Three bugs were
+  blocking the board, all mouse-only assumptions, all fixed in `a5b0114`:
+  tile taps (`Mouse.current` null on touch devices), pan (`touches.Count == 1` compares
+  against the count of touch CONTROLS, normally 10 - so touch pan had never worked
+  anywhere), and pinch zoom (Zoom is bound to mouse scroll only; a pinch is not
+  expressible as a binding and is now measured in Update).
+
+  **Phones: the problem is orientation, not size.** With `match: 0.5` the canvas in
+  reference units is screen px / scale factor:
+
+  | Orientation | Canvas units | Sidebars (380 each) |
+  |---|---|---|
+  | Landscape 2340x1080 | ~2120 x 978 | 760 of 2120 = **36%** |
+  | Portrait 1080x2340 | ~978 x 2120 | 760 of **978** = **78%** |
+
+  In portrait the sidebars consume nearly the whole width, which is what "sidebars over
+  the cards and map" is. A two-sidebar layout is structurally impossible on a portrait
+  phone; no amount of scaling fixes it.
+
+  **Why a single scaling lever does not work.** Dropping the reference resolution scales
+  text up, but scales the sidebars up with it - at a 1280 reference they become 30% of
+  the width each. Text wants to grow; panels do not. Two sizings, not one.
+
+  **Plan, cheapest first:**
+
+  1. **Landscape gate.** Detect portrait, show a rotate-to-play overlay. Legitimate and
+     common for a board game, and the landscape layout is already close to working.
+     Small: one overlay plus an orientation check.
+  2. **Text density pass in landscape.** Raise font sizes only, leaving layout alone.
+     Font sizes live in the generator commands, so this is mostly numbers in one place -
+     except GameScene sidebars, which were hand-tuned.
+  3. **Collapsible sidebars** - only if landscape still feels cramped after 1 and 2.
+     This is the one that is real work, and it may never be needed.
+
+  **Open question that decides the plan:** confirm the bad screenshot was portrait. If
+  it was landscape, step 1 does not help and the problem is bigger than this entry says.
+
   **Sequencing:** still after the 4-player desktop playtest, which is what says
   whether any polish is worth buying. But mobile widens the playtest pool a lot —
   a link works on a phone in a way it does not on a laptop nobody has open.

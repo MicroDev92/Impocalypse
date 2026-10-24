@@ -31,6 +31,9 @@ public class MainMenuUI : MonoBehaviour
     /// <summary>True while a join is in flight, so the menu cannot fire a second one.</summary>
     private bool _busy;
 
+    /// <summary>Guards the single auto-reconnect attempt per visit to this screen.</summary>
+    private bool _reconnectTried;
+
     private void Start()
     {
         if (!ServiceLocator.TryGetService(out _network))
@@ -38,6 +41,11 @@ public class MainMenuUI : MonoBehaviour
             Debug.LogError("[MainMenuUI] No INetworkService registered - this menu cannot start " +
                            "a game. Check that NetworkManager is present in this scene.");
         }
+
+        // Arriving disconnected is recoverable and must be recovered from: every
+        // button here is gated on IsConnected, so without this the menu is a dead
+        // screen whose only escape is reloading the page.
+        if (_network != null && !_network.IsConnected) _network.Connect();
 
         if (nameInput != null)
         {
@@ -235,6 +243,18 @@ public class MainMenuUI : MonoBehaviour
     {
         _busy = false;
         UpdateInteractable();
+
+        // One retry, not a loop: if Photon is genuinely down, retrying forever just
+        // spins, and WatchForConnection already reports it after the timeout.
+        if (!_reconnectTried && _network != null)
+        {
+            _reconnectTried = true;
+            SetStatus("Reconnecting...");
+            _network.Connect();
+            StartCoroutine(WatchForConnection());
+            return;
+        }
+
         SetStatus("Disconnected");
     }
 

@@ -324,6 +324,17 @@ determination all worked. Everything below is on top of a working game.
       deriving it from the sidebar width rather than hardcoding, so the next
       sidebar change does not silently reintroduce this.
 
+- [x] **C-j.** `pending`. **Main Menu from the results screen left the menu dead.**
+      Found 2026-10-24 in the deployed build. `GameOverState.ReturnToMenu` called
+      `Disconnect()` rather than `LeaveRoom()`, dropping the Photon connection;
+      `NetworkService` is DontDestroyOnLoad, so its `Start()` - the only caller of
+      `Connect()` - never ran again, and every menu button is gated on
+      `IsConnected`. The only recovery was reloading the page.
+
+      Fixed in two places: returning to the menu now leaves the room instead of the
+      server, and the menu reconnects once if it arrives disconnected, so an
+      ordinary network blip is survivable rather than terminal.
+
 **Results screen**
 
 - [x] **C-f.** `7e041d3`. **GameOver score panels overlapped.** Both players' entries rendered on top

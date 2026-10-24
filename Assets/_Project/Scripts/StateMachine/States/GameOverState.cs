@@ -85,7 +85,12 @@ namespace StateMachine.States
         public void ReturnToMenu()
         {
             var networkService = ServiceLocator.GetService<INetworkService>();
-            networkService?.Disconnect();
+
+            // Leave the ROOM, not the server. Disconnect() dropped the Photon
+            // connection, and NetworkService is DontDestroyOnLoad so its Start() -
+            // which is the only thing that calls Connect() - never ran again. The menu
+            // gates its buttons on IsConnected, so it came back permanently dead.
+            networkService?.LeaveRoom();
             UnityEngine.SceneManagement.SceneManager.LoadScene("Launcher");
         }
     }

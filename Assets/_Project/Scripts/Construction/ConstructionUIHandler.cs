@@ -389,15 +389,25 @@ namespace Construction
         {
             if (!_isActive || _selectedCityCard == null) return;
 
+            // Mouse OR touch, same as TileClickInspector. Gating on Mouse.current alone
+            // meant placement was dead on a touch device - Mouse.current is null there -
+            // while the building CARDS still worked, because Unity UI routes touch through
+            // the EventSystem. Picking a building and then being unable to place it is a
+            // worse failure than neither working.
+            Vector2 screenPos;
             var mouse = Mouse.current;
-            if (mouse == null) return;
+            var touch = Touchscreen.current;
 
-            if (mouse.leftButton.wasPressedThisFrame)
+            if (mouse != null && mouse.leftButton.wasPressedThisFrame)
+                screenPos = mouse.position.ReadValue();
+            else if (touch != null && touch.primaryTouch.press.wasPressedThisFrame)
+                screenPos = touch.primaryTouch.position.ReadValue();
+            else return;
+
             {
                 if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
                     return;
 
-                Vector2 screenPos = mouse.position.ReadValue();
                 Vector2 worldPos = Camera.main.ScreenToWorldPoint(screenPos);
 
                 var hit = Physics2D.Raycast(worldPos, Vector2.zero);

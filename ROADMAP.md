@@ -503,6 +503,31 @@ usually are not.
 ## Parking Lot (post-1.0, or "when it hurts")
 
 - Bots / single-player mode
+- **Chat / emotes** — raised 2026-10-24, never discussed before that. Recording
+  the reasoning so it is not re-derived.
+
+  **The roadmap already assumes Discord**, in two places: room codes are "read
+  aloud over Discord", and the trust model is "correct for friends on Discord".
+  So the design has quietly assumed a voice channel alongside the game. Chat is
+  what is needed when there is not one.
+
+  **Chat matters at the edges, not during play.** Lobby (waiting) and the end
+  screen (gg) yes; the 45s draft and 90s build no - typing against a pick timer
+  is hostile. That is convenient, because the edges are where nothing else is
+  competing for attention.
+
+  **Emotes beat chat for this game.** A handful of one-click reactions - taunt,
+  nice one, hurry up - because they work during a timed draft where typing
+  cannot, carry no moderation surface if the itch link spreads, fit a
+  hell-themed area-control game better than conversation, and are nearly free:
+  an emote is one more byte event code on the existing SendToAll plumbing. No
+  Photon Chat product, no extra CCU. Real chat costs a text input, a message
+  list, scrollback, join history and the moderation question.
+
+  **Decide from the playtest, not from a chair.** Four people playing answer it
+  for free: if they are on Discord and never miss it, the whole feature is saved;
+  if they reach for something, the moment and the kind tell you which feature it
+  actually is - a lobby "ready?" is not the same thing as trash-talking a pact.
 - **Mobile port** — investigated 2026-10-20 on a real phone. The original note
   here ("touch pass + UI density; architecture already ports") was right, and a
   fresh reading that called it a design change was wrong. Recording why.

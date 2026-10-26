@@ -255,6 +255,7 @@ namespace Imps
 
             tr.position = start;
             tr.localRotation = startRot;
+            imp.SetAirborneOffset(start - landing);
 
             float waited = 0f;
             while (waited < delay)
@@ -281,6 +282,7 @@ namespace Imps
                 // out reads as sliding.
                 tr.position = Vector3.LerpUnclamped(start, overshoot, k * k);
                 tr.localRotation = Quaternion.Slerp(startRot, landRot, k);
+                imp.SetAirborneOffset(tr.position - landing);
                 yield return null;
             }
 
@@ -295,12 +297,14 @@ namespace Imps
                 float e = 1f - (1f - k) * (1f - k);
                 tr.position = Vector3.LerpUnclamped(overshoot, landing, e);
                 tr.localRotation = Quaternion.Slerp(landRot, restRot, e);
+                imp.SetAirborneOffset(tr.position - landing);
                 yield return null;
             }
 
             if (!StillAirborne(imp)) yield break;
             tr.position = landing;
             tr.localRotation = restRot;
+            imp.SetAirborneOffset(Vector3.zero);
         }
 
         private static bool StillAirborne(Imp imp) => imp != null && imp.gameObject.activeInHierarchy;

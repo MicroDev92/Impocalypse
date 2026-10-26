@@ -39,7 +39,7 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     [SerializeField] private float shakeDuration = 0.25f;
 
     [Tooltip("Smallest the card label may auto-shrink to. The hand layout also scales cards down, so this is the real readability floor.")]
-    [SerializeField] private float minLabelFontSize = 20f;
+    [SerializeField] private float minLabelFontSize = 13f;
 
     [Header("Card Art")]
     [Tooltip("Large art panel on the card face. Territory cards mirror their tile's terrain; the art set below covers everything else.")]
@@ -92,12 +92,20 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         // but never below a readable floor. The old 8pt minimum let long labels
         // collapse to an illegible smudge once the hand layout also scaled the card
         // down; text that can't be read is worse than text that wraps.
+        //
+        // NoWrap, because pact labels arrive hand-broken from ParchmentCardLabel.
+        // Left to wrap, auto-sizing satisfies itself by splitting a word rather
+        // than shrinking - "+1/Charwoo" above a lone "d" - since a broken word
+        // technically fits. Denying it that escape makes the font the only thing
+        // that can give, and the authored line breaks survive. The cost is that
+        // the floor above is now a hard budget: roughly 10 characters per line
+        // at 18pt in a 106px label, so labels must be written to fit.
         if (label != null)
         {
             label.enableAutoSizing = true;
             label.fontSizeMax = label.fontSize;
             label.fontSizeMin = minLabelFontSize;
-            label.textWrappingMode = TextWrappingModes.Normal;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
         }
         if (button != null)
         {
@@ -309,7 +317,7 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
             // twelve-cards-across sizes). Pacts are the exception - their rule IS
             // their content and no art can convey it.
             else if (data.IsCamp)
-                label.text = $"{GameLexicon.CampName} #{data.Amount}";
+                label.text = $"Camp #{data.Amount}";
             else if (data.IsSkyTower)
                 label.text = GameLexicon.SkyTowerName;
             else if (data.IsProvisions)
@@ -353,7 +361,7 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 
         thumbnail.sprite = art;
         thumbnail.preserveAspect = true;
-        thumbnail.enabled = art != null;
+        thumbnail.gameObject.SetActive(art != null);
     }
 
     /// <summary>Hand-card label for a farm: says what it adds and where it can go.</summary>
@@ -362,8 +370,8 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         return data.Farm switch
         {
             FarmKind.Market => GameLexicon.MarketName,
-            FarmKind.Special => $"{GameLexicon.Resource(data.Resource)}\non {GameLexicon.TerrainShort(data.AllowedTerrain)}",
-            _ => GameLexicon.Resource(data.Resource) // art says "farm"; the inspector says "adds"
+            FarmKind.Special => $"{GameLexicon.ResourceShort(data.Resource)}\non {GameLexicon.TerrainShort(data.AllowedTerrain)}",
+            _ => GameLexicon.ResourceShort(data.Resource) // art says "farm"; the inspector says "adds"
         };
     }
 
@@ -373,10 +381,10 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         return data.Rule switch
         {
             Cards.ParchmentRule.Treasure => $"Treasure\n+{data.Amount}",
-            Cards.ParchmentRule.PerResource => $"Pact\n+{data.Amount}/{GameLexicon.Resource(data.Resource)}",
-            Cards.ParchmentRule.PerFief => $"Pact\n+{data.Amount}/domain",
-            Cards.ParchmentRule.LargestFief => $"Pact\n+{data.Amount}/tile\nbiggest domain",
-            Cards.ParchmentRule.PerCity => $"Pact\n+{data.Amount}/citadel",
+            Cards.ParchmentRule.PerResource => $"Pact\n+{data.Amount} per\n{GameLexicon.ResourceShort(data.Resource)}",
+            Cards.ParchmentRule.PerFief => $"Pact\n+{data.Amount} per\nDomain",
+            Cards.ParchmentRule.LargestFief => $"Pact\n+{data.Amount}/tile\nbiggest",
+            Cards.ParchmentRule.PerCity => $"Pact\n+{data.Amount} per\nCitadel",
             _ => "Pact"
         };
     }
@@ -413,7 +421,7 @@ public class Card : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 
         if (label != null) label.text = "";
         if (button != null) button.interactable = true;
-        if (thumbnail != null) { thumbnail.sprite = null; thumbnail.enabled = false; }
+        if (thumbnail != null) { thumbnail.sprite = null; thumbnail.gameObject.SetActive(false); }
 
         if (resourceIcon != null)
         {

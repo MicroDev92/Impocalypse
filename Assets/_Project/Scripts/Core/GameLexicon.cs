@@ -26,6 +26,13 @@ public static class GameLexicon
         _ => ""
     };
 
+    /// <summary>
+    /// Resource name for a card face, where the budget is roughly ten characters.
+    /// Only the wildcard needs shortening; the inspector panel still says it in full.
+    /// </summary>
+    public static string ResourceShort(ResourceType r) =>
+        r == ResourceType.WildcardCommon ? "Any" : Resource(r);
+
     // ---- Terrains ----
     public static string Terrain(TileData.TileType t) => t switch
     {

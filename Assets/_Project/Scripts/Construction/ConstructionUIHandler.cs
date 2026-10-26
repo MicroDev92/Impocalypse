@@ -203,8 +203,8 @@ namespace Construction
             if (label != null)
             {
                 label.text = stackCount > 1
-                    ? $"{BuildingLabel(card)}  ×{stackCount}"
-                    : BuildingLabel(card);
+                    ? BuildingFaceLabel(card) + "\n×" + stackCount
+                    : BuildingFaceLabel(card);
             }
             
             // If it has a Card script, disable it so it doesn't fight our UI logic
@@ -276,7 +276,10 @@ namespace Construction
         /// </summary>
         private void ApplyButtonArt(GameObject buttonObj, CardData card)
         {
-            Transform thumbTransform = buttonObj.transform.Find("Thumbnail");
+            // Find by name rather than by path: Card.prefab nests the thumbnail
+            // under its Content safe-area object, and a direct-child Find silently
+            // returns null there, leaving an Image with no sprite drawing a white box.
+            Transform thumbTransform = FindDeep(buttonObj.transform, "Thumbnail");
             if (thumbTransform == null) return;
 
             var thumb = thumbTransform.GetComponent<Image>();
@@ -285,7 +288,9 @@ namespace Construction
             var art = cardArt.SpriteFor(card);
             thumb.sprite = art;
             thumb.preserveAspect = true;
-            thumb.enabled = art != null;
+            // Deactivate, not disable: Content's layout group still reserves space for
+            // a disabled Image, which would leave the label squashed into half a card.
+            thumb.gameObject.SetActive(art != null);
         }
 
         private void OnCityCardSelected(CardData card, GameObject buttonObj)
@@ -297,12 +302,14 @@ namespace Construction
             foreach (var btn in _cityCardButtons)
             {
                 var img = btn.GetComponent<Image>();
-                if (img != null) img.color = new Color(0.70f, 0.75f, 0.90f, 1f);
+                // White = the frame art as drawn. The old bluish tint was left over
+                // from the stock Unity button sprite and washed the card out.
+                if (img != null) img.color = Color.white;
             }
 
             // Highlight selected
             var selectedImg = buttonObj.GetComponent<Image>();
-            if (selectedImg != null) selectedImg.color = new Color(1f, 0.85f, 0.40f, 1f);
+            if (selectedImg != null) selectedImg.color = new Color(1f, 0.82f, 0.55f, 1f);
 
             if (instructionText != null)
                 instructionText.text = $"Selected {BuildingLabel(card)}. Click a highlighted tile to place.";
@@ -358,7 +365,43 @@ namespace Construction
             return false;
         }
 
-        /// <summary>Short label describing a building card.</summary>
+        /// <summary>
+        /// What goes on the card itself. Deliberately the same wording the draft hand
+        /// uses, so a building looks identical in hand and on the construction bar, and
+        /// short enough for the card: BuildingLabel's parenthetical hints run to 29
+        /// characters, which no 130px card can hold. Those hints live on the
+        /// instruction line instead, which has the whole width of the screen.
+        /// </summary>
+        private static string BuildingFaceLabel(CardData card)
+        {
+            if (card.IsCity) return $"Str {(int)card.Strength}";
+            if (card.IsCamp) return $"Camp #{card.Amount}";
+            if (card.IsSkyTower) return GameLexicon.SkyTowerName;
+            if (card.IsFarm)
+            {
+                return card.Farm switch
+                {
+                    FarmKind.Market => GameLexicon.MarketName,
+                    FarmKind.Special => $"{GameLexicon.ResourceShort(card.Resource)}\non {GameLexicon.TerrainShort(card.AllowedTerrain)}",
+                    _ => GameLexicon.ResourceShort(card.Resource)
+                };
+            }
+            return "Building";
+        }
+
+        /// <summary>Recursive child lookup by name; Transform.Find only sees direct children.</summary>
+        private static Transform FindDeep(Transform root, string name)
+        {
+            if (root.name == name) return root;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                var found = FindDeep(root.GetChild(i), name);
+                if (found != null) return found;
+            }
+            return null;
+        }
+
+        /// <summary>Full sentence-case description, for the instruction line and logs.</summary>
         private static string BuildingLabel(CardData card)
         {
             if (card.IsCity) return $"{GameLexicon.CityName} Str {(int)card.Strength}";

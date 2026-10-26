@@ -21,10 +21,64 @@
         width: 100%; height: 100%;
         background: #140C0A;
       }
+      /* Portrait on a touch device is unusable: two 380-unit sidebars take 78% of
+         the canvas width. iOS will not honour an orientation lock from a web page,
+         so the only honest option is to ask. Pure CSS, so it is up before Unity has
+         even finished loading. */
+      #rotate-hint {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        background: #140C0A;
+        color: #F0A868;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        padding: 24px;
+        text-align: center;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      #rotate-hint .phone {
+        width: 54px;
+        height: 92px;
+        border: 4px solid #E0712A;
+        border-radius: 10px;
+      }
+      #rotate-hint p {
+        margin: 0;
+        font-size: 19px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      #rotate-hint small {
+        display: block;
+        margin-top: 10px;
+        font-size: 13px;
+        letter-spacing: 0.04em;
+        color: #8A6652;
+        text-transform: none;
+      }
+      @media (orientation: portrait) and (pointer: coarse) {
+        #rotate-hint { display: flex; }
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        #rotate-hint .phone { animation: tipover 2.4s ease-in-out infinite; }
+      }
+      @keyframes tipover {
+        0%, 30%  { transform: rotate(0deg); }
+        55%, 85% { transform: rotate(-90deg); }
+        100%     { transform: rotate(0deg); }
+      }
     </style>
   </head>
   <body>
     <canvas id="unity-canvas" width={{{ WIDTH }}} height={{{ HEIGHT }}} tabindex="-1"></canvas>
+    <div id="rotate-hint" aria-live="polite">
+      <div class="phone"></div>
+      <p>Rotate your device<small>Impocalypse plays in landscape</small></p>
+    </div>
     <script src="Build/{{{ LOADER_FILENAME }}}"></script>
     <script>
       // Right-drag pans the board, so stop the browser hijacking it with a

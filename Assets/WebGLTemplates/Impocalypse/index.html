@@ -60,8 +60,23 @@
         color: #8A6652;
         text-transform: none;
       }
-      @media (orientation: portrait) and (pointer: coarse) {
-        #rotate-hint { display: flex; }
+      /* Visibility is decided in script, not here. The CSS orientation feature
+         describes the IFRAME's box, and itch serves the game in a fixed-size one,
+         so it stays "portrait" however the phone is held - the hint went up and
+         never came down. Defaulting to hidden also means a script failure costs a
+         missing hint rather than a locked screen. */
+      #rotate-hint.visible { display: flex; }
+      #rotate-hint button {
+        appearance: none;
+        background: transparent;
+        border: 2px solid #8A6652;
+        border-radius: 8px;
+        color: #C79070;
+        font: inherit;
+        font-size: 14px;
+        letter-spacing: 0.08em;
+        padding: 10px 22px;
+        text-transform: uppercase;
       }
       @media (prefers-reduced-motion: no-preference) {
         #rotate-hint .phone { animation: tipover 2.4s ease-in-out infinite; }
@@ -78,7 +93,62 @@
     <div id="rotate-hint" aria-live="polite">
       <div class="phone"></div>
       <p>Rotate your device<small>Impocalypse plays in landscape</small></p>
+      <button id="rotate-dismiss" type="button">Play anyway</button>
     </div>
+    <script>
+      // Decide the rotate hint from the DEVICE, not from the CSS orientation
+      // media feature: inside itch's fixed-size iframe that feature never changes
+      // when the phone turns, which left the hint up permanently with no way past.
+      (function () {
+        var hint = document.getElementById("rotate-hint");
+        var dismissed = false;
+
+        // screen.orientation and window.orientation report the device even from
+        // inside an iframe. Returns null when neither is available.
+        function devicePortrait() {
+          var so = window.screen && window.screen.orientation;
+          if (so && typeof so.type === "string") return so.type.indexOf("portrait") === 0;
+          if (typeof window.orientation === "number") {
+            return window.orientation === 0 || window.orientation === 180;
+          }
+          return null;
+        }
+
+        function update() {
+          if (dismissed) { hint.classList.remove("visible"); return; }
+
+          var coarse = !window.matchMedia || window.matchMedia("(pointer: coarse)").matches;
+          var viewportPortrait = window.innerHeight > window.innerWidth;
+          var device = devicePortrait();
+
+          // Require BOTH the device and the frame to look portrait. Hiding on a
+          // wrong guess costs a cramped layout; showing on a wrong guess strands
+          // the player, so the asymmetry decides which way to err.
+          var show = coarse && viewportPortrait && (device === null ? true : device);
+          hint.classList.toggle("visible", show);
+        }
+
+        function recheck() {
+          // iOS reports stale dimensions for a moment after a rotation, so sample
+          // again as it settles rather than trusting the first value.
+          update();
+          setTimeout(update, 120);
+          setTimeout(update, 400);
+          setTimeout(update, 900);
+        }
+
+        hint.addEventListener("click", function () { dismissed = true; update(); });
+
+        window.addEventListener("resize", update);
+        window.addEventListener("orientationchange", recheck);
+        if (window.screen && window.screen.orientation && window.screen.orientation.addEventListener) {
+          window.screen.orientation.addEventListener("change", recheck);
+        }
+        if (window.visualViewport) window.visualViewport.addEventListener("resize", update);
+
+        update();
+      })();
+    </script>
     <script src="Build/{{{ LOADER_FILENAME }}}"></script>
     <script>
       // Right-drag pans the board, so stop the browser hijacking it with a

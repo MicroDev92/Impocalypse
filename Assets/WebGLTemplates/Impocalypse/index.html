@@ -21,70 +21,62 @@
         width: 100%; height: 100%;
         background: #140C0A;
       }
-      /* Portrait on a touch device is unusable: two 380-unit sidebars take 78% of
-         the canvas width. iOS will not honour an orientation lock from a web page,
-         so the only honest option is to ask. Pure CSS, so it is up before Unity has
-         even finished loading. */
+      /* A BANNER, not a curtain. Three attempts at a full-screen overlay each
+         left the player stuck: the first two gated it on a signal that never
+         changes inside itch's fixed-size iframe, and the third could not be
+         tapped away because position:fixed hit-tests against the wrong viewport
+         on iOS inside a scaled iframe - the button drew where you saw it but
+         answered somewhere else.
+         A strip across the top cannot hide the game or swallow a tap, so there
+         is no state left in which the player is blocked. position:absolute,
+         because fixed is the thing that misbehaves. */
       #rotate-hint {
         display: none;
-        position: fixed;
-        inset: 0;
+        position: absolute;
+        top: 0; left: 0; right: 0;
         z-index: 10;
-        background: #140C0A;
-        color: #F0A868;
-        flex-direction: column;
+        padding: 10px 14px;
+        gap: 12px;
         align-items: center;
         justify-content: center;
-        gap: 28px;
-        padding: 24px;
+        background: rgba(20, 12, 10, 0.94);
+        border-bottom: 1px solid #4A2D22;
+        color: #F0A868;
         text-align: center;
         font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        /* Taps fall through to the game; only the button answers. */
+        pointer-events: none;
       }
+      #rotate-hint.visible { display: flex; }
       #rotate-hint .phone {
-        width: 54px;
-        height: 92px;
-        border: 4px solid #E0712A;
-        border-radius: 10px;
+        flex: none;
+        width: 16px;
+        height: 26px;
+        border: 2px solid #E0712A;
+        border-radius: 4px;
       }
       #rotate-hint p {
         margin: 0;
-        font-size: 19px;
-        letter-spacing: 0.14em;
+        font-size: 13px;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
       }
       #rotate-hint small {
-        display: block;
-        margin-top: 10px;
-        font-size: 13px;
-        letter-spacing: 0.04em;
-        color: #8A6652;
-        text-transform: none;
+        display: none;
       }
-      /* Visibility is decided in script, not here. The CSS orientation feature
-         describes the IFRAME's box, and itch serves the game in a fixed-size one,
-         so it stays "portrait" however the phone is held - the hint went up and
-         never came down. Defaulting to hidden also means a script failure costs a
-         missing hint rather than a locked screen. */
-      #rotate-hint.visible { display: flex; }
       #rotate-hint button {
+        pointer-events: auto;
+        flex: none;
         appearance: none;
         background: transparent;
-        border: 2px solid #8A6652;
-        border-radius: 8px;
+        border: 1px solid #8A6652;
+        border-radius: 6px;
         color: #C79070;
         font: inherit;
-        font-size: 14px;
-        letter-spacing: 0.08em;
-        padding: 10px 22px;
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        padding: 6px 12px;
         text-transform: uppercase;
-      }
-      @media (prefers-reduced-motion: no-preference) {
-        #rotate-hint .phone { animation: tipover 2.4s ease-in-out infinite; }
-      }
-      @keyframes tipover {
-        0%, 30%  { transform: rotate(0deg); }
-        55%, 85% { transform: rotate(-90deg); }
-        100%     { transform: rotate(0deg); }
       }
     </style>
   </head>
@@ -93,7 +85,7 @@
     <div id="rotate-hint" aria-live="polite">
       <div class="phone"></div>
       <p>Rotate your device<small>Impocalypse plays in landscape</small></p>
-      <button id="rotate-dismiss" type="button">Tap to continue</button>
+      <button id="rotate-dismiss" type="button">Dismiss</button>
     </div>
     <script>
       // The hint is an ADVISORY, not a gate. Two earlier attempts gated it on a
@@ -118,6 +110,9 @@
           if (gone) return;
           gone = true;
           hint.classList.remove("visible");
+          // Remember it: iOS can re-create the iframe on rotation, which would
+          // otherwise hand the player the banner again every time they turn.
+          try { sessionStorage.setItem("rotateHintDone", "1"); } catch (e) {}
           document.removeEventListener("pointerdown", hideForever, true);
           document.removeEventListener("touchstart", hideForever, true);
           document.removeEventListener("keydown", hideForever, true);
@@ -139,8 +134,10 @@
 
         var coarse = !window.matchMedia || window.matchMedia("(pointer: coarse)").matches;
         var portraitish = window.innerHeight > window.innerWidth;
+        var alreadyDone = false;
+        try { alreadyDone = sessionStorage.getItem("rotateHintDone") === "1"; } catch (e) {}
 
-        if (!coarse || !portraitish) { hideForever(); return; }
+        if (alreadyDone || !coarse || !portraitish) { hideForever(); return; }
 
         hint.classList.add("visible");
 

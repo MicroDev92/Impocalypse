@@ -93,18 +93,37 @@
     <div id="rotate-hint" aria-live="polite">
       <div class="phone"></div>
       <p>Rotate your device<small>Impocalypse plays in landscape</small></p>
-      <button id="rotate-dismiss" type="button">Play anyway</button>
+      <button id="rotate-dismiss" type="button">Tap to continue</button>
     </div>
     <script>
-      // Decide the rotate hint from the DEVICE, not from the CSS orientation
-      // media feature: inside itch's fixed-size iframe that feature never changes
-      // when the phone turns, which left the hint up permanently with no way past.
+      // The hint is an ADVISORY, not a gate. Two earlier attempts gated it on a
+      // signal that was supposed to change when the phone turns - first the CSS
+      // orientation media feature, then screen.orientation - and inside itch's
+      // fixed-size cross-origin iframe neither reliably does. iOS Safari only
+      // exposes screen.orientation from 16.4 and window.orientation is being
+      // removed, so when both are missing there is NOTHING in the frame that
+      // changes on rotation, and anything gated on one strands the player.
+      //
+      // So nothing here can keep the hint up: it clears on a timer, on any touch
+      // and on any key, whatever the orientation APIs say. Orientation is used
+      // only to clear it sooner, never as the sole way out.
       (function () {
         var hint = document.getElementById("rotate-hint");
-        var dismissed = false;
+        if (!hint) return;
 
-        // screen.orientation and window.orientation report the device even from
-        // inside an iframe. Returns null when neither is available.
+        var HIDE_AFTER_MS = 5000;
+        var gone = false;
+
+        function hideForever() {
+          if (gone) return;
+          gone = true;
+          hint.classList.remove("visible");
+          document.removeEventListener("pointerdown", hideForever, true);
+          document.removeEventListener("touchstart", hideForever, true);
+          document.removeEventListener("keydown", hideForever, true);
+        }
+
+        // Device orientation when it is knowable; null when it is not.
         function devicePortrait() {
           var so = window.screen && window.screen.orientation;
           if (so && typeof so.type === "string") return so.type.indexOf("portrait") === 0;
@@ -114,39 +133,39 @@
           return null;
         }
 
-        function update() {
-          if (dismissed) { hint.classList.remove("visible"); return; }
-
-          var coarse = !window.matchMedia || window.matchMedia("(pointer: coarse)").matches;
-          var viewportPortrait = window.innerHeight > window.innerWidth;
-          var device = devicePortrait();
-
-          // Require BOTH the device and the frame to look portrait. Hiding on a
-          // wrong guess costs a cramped layout; showing on a wrong guess strands
-          // the player, so the asymmetry decides which way to err.
-          var show = coarse && viewportPortrait && (device === null ? true : device);
-          hint.classList.toggle("visible", show);
+        function clearIfLandscape() {
+          if (devicePortrait() === false || window.innerWidth > window.innerHeight) hideForever();
         }
 
+        var coarse = !window.matchMedia || window.matchMedia("(pointer: coarse)").matches;
+        var portraitish = window.innerHeight > window.innerWidth;
+
+        if (!coarse || !portraitish) { hideForever(); return; }
+
+        hint.classList.add("visible");
+
+        // The guarantee: the hint goes away on its own even if every signal below
+        // fails. Worst case the player waits five seconds; they are never stuck.
+        setTimeout(hideForever, HIDE_AFTER_MS);
+
+        // Any interaction at all dismisses - capture phase, so it still counts
+        // when Unity's canvas swallows the event.
+        document.addEventListener("pointerdown", hideForever, true);
+        document.addEventListener("touchstart", hideForever, true);
+        document.addEventListener("keydown", hideForever, true);
+
+        // And clear early when we CAN tell the phone has turned. iOS reports stale
+        // dimensions briefly after a rotation, so sample again as it settles.
         function recheck() {
-          // iOS reports stale dimensions for a moment after a rotation, so sample
-          // again as it settles rather than trusting the first value.
-          update();
-          setTimeout(update, 120);
-          setTimeout(update, 400);
-          setTimeout(update, 900);
+          clearIfLandscape();
+          setTimeout(clearIfLandscape, 150);
+          setTimeout(clearIfLandscape, 500);
         }
-
-        hint.addEventListener("click", function () { dismissed = true; update(); });
-
-        window.addEventListener("resize", update);
         window.addEventListener("orientationchange", recheck);
+        window.addEventListener("resize", clearIfLandscape);
         if (window.screen && window.screen.orientation && window.screen.orientation.addEventListener) {
           window.screen.orientation.addEventListener("change", recheck);
         }
-        if (window.visualViewport) window.visualViewport.addEventListener("resize", update);
-
-        update();
       })();
     </script>
     <script src="Build/{{{ LOADER_FILENAME }}}"></script>

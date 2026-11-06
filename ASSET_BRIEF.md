@@ -209,30 +209,90 @@ If you want a blink later, the cheapest addition is **one extra eyes-closed
 variant per creature**, same anchoring, swapped on a timer. Decide before
 generating; retrofitting a blink frame to a finished creature rarely matches.
 
-## 4. Luxury resource icons — 3 needed
+## 4. Resource and UI icons — 9 needed
 
-The only icons missing. `ui_icons.png` already has `charwood`, `bloodroot`,
-`souls`, `territory`, `citadel`, `infamy`.
+All nine, not three: the six existing ones are being replaced along with
+everything else. Six come from `ui_icons.png` (use it as subject reference for
+what each represents), three are new.
 
-| icon | source |
-|---|---|
-| Demonsilk | Special Farm on Gloomwood Grove |
-| Soulwine | Special Farm on Bloodroot Field |
-| Ectoplasm | Special Farm on The Styx |
+| icon | source | status |
+|---|---|---|
+| Charwood | Gloomwood Grove tiles | replaces existing |
+| Bloodroot | Bloodroot Field tiles | replaces existing |
+| Souls | The Styx tiles | replaces existing |
+| Territory | a claimed tile | replaces existing |
+| Citadel | a built citadel | replaces existing |
+| Infamy | the score currency | replaces existing |
+| Demonsilk | Special Farm on Gloomwood Grove | new |
+| Soulwine | Special Farm on Bloodroot Field | new |
+| Ectoplasm | Special Farm on The Styx | new |
 
 - **Canvas: 512 × 512 px**, transparent, object centred.
-- Must read at **24–32 px**. Single object, one silhouette, no scene.
-- See the compatibility warning above: if the new style diverges from the
-  existing six, generate all nine rather than mixing.
+- Must read at **24–32 px** in the sidebar. Single object, one silhouette,
+  no scene, no background.
+- These appear as the Pacts and Domains chips in the sidebar, which is the part
+  of the mockup singled out as most readable — they carry real meaning, not
+  decoration.
 
-## 5. Card art — 2 slots, optional
+## 5. Building markers — 6 needed
 
-`CardArtSet.pact` and `CardArtSet.provisions` are empty (`fileID: 0`), which is
-why those cards show bare parchment. Citadel, farm, bazaar, warcamp and hellgate
-already have art.
+Drawn on the board over a terrain tile, and on cards.
 
-- **Canvas: 512 × 512 px**, transparent. Renders ~58 units square on the card.
-- Pact: a sealed scroll / contract. Provisions: a supply crate or sack.
+| marker | notes |
+|---|---|
+| Citadel | strength 1–3 all use this one marker |
+| Farm | common farm |
+| Bazaar | market / wildcard |
+| Warcamp | provisional claim |
+| Hellgate | sky tower, links two domains |
+| Lair | currently unused by the rules, keep for parity |
+
+- **Canvas: 1024 × 1024 px**, transparent.
+- A building shares its tile with a creature — the creature tucks and shrinks
+  behind it (`ImpSpawner.TuckPose`). **Leave the lower third visually clear** so
+  the occupant is not completely hidden.
+- Same rendered-size constraint as creatures: roughly 17–48 px depending on
+  viewport. Silhouette first.
+
+## 6. Card art and frame — 3 needed
+
+- **Card art ×2**, 512 × 512 px, transparent, renders ~58 units square inside
+  the card's parchment. `CardArtSet.pact` and `.provisions` are empty slots
+  today, which is why those cards show bare parchment. Pact: a sealed scroll or
+  contract. Provisions: a supply crate or sack.
+- **Card frame ×1**, the parchment-and-horns card background, **9-sliced**.
+
+> **The card frame has a dependency nothing else has.** The card's internal
+> layout is pinned to the *measured* parchment area of the current frame: a
+> content box of **71 × 95 units inside a 130 × 190 card**, derived by scanning
+> `card_frame.png` for the parchment region (commit `381d183`). A new frame with
+> a different parchment shape invalidates that measurement, and the card layout
+> has to be re-measured and re-fitted afterwards.
+>
+> So either keep the new frame's **parchment area in the same proportions** as
+> the current one, or expect a follow-up pass on card layout. Flag which, because
+> it is cheaper to match the proportions than to redo the fitting.
+>
+> Supply the intended **9-slice border insets** in pixels with the frame, or the
+> corners will stretch when the card is scaled.
+
+## 7. Panels, chrome and background — 6 needed
+
+| asset | notes |
+|---|---|
+| Panel background | sidebar and card-info panels, **9-sliced** |
+| Button background | **9-sliced** |
+| Coordinate slab | the tile behind each A–J / 1–10 label |
+| Corner skull | the four board corners |
+| Background texture | tileable, sits behind everything |
+| Background glow | soft vignette / glow layer |
+
+- Panel and button are **9-sliced and stretched to many different sizes** —
+  supply border insets in pixels, and keep the decorative detail in the corners
+  rather than along the edges, which get stretched.
+- The coordinate slab must read behind **TextMeshPro text**, not baked art —
+  keep its centre quiet.
+- Background texture must tile seamlessly; it is drawn behind the whole board.
 
 ---
 
@@ -273,13 +333,24 @@ A real capture replaces this once tinting lands, and the tint percentage here
 
 ## Filenames and destinations
 
-| asset | file | destination |
-|---|---|---|
-| Terrain ×5 | `ashlands.png`, `styx.png`, `grove.png`, `field.png`, `peaks.png` | `Assets/Art/Tiles/` |
-| Creatures ×4 | `imp_red.png`, `imp_teal.png`, `imp_yellow.png`, `imp_purple.png` | `Assets/Art/Imps/` |
-| Portraits ×4 | `portrait_red.png`, … | `Assets/Art/Imps/` |
-| Luxury icons ×3 | `icon_demonsilk.png`, `icon_soulwine.png`, `icon_ectoplasm.png` | `Assets/Art/UI/Icons/` |
-| Card art ×2 | `card_pact.png`, `card_provisions.png` | `Assets/Art/UI/` |
+All 37, as individual PNGs — **not sheets**. Sheets are for settling the design;
+deliverables are separate files, so slicing stays on this side.
+
+| # | asset | files | destination |
+|---|---|---|---|
+| 5 | Terrain | `ashlands.png`, `styx.png`, `grove.png`, `field.png`, `peaks.png` | `Assets/Art/Tiles/` |
+| 4 | Creatures | `imp_red.png`, `imp_teal.png`, `imp_yellow.png`, `imp_purple.png` | `Assets/Art/Imps/` |
+| 4 | Portraits | `portrait_red.png`, `portrait_teal.png`, `portrait_yellow.png`, `portrait_purple.png` | `Assets/Art/Imps/` |
+| 9 | Icons | `icon_charwood.png`, `icon_bloodroot.png`, `icon_souls.png`, `icon_territory.png`, `icon_citadel.png`, `icon_infamy.png`, `icon_demonsilk.png`, `icon_soulwine.png`, `icon_ectoplasm.png` | `Assets/Art/UI/Icons/` |
+| 6 | Buildings | `building_citadel.png`, `building_farm.png`, `building_bazaar.png`, `building_warcamp.png`, `building_hellgate.png`, `building_lair.png` | `Assets/Art/UI/Buildings/` |
+| 2 | Card art | `card_pact.png`, `card_provisions.png` | `Assets/Art/UI/` |
+| 1 | Card frame | `card_frame.png` | `Assets/Art/UI/` |
+| 4 | Panels & chrome | `panel_bg.png`, `button_bg.png`, `coord_slab.png`, `corner_skull.png` | `Assets/Art/UI/Panels/` |
+| 2 | Background | `bg_texture_tileable.png`, `bg_glow.png` | `Assets/Art/UI/Background/` |
+| **37** | | | |
+
+Anything **9-sliced** (`card_frame`, `panel_bg`, `button_bg`) needs its border
+insets in pixels supplied alongside it.
 
 Note the existing `colorId` values are `red`, `green`, `blue`, `purple`, while
 the concept set is red / teal / yellow / purple. I will remap the ids; the
@@ -320,6 +391,10 @@ Handled on this side; listed so the deliverable is unambiguous.
 2. Each terrain as a **3 × 3 block of itself** — do the edges meet without a
    visible grid?
 3. Five terrains mixed on a board — does Ashlands recede, or fight?
-4. Each terrain **under a 15% wash of each player colour** — still identifiable?
+4. Each terrain **under a 15% wash of each player colour, with the coloured
+   ownership edge drawn** — terrain still identifiable, owner still obvious?
 5. Each icon at 24 px — readable?
-6. Every transparent PNG genuinely transparent, no white fringe.
+6. A building on a tile **with a creature tucked behind it** — is the occupant
+   still visible?
+7. Every transparent PNG genuinely transparent, no white fringe.
+8. 9-sliced assets stretched to double width — do the corners hold?

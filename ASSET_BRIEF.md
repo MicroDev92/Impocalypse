@@ -25,10 +25,16 @@ Matching these from a description does not work. Attach the files:
 | `Assets/Art/Imps/Imp.png` | the imp being replaced |
 | `Assets/Art/Tiles/grass.png`, `water.png` | the only two correctly-sized tiles |
 
-**Existing art is not automatically compatible with the new style.** Decide up
-front: either the new pack is constrained to match the current icons and
-buildings, or those get regenerated too (+6 icons, +6 building markers). Do not
-assume the old and new will sit together.
+**These two requests pull against each other, and that tension is the decision.**
+Attaching the existing art tells the generator to match it — but the existing art
+was drawn for the current look, not the mockup's, so matching it may be aiming at
+the wrong target. Both "use the existing icons as reference" and "the existing
+icons may clash with the new style" are true, and they cannot both be acted on.
+
+Settle it before generating, not halfway through: either the new pack is
+constrained to match the current icons and buildings, or those are regenerated
+too (+6 icons, +6 building markers). What does not work is assuming old and new
+will sit together because they are both "the project's art".
 
 ## Rules that apply to everything
 
@@ -189,6 +195,21 @@ Consequences for the art:
    terrains that differ only by hue will collapse into each other when tinted.
 2. Player colours must stay distinct from each other **and** from the terrain
    palette, so an owned Styx tile does not read as an owned Bloodroot Field.
+
+### What this section cannot show yet
+
+A populated screenshot at minimum zoom — ownership tint applied, a creature
+sharing a tile with a building, correct layering — would be a better acceptance
+artifact than any table here, and it was reasonably asked for.
+
+It does not exist, because **tile tinting is not implemented yet** (playtest
+finding #6). Capturing the board as it stands would show untinted tiles and
+prove nothing about the case that matters. Rather than ship a misleading
+reference, the measured sizes above answer the underlying question: how large is
+a creature when the board is fully zoomed out, which is 17 px on a phone.
+
+A real capture replaces this once tinting lands, and the tint percentage here
+(~15%) is a starting value to be tuned against that capture — not a fixed number.
 
 ## Filenames and destinations
 

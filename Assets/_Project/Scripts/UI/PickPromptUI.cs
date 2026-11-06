@@ -102,8 +102,16 @@ namespace UI
                 if (canvasGroup != null) canvasGroup.alpha = canSubmit ? 1f : 0.45f;
             }
 
+            // The button states its own reason for being dead. Playtest 1 produced
+            // "couldn't press Confirm Picks for some time, like it was disabled" -
+            // the quota was on screen, but in the prompt text rather than on the
+            // control it gates, so a correctly-disabled button read as broken.
             if (confirmLabel != null)
-                confirmLabel.text = "Confirm Picks";
+            {
+                confirmLabel.text = canSubmit
+                    ? "Confirm Picks"
+                    : $"Pick {Mathf.Max(0, required - selected)} more";
+            }
         }
 
         private void OnConfirmClicked()

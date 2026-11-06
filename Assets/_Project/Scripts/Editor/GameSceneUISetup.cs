@@ -262,13 +262,10 @@ public static class GameSceneUISetup
         fanRect.offsetMax = Vector2.zero;
         cardFanObj.AddComponent<CardFanLayout>();
 
-        // Confirm button (right side of bottom bar)
-        var confirmBtn = CreateButton(bottomBar.transform, "ConfirmButton", "Confirm Picks", 150f, 40f);
-        var confirmRect = confirmBtn.GetComponent<RectTransform>();
-        confirmRect.anchorMin = new Vector2(1, 0.5f);
-        confirmRect.anchorMax = new Vector2(1, 0.5f);
-        confirmRect.pivot = new Vector2(1, 0.5f);
-        confirmRect.anchoredPosition = new Vector2(-16, 0);
+        // No Confirm button here. The real one is built by the PickPrompt generator
+        // below and wired to PickPromptUI; this bottom-bar copy was never given a
+        // listener, so re-running this generator would add a second button that looks
+        // identical to the live one and does nothing when pressed.
 
         // Status text (above card fan)
         var cardStatusText = CreateTextObject(bottomBar.transform, "CardStatusText", "Cards: 10 | Picks left: 2", 14, FontStyles.Normal);

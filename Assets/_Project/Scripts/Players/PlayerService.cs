@@ -116,6 +116,19 @@ namespace Players
             Debug.Log($"[PlayerService] Refreshed players. Count: {_players.Count}");
         }
 
+        /// <summary>
+        /// The colour belonging to a player, from the identity assigned in
+        /// <see cref="AssignPlayerIdentities"/>. White when the player or their
+        /// identity is not known yet, which reads as "unowned" rather than as
+        /// somebody else's colour.
+        /// </summary>
+        public Color GetPlayerColor(int actorNumber)
+        {
+            var player = GetPlayer(actorNumber);
+            if (player == null || string.IsNullOrEmpty(player.ImpColor)) return Color.white;
+            return colorPalette != null ? colorPalette.GetPrimaryColor(player.ImpColor) : Color.white;
+        }
+
         public void AssignPlayerIdentities()
         {
             if (_networkService == null || !_networkService.IsMasterClient)

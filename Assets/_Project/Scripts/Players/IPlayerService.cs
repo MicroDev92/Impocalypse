@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Players
 {
@@ -33,6 +34,14 @@ namespace Players
         /// Gets player by color ID.
         /// </summary>
         PlayerData GetPlayerByColor(string colorId);
+
+        /// <summary>
+        /// The display colour for a player, resolved from the identity this service
+        /// assigned. Anything drawing a player's colour must come through here: the
+        /// board previously derived its own from actorNumber % 4, which disagreed with
+        /// the assigned imp colour for three players out of four.
+        /// </summary>
+        Color GetPlayerColor(int actorNumber);
 
         /// <summary>
         /// Number of connected players.

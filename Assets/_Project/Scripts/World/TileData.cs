@@ -295,38 +295,131 @@ public class TileData : MonoBehaviour
         SkyLinkCoord = null;
 
         if (_highlightOverlay != null) _highlightOverlay.enabled = false;
+        if (_ownerWash != null) _ownerWash.enabled = false;
+        if (_ownerEdge != null) _ownerEdge.enabled = false;
 
         var sr = backgroundRenderer != null ? backgroundRenderer : GetComponent<SpriteRenderer>();
         if (sr != null) sr.color = _originalColor;
     }
 
+    [Header("Ownership")]
+    [Tooltip("Strength of the owner's colour wash over the tile. Enough to read a " +
+             "region at a glance, little enough to leave the terrain recognisable.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float ownerWashAlpha = 0.15f;
+
+    [Tooltip("Owner edge thickness as a fraction of a tile. The edge is what survives " +
+             "when a tile is only ~22px on a phone, where a wash alone is ambiguous.")]
+    [Range(0.02f, 0.25f)]
+    [SerializeField] private float ownerEdgeThickness = 0.09f;
+
+    private SpriteRenderer _ownerWash;
+    private SpriteRenderer _ownerEdge;
+    private static Sprite _unitBorderSprite;
+
+    /// <summary>
+    /// Shows who owns this tile, as a colour wash plus a saturated edge.
+    ///
+    /// This used to write Color.Lerp(original, playerColour, 0.35f) into the tile's
+    /// own SpriteRenderer.color. That multiplies the sprite, so it can only ever
+    /// DARKEN - it cannot push a brown tile towards blue or yellow, and in play it
+    /// was invisible. The highlight overlay right above already records the reason:
+    /// "an overlay BRIGHTENS any terrain, unlike a sprite tint which can only darken".
+    /// Ownership now uses the same mechanism.
+    ///
+    /// The colour also came from actorNumber % 4, an entirely separate palette from
+    /// the identity PlayerService assigns, so three players in four saw a tile colour
+    /// that contradicted their own imp. It now comes from the one source of truth.
+    /// </summary>
     private void ApplyOwnerTint()
     {
-        var sr = backgroundRenderer != null ? backgroundRenderer : GetComponent<SpriteRenderer>();
-        if (sr != null)
+        if (!IsOwned)
         {
-            sr.color = GetOwnerTintColor();
+            if (_ownerWash != null) _ownerWash.enabled = false;
+            if (_ownerEdge != null) _ownerEdge.enabled = false;
+            return;
         }
+
+        Color owner = ResolveOwnerColor(_ownerActorNumber);
+        EnsureOwnershipOverlays();
+
+        _ownerWash.color = new Color(owner.r, owner.g, owner.b, ownerWashAlpha);
+        _ownerWash.enabled = true;
+
+        _ownerEdge.color = new Color(owner.r, owner.g, owner.b, 1f);
+        _ownerEdge.enabled = true;
     }
 
-    private Color GetOwnerTintColor()
+    private static Color ResolveOwnerColor(int actorNumber)
     {
-        // Tint based on player actor number with semi-transparent overlay
-        Color baseColor = _originalColor;
-        Color playerColor = GetPlayerColor(_ownerActorNumber);
-        return Color.Lerp(baseColor, playerColor, 0.35f);
+        return _Project.Scripts.Utility.ServiceLocator.TryGetService(out Players.IPlayerService players)
+            ? players.GetPlayerColor(actorNumber)
+            : Color.white;
     }
 
-    private static Color GetPlayerColor(int actorNumber)
+    private void EnsureOwnershipOverlays()
     {
-        // Default player color palette
-        return (actorNumber % 4) switch
+        if (_ownerWash == null) _ownerWash = CreateTileOverlay("OwnerWash", GetUnitWhiteSprite(), 3);
+        if (_ownerEdge == null) _ownerEdge = CreateTileOverlay("OwnerEdge", GetUnitBorderSprite(), 4);
+    }
+
+    /// <summary>
+    /// A child renderer covering exactly this tile. Scaled to the background sprite's
+    /// local bounds so the parent's FitToCell lands it on one grid cell, the same way
+    /// the highlight overlay is built.
+    /// </summary>
+    private SpriteRenderer CreateTileOverlay(string name, Sprite sprite, int sortingOrder)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(transform, false);
+
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = sprite;
+        sr.sortingOrder = sortingOrder; // tile art 0 < wash 3 < edge 4 < highlight 5 < imps 10
+        sr.enabled = false;
+
+        var bg = backgroundRenderer != null ? backgroundRenderer : GetComponent<SpriteRenderer>();
+        if (bg != null && bg.sprite != null)
         {
-            0 => new Color(0.9f, 0.3f, 0.3f), // Red
-            1 => new Color(0.3f, 0.5f, 0.9f), // Blue
-            2 => new Color(0.3f, 0.8f, 0.3f), // Green
-            3 => new Color(0.9f, 0.8f, 0.2f), // Yellow
-            _ => Color.white
+            var size = bg.sprite.bounds.size;
+            go.transform.localScale = new Vector3(size.x, size.y, 1f);
+        }
+
+        return sr;
+    }
+
+    /// <summary>
+    /// A hollow square: opaque ring, transparent centre. Built in code because it is
+    /// a handful of pixels and needs no import settings or art pass.
+    /// </summary>
+    private Sprite GetUnitBorderSprite()
+    {
+        if (_unitBorderSprite != null) return _unitBorderSprite;
+
+        const int size = 64;
+        int inset = Mathf.Max(1, Mathf.RoundToInt(size * ownerEdgeThickness));
+
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
+        {
+            filterMode = FilterMode.Bilinear,
+            wrapMode = TextureWrapMode.Clamp,
+            name = "TileOwnerEdge"
         };
+
+        var px = new Color32[size * size];
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                bool onEdge = x < inset || y < inset || x >= size - inset || y >= size - inset;
+                px[y * size + x] = new Color32(255, 255, 255, (byte)(onEdge ? 255 : 0));
+            }
+        }
+
+        tex.SetPixels32(px);
+        tex.Apply();
+
+        _unitBorderSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+        return _unitBorderSprite;
     }
 }

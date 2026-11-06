@@ -41,13 +41,32 @@ namespace Draft.Services
         // Parchment cards collected during draft (secret hand, scored at game end)
         private readonly Dictionary<int, List<CardData>> _playerParchments = new();
 
-        private int _currentRound = 1;
+        private int _currentPass = 1;
         private bool _hasSubmittedPicks;
         private List<int> _cachedPlayerIds = new();
 
         // IDraftService Properties
-        public int CurrentRound => _currentRound;
-        public bool IsClockwise => draftConfig?.IsClockwise(_currentRound) ?? true;
+        public int CurrentPass => _currentPass;
+        /// <summary>
+        /// Pass direction for the current GAME round. A round circulates the same
+        /// hands in one direction throughout; the direction flips between rounds, so
+        /// rounds 1 and 3 go clockwise and 2 and 4 counter-clockwise.
+        ///
+        /// This read _currentPass, which counts passes WITHIN a round, so the
+        /// direction reversed on every pass: a hand went to your neighbour and came
+        /// straight back on the next pass, minus their two picks. Players saw cards
+        /// they had already seen, and in a four-player game two of the other hands
+        /// never reached them at all.
+        /// </summary>
+        public bool IsClockwise => draftConfig?.IsClockwise(GameRound) ?? true;
+
+        /// <summary>
+        /// The game round (1..MaxRounds) from the authoritative GameManager - not
+        /// this service's pass counter. Falls back to 1 (clockwise) when the manager
+        /// is unavailable, which only happens outside a running game.
+        /// </summary>
+        private int GameRound =>
+            ServiceLocator.TryGetService(out IGameManager gameManager) ? gameManager.CurrentRound : 1;
         public int CardsPerPlayer => CalculateCardsPerPlayer();
         public int PicksPerRound => draftConfig?.PicksPerRound ?? 2;
         public bool HasSubmittedPicks => _hasSubmittedPicks;
@@ -118,7 +137,7 @@ namespace Draft.Services
 
         public void StartDraft()
         {
-            _currentRound = 1;
+            _currentPass = 1;
             _hasSubmittedPicks = false;
             _pendingPicks.Clear();
             _playerHands.Clear();
@@ -149,7 +168,7 @@ namespace Draft.Services
         /// </summary>
         public void StartNewGameRound()
         {
-            _currentRound = 1;
+            _currentPass = 1;
             _hasSubmittedPicks = false;
             _pendingPicks.Clear();
             _playerHands.Clear();
@@ -870,8 +889,8 @@ namespace Draft.Services
             else
             {
                 // Internal draft pass counter — NOT the game round
-                _currentRound++;
-                Debug.Log($"[DraftService] Draft pass {_currentRound}, passing hands...");
+                _currentPass++;
+                Debug.Log($"[DraftService] Draft pass {_currentPass}, passing hands...");
                 PassHands();
             }
         }

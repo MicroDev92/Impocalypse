@@ -13,7 +13,7 @@ namespace Draft.Services
         /// <summary>
         /// Current round number.
         /// </summary>
-        int CurrentRound { get; }
+        int CurrentPass { get; }
 
         /// <summary>
         /// Whether the current round passes clockwise.

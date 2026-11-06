@@ -35,10 +35,50 @@ separate cleanly once you split *subject* from *style*:
   Warcamp looks like, what the card frame has to accommodate.
 - The mockup says **how it should look**: outline weight, palette, shading.
 
-So: match the mockup, use the existing files as subject reference only, and
-replace existing art wherever it visibly clashes once the new pack lands. Budget
-for that replacement (up to +6 icons, +6 building markers) rather than assuming
-old and new will sit together because they are both "the project's art".
+So: **everything visible is regenerated to the mockup.** No existing art ships
+in the final look. The existing files travel with this brief as subject
+reference only — what a Warcamp is, which shape means Charwood — and are
+replaced, not matched.
+
+The one exception is the **font**: `LuckiestGuy` is already the mockup's
+lettering and stays.
+
+See *Full inventory* below for what that actually amounts to.
+
+## Full inventory
+
+Replacing everything rather than patching means **37 assets**, not the 18 the
+first draft implied. Worth seeing before committing:
+
+| group | count | detail |
+|---|---|---|
+| Terrain | 5 | Ashlands, Styx, Grove, Field, Peaks |
+| Creatures | 4 | board sprites |
+| Portraits | 4 | sidebar busts |
+| Resource / UI icons | 9 | 6 replacing `ui_icons.png` + 3 new luxuries |
+| Building markers | 6 | citadel, farm, bazaar, warcamp, hellgate, lair |
+| Card art | 2 | pact, provisions (currently empty slots) |
+| Card frame | 1 | 9-sliced |
+| Panels & chrome | 4 | panel, button, coordinate slab, corner skull |
+| Background | 2 | tileable texture, glow |
+| **Total** | **37** | |
+
+**Sequence it.** Do not generate 37 assets before any of them has been seen in
+the scene. First batch is **one Ashlands tile and the four creatures** — that
+proves the one relationship everything else depends on, characters legible
+against terrain at 17 px. The rest follows once that is agreed.
+
+### The 20 coordinate labels are not on that list, deliberately
+
+The A–J and 1–10 labels around the board are currently **20 separate PNGs**
+(`TileData.InitWithLabel` assigns `labelRenderer.sprite`). Regenerating them as
+art would mean 20 more assets that must stay consistent with each other and
+with the font — the most tedious possible use of an image model, and they would
+still be fixed-resolution.
+
+They should become **TextMeshPro text in LuckiestGuy** instead: one font already
+in the project and already matching the mockup, crisp at any zoom, 20 fewer
+assets. That is a code change on this side, not a generation task.
 
 ## Rules that apply to everything
 

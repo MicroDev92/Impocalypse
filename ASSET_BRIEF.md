@@ -25,16 +25,20 @@ Matching these from a description does not work. Attach the files:
 | `Assets/Art/Imps/Imp.png` | the imp being replaced |
 | `Assets/Art/Tiles/grass.png`, `water.png` | the only two correctly-sized tiles |
 
-**These two requests pull against each other, and that tension is the decision.**
-Attaching the existing art tells the generator to match it — but the existing art
-was drawn for the current look, not the mockup's, so matching it may be aiming at
-the wrong target. Both "use the existing icons as reference" and "the existing
-icons may clash with the new style" are true, and they cannot both be acted on.
+**Settled: the mockup is the style authority, not the existing art.**
 
-Settle it before generating, not halfway through: either the new pack is
-constrained to match the current icons and buildings, or those are regenerated
-too (+6 icons, +6 building markers). What does not work is assuming old and new
-will sit together because they are both "the project's art".
+These two requests looked mutually exclusive — "use the existing icons as
+reference" versus "the existing icons may clash with the new style" — but they
+separate cleanly once you split *subject* from *style*:
+
+- Existing art says **what an object is**: which shape means Charwood, what a
+  Warcamp looks like, what the card frame has to accommodate.
+- The mockup says **how it should look**: outline weight, palette, shading.
+
+So: match the mockup, use the existing files as subject reference only, and
+replace existing art wherever it visibly clashes once the new pack lands. Budget
+for that replacement (up to +6 icons, +6 building markers) rather than assuming
+old and new will sit together because they are both "the project's art".
 
 ## Rules that apply to everything
 
@@ -108,29 +112,45 @@ finding was that players could not tell whose imp was whose.
 | 4 | purple wannabe royalty | purple |
 
 **Exact anchoring** (all four must share this, or they will sit at different
-heights and their shadows will detach):
+heights and their shadows will detach). Every number below is in the same frame
+of reference — an earlier revision mixed canvas-relative and world-space figures
+and did not compose:
 
 - Canvas **1024 × 1024 px**, transparent.
-- The creature's **visible artwork occupies the middle 80% horizontally** and
-  spans from **8% above the bottom edge to no higher than 4% below the top**.
-- **Feet sit on a shared baseline at 8% up from the bottom edge.** The runtime
-  shadow is drawn at `-0.38` world units from the sprite centre; with the import
-  below, that line lands on that baseline.
-- Import pivot: **centre (0.5, 0.5)**. I set this.
+- **The full canvas maps to exactly 1.00 × 1.00 world units** (imported at
+  PPU 1024, whole canvas as the sprite rect, no trimming). So canvas percentages
+  and world units are the same scale: 1% of canvas = 0.01 units.
+- Import pivot **centre (0.5, 0.5)**, so the canvas spans −0.50 … +0.50 units.
+- **Feet sit on a shared baseline 8% up from the bottom edge** = −0.42 units
+  before the spawn scale.
+- **Visible artwork spans 8% → 96% vertically** (0.88 of the canvas) and the
+  **middle 80% horizontally**.
 
-**Rendered size — this is the constraint that matters.** The board camera sits
-at orthographic size 8.82, so 17.65 world units fill the viewport height. A
-creature is 0.8 units tall and is scaled to 0.9 at spawn:
+That makes the runtime shadow line up without tuning:
+
+```
+feet            -0.42 × 0.9 spawn scale = -0.378 world units
+Imp.shadowOffsetY                       = -0.380 world units
+mismatch                                   0.002 units  (0.04 px on a phone)
+```
+
+**Rendered size — the constraint that matters.** Board camera is at orthographic
+size 8.82, so 17.65 world units fill the viewport height. Creature art is
+0.88 canvas × 0.9 spawn scale = **0.792 world units**:
 
 | viewport height | 1 tile | **creature** |
 |---|---|---|
-| 1080 (desktop) | 61 px | **47 px** |
-| 768 (tablet landscape) | 44 px | **34 px** |
-| ~390 (phone landscape) | 22 px | **17 px** |
+| 1080 (desktop) | 61.2 px | **48.5 px** |
+| 768 (tablet landscape) | 43.5 px | **34.5 px** |
+| ~390 (phone landscape) | 22.1 px | **17.5 px** |
 
-Fully zoomed out on a phone a creature is **about 17 pixels tall**. Design the
-silhouette for that and let the detail be a bonus when zoomed in. Anything below
+Fully zoomed out on a phone a creature is **about 17 px tall**. Design the
+silhouette for that and let detail be a bonus when zoomed in; anything below
 roughly 5% of the canvas will not survive.
+
+> The *existing* `Imp.png` does not follow this: it is a 703 × 746 sprite rect at
+> PPU 864 (0.81 × 0.86 units), trimmed rather than full-canvas. The spec above
+> supersedes it — do not measure the old imp to infer the new sizing.
 
 Also needed: **a matching portrait per creature** for the sidebar (bust,
 front-facing, more detail, same 1024 canvas, transparent).

@@ -135,9 +135,42 @@ so a tile must be exactly **1.00 × 1.00 world units, full bleed, fully opaque**
   no motif running off one edge that won't meet its neighbour. Test each terrain
   as a repeated **3 × 3 block of itself**, not only in a mixed board.
 - **Ashlands is 40% of the board** and the ground everything is drawn on. Keep it
-  quiet and low-contrast; anything busy fights every creature and building.
+  quiet; anything busy fights every creature and building. Quiet is not the same
+  as featureless — see the detail floor below.
 - Terrains must stay distinguishable **by value and texture, not hue alone** —
   see Ownership tint below.
+
+### Detail floor — terrain is downscaled 17×
+
+A 1024px tile renders at **61px on desktop and 22px on a phone**, so **one
+rendered pixel is ~17 source pixels**. Any feature thinner than that disappears
+entirely; fine detail does not read as "subtle", it reads as nothing.
+
+| at 1024px source | renders as |
+|---|---|
+| 17px stroke | 1px — invisible |
+| **35px stroke** | **2px — the practical minimum** |
+| 50–70px stroke | 3–4px — comfortably readable |
+
+So cracks, pits and stones must be drawn **thick and few**, not thin and many.
+Fewer, larger, higher-contrast features beat a fine all-over texture, which is
+exactly what the downscale destroys.
+
+**Measurable target.** Convert the tile to greyscale, box-downsample to 61×61
+and measure the standard deviation of luminance:
+
+| stdev at 61px | verdict |
+|---|---|
+| < 2 | flat fill — the detail is not there |
+| **4 – 9** | **target for Ashlands** — quiet but present |
+| 10 – 15 | fine for the four feature terrains |
+| > 20 | too busy; it will fight the creatures |
+
+> The first Ashlands candidate measured **0.91** at 61px, with a total luma
+> range of 7 levels out of 255 — visually a solid colour. The old plains it
+> replaced measured 11.24. "Quiet and low-contrast" with no floor was read as
+> near-silent, which is a fair reading of what the brief said; this table is
+> the missing half of that instruction.
 
 ## 2. Player creatures — 4 needed
 
@@ -391,6 +424,10 @@ Handled on this side; listed so the deliverable is unambiguous.
 2. Each terrain as a **3 × 3 block of itself** — do the edges meet without a
    visible grid?
 3. Five terrains mixed on a board — does Ashlands recede, or fight?
+3b. **Downsample each terrain to 61 × 61 and look at it there**, not at 1024.
+   That is the size players see. Greyscale stdev should land in the ranges in
+   the detail floor above; below 2 the tile is a flat fill whatever it looks
+   like at full resolution.
 4. Each terrain **under a 15% wash of each player colour, with the coloured
    ownership edge drawn** — terrain still identifiable, owner still obvious?
 5. Each icon at 24 px — readable?

@@ -296,7 +296,6 @@ public class TileData : MonoBehaviour
 
         if (_highlightOverlay != null) _highlightOverlay.enabled = false;
         if (_ownerWash != null) _ownerWash.enabled = false;
-        if (_ownerEdge != null) _ownerEdge.enabled = false;
 
         var sr = backgroundRenderer != null ? backgroundRenderer : GetComponent<SpriteRenderer>();
         if (sr != null) sr.color = _originalColor;
@@ -308,17 +307,17 @@ public class TileData : MonoBehaviour
     [Range(0f, 1f)]
     [SerializeField] private float ownerWashAlpha = 0.15f;
 
-    [Tooltip("Owner edge thickness as a fraction of a tile. The edge is what survives " +
-             "when a tile is only ~22px on a phone, where a wash alone is ambiguous.")]
-    [Range(0.02f, 0.25f)]
-    [SerializeField] private float ownerEdgeThickness = 0.09f;
-
     private SpriteRenderer _ownerWash;
-    private SpriteRenderer _ownerEdge;
-    private static Sprite _unitBorderSprite;
 
     /// <summary>
-    /// Shows who owns this tile, as a colour wash plus a saturated edge.
+    /// Shows who owns this tile, as a colour wash.
+    ///
+    /// Wash only, deliberately. A per-tile border was tried here and removed: it
+    /// duplicated FiefVisualizer, which already outlines each connected group in the
+    /// owner's colour and refreshes live on TileOwnerChangedEvent. Two mechanisms drew
+    /// the same information and doubled every shared border between owned tiles. The
+    /// outline is the better of the two - it follows regions rather than single
+    /// tiles - so the edge job belongs there and the wash stays here.
     ///
     /// This used to write Color.Lerp(original, playerColour, 0.35f) into the tile's
     /// own SpriteRenderer.color. That multiplies the sprite, so it can only ever
@@ -336,18 +335,14 @@ public class TileData : MonoBehaviour
         if (!IsOwned)
         {
             if (_ownerWash != null) _ownerWash.enabled = false;
-            if (_ownerEdge != null) _ownerEdge.enabled = false;
             return;
         }
 
         Color owner = ResolveOwnerColor(_ownerActorNumber);
-        EnsureOwnershipOverlays();
+        if (_ownerWash == null) _ownerWash = CreateTileOverlay("OwnerWash", GetUnitWhiteSprite(), 3);
 
         _ownerWash.color = new Color(owner.r, owner.g, owner.b, ownerWashAlpha);
         _ownerWash.enabled = true;
-
-        _ownerEdge.color = new Color(owner.r, owner.g, owner.b, 1f);
-        _ownerEdge.enabled = true;
     }
 
     private static Color ResolveOwnerColor(int actorNumber)
@@ -355,12 +350,6 @@ public class TileData : MonoBehaviour
         return _Project.Scripts.Utility.ServiceLocator.TryGetService(out Players.IPlayerService players)
             ? players.GetPlayerColor(actorNumber)
             : Color.white;
-    }
-
-    private void EnsureOwnershipOverlays()
-    {
-        if (_ownerWash == null) _ownerWash = CreateTileOverlay("OwnerWash", GetUnitWhiteSprite(), 3);
-        if (_ownerEdge == null) _ownerEdge = CreateTileOverlay("OwnerEdge", GetUnitBorderSprite(), 4);
     }
 
     /// <summary>
@@ -388,38 +377,4 @@ public class TileData : MonoBehaviour
         return sr;
     }
 
-    /// <summary>
-    /// A hollow square: opaque ring, transparent centre. Built in code because it is
-    /// a handful of pixels and needs no import settings or art pass.
-    /// </summary>
-    private Sprite GetUnitBorderSprite()
-    {
-        if (_unitBorderSprite != null) return _unitBorderSprite;
-
-        const int size = 64;
-        int inset = Mathf.Max(1, Mathf.RoundToInt(size * ownerEdgeThickness));
-
-        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
-        {
-            filterMode = FilterMode.Bilinear,
-            wrapMode = TextureWrapMode.Clamp,
-            name = "TileOwnerEdge"
-        };
-
-        var px = new Color32[size * size];
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                bool onEdge = x < inset || y < inset || x >= size - inset || y >= size - inset;
-                px[y * size + x] = new Color32(255, 255, 255, (byte)(onEdge ? 255 : 0));
-            }
-        }
-
-        tex.SetPixels32(px);
-        tex.Apply();
-
-        _unitBorderSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
-        return _unitBorderSprite;
-    }
 }

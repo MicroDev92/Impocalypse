@@ -20,7 +20,7 @@ namespace Scoring
     public class FiefVisualizer : MonoBehaviour
     {
         [Header("Outline")]
-        [SerializeField] private float lineWidth = 0.06f;
+        [SerializeField] private float lineWidth = 0.10f;
         [Tooltip("World size of one tile. Tiles are placed 1 unit apart, so leave at 1.")]
         [SerializeField] private float cellSize = 1f;
         [Tooltip("Pull the outline slightly inside the tile edge so it reads as a highlight.")]
@@ -179,13 +179,20 @@ namespace Scoring
             if (label != null) label.text = fief.Score.ToString();
         }
 
-        private static Color GetPlayerColor(int actorNumber) => (actorNumber % 4) switch
+        /// <summary>
+        /// The owner's colour, from the identity PlayerService assigned.
+        ///
+        /// This used to be a private actorNumber % 4 palette - a second copy of the one
+        /// TileData carried, and wrong in the same way. Actor 1 resolved to blue while
+        /// their imp was red, so a player's own domain was outlined in another player's
+        /// colour. Both now resolve through the one service, from the same palette entry
+        /// that supplies the imp sprite, so outline, tile tint and imp cannot disagree.
+        /// </summary>
+        private static Color GetPlayerColor(int actorNumber)
         {
-            0 => new Color(0.90f, 0.30f, 0.30f),
-            1 => new Color(0.30f, 0.50f, 0.90f),
-            2 => new Color(0.30f, 0.80f, 0.30f),
-            3 => new Color(0.90f, 0.80f, 0.20f),
-            _ => Color.white
-        };
+            return ServiceLocator.TryGetService(out Players.IPlayerService players)
+                ? players.GetPlayerColor(actorNumber)
+                : Color.white;
+        }
     }
 }

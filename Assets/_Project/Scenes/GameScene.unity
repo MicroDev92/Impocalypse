@@ -2688,7 +2688,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff7bde735ecc7514f9e3ab56b8ade2f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scoring.FiefVisualizer
-  lineWidth: 0.06
+  lineWidth: 0.1
   cellSize: 1
   inset: 0.05
   outlineSortingOrder: 40

@@ -58,3 +58,6 @@ claude-chat-text-file.txt
 # Unity crash-recovery snapshots - local only
 /Assets/_Recovery/
 /Assets/_Recovery.meta
+
+# Art generator output: the tiles that matter are copied into Assets/Art
+Tools/ArtGen/out/

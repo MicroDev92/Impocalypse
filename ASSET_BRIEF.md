@@ -161,16 +161,40 @@ and measure the standard deviation of luminance:
 
 | stdev at 61px | verdict |
 |---|---|
-| < 2 | flat fill — the detail is not there |
-| **4 – 9** | **target for Ashlands** — quiet but present |
-| 10 – 15 | fine for the four feature terrains |
-| > 20 | too busy; it will fight the creatures |
+| < 2 | flat fill - the detail is not there |
+| **13 - 18** | **Ashlands** - visibly cracked, still the calmest terrain |
+| 17 - 45 | the four feature terrains |
 
-> The first Ashlands candidate measured **0.91** at 61px, with a total luma
-> range of 7 levels out of 255 — visually a solid colour. The old plains it
-> replaced measured 11.24. "Quiet and low-contrast" with no floor was read as
-> near-silent, which is a fair reading of what the brief said; this table is
-> the missing half of that instruction.
+Measure the interior only (crop the outer ~9%), or the dark tile gap dominates
+the number.
+
+> **These ranges were corrected after the tiles were actually made.** The first
+> version of this table said 4-9 for Ashlands and called anything over 20 too
+> busy. Those were guesses with no picture behind them. The shipped set measures
+> Ashlands 14-17, Field 17, Styx 36, Peaks 31, Grove 43, and on the board
+> Ashlands still recedes and creatures read clearly on all of it. What matters
+> is the ORDER - Ashlands quietest - and that features are thick enough to
+> survive, not the absolute number.
+>
+> For the record, the first external Ashlands candidate measured **0.91**, a
+> total luma range of 7 levels out of 255: visually a solid colour.
+
+### Status: terrain is done, in-house
+
+The five terrains (13 tiles: Ashlands x4, Styx x3, Grove x2, Field x2, Peaks x2)
+are drawn by code in `Tools/ArtGen` and live in `Assets/Art/Tiles/`. They are no
+longer part of what needs generating externally. See `Docs/new_tiles_sheet.png`
+and `Docs/new_tiles_ingame.png`.
+
+Two things learned there that apply to everything else in this brief:
+
+- **Styx is deeper than the mockup's water**, on purpose. The teal player's
+  creature and ownership wash are light teal and vanished on bright teal water.
+  Any asset in a player's colour needs checking against the terrain of its hue.
+- **Tiles are plates with a dark gap**, as in the mockup, rather than full-bleed
+  texture: neighbours show a soft dark seam. Rim shading is symmetric because
+  tiles are rotated and mirrored at runtime, so directional light on the plate
+  would point a different way on every tile.
 
 ## 2. Player creatures — 4 needed
 

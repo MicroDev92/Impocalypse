@@ -23,6 +23,14 @@ public class GridGenerator : MonoBehaviour, IGridService
     public Sprite woodSprite;
     public Sprite carrotSprite;
     public Sprite fishSprite;
+
+    [Header("Terrain Variants")]
+    [Tooltip("Looks per terrain. One is picked per tile from the seeded random stream, so every client draws the same board. An empty list falls back to the single sprite above.")]
+    public Sprite[] ashlandsVariants;
+    public Sprite[] styxVariants;
+    public Sprite[] groveVariants;
+    public Sprite[] fieldVariants;
+    public Sprite[] peaksVariants;
     
     [Header("Coordinate Sprites (Board Frame source)")]
     [Tooltip("The runtime grid no longer draws the frame - these feed the static BoardFrame prefab. Regenerate it via Tools > Impocalypse > Generate Board Frame after changing them.")]
@@ -316,15 +324,35 @@ public class GridGenerator : MonoBehaviour, IGridService
         }
     }
 
-    private Sprite SpriteFor(TileData.TileType type) => type switch
+    private Sprite SpriteFor(TileData.TileType type)
     {
-        TileData.TileType.Water => waterSprite,
-        TileData.TileType.Wood => woodSprite,
-        TileData.TileType.Carrot => carrotSprite,
-        TileData.TileType.Mountain => mountainSprite != null ? mountainSprite : grassSprite,
-        // Ashlands: pick between the two plains looks for variety
-        _ => (plainsVariantSprite != null && Random.value < 0.5f) ? plainsVariantSprite : grassSprite
-    };
+        switch (type)
+        {
+            case TileData.TileType.Water: return Variant(styxVariants, waterSprite);
+            case TileData.TileType.Wood: return Variant(groveVariants, woodSprite);
+            case TileData.TileType.Carrot: return Variant(fieldVariants, carrotSprite);
+            case TileData.TileType.Mountain:
+                return Variant(peaksVariants, mountainSprite != null ? mountainSprite : grassSprite);
+            default:
+                // Ashlands. Without a variant list, fall back to the old two-look pick.
+                if (ashlandsVariants != null && ashlandsVariants.Length > 0)
+                    return Variant(ashlandsVariants, grassSprite);
+                return (plainsVariantSprite != null && Random.value < 0.5f) ? plainsVariantSprite : grassSprite;
+        }
+    }
+
+    /// <summary>
+    /// One look from a terrain's variant list, or the fallback when the list is empty
+    /// or the chosen slot is unassigned. Ashlands covers ~43 tiles forming ~38 touching
+    /// pairs, so a single sprite repeats visibly; four sprites times the rotations and
+    /// mirroring below leave about one identical touching pair per board.
+    /// </summary>
+    private static Sprite Variant(Sprite[] set, Sprite fallback)
+    {
+        if (set == null || set.Length == 0) return fallback;
+        var pick = set[Random.Range(0, set.Length)];
+        return pick != null ? pick : fallback;
+    }
 
     /// <summary>
     /// Visual variety for full-bleed terrain. Non-directional textures (plains, lava)
@@ -337,20 +365,28 @@ public class GridGenerator : MonoBehaviour, IGridService
         switch (tile.type)
         {
             case TileData.TileType.Plains:
+                // Ground has no "up", so it both rotates and mirrors: 8 looks per sprite.
+                tile.transform.rotation = Quaternion.Euler(0f, 0f, 90f * Random.Range(0, 4));
+                MirrorHalfTheTime(tile);
+                break;
+
             case TileData.TileType.Water:
                 tile.transform.rotation = Quaternion.Euler(0f, 0f, 90f * Random.Range(0, 4));
                 break;
 
             case TileData.TileType.Wood:
             case TileData.TileType.Mountain:
-                if (Random.value < 0.5f)
-                {
-                    var s = tile.transform.localScale;
-                    s.x = -s.x;
-                    tile.transform.localScale = s;
-                }
+                MirrorHalfTheTime(tile);
                 break;
         }
+    }
+
+    private static void MirrorHalfTheTime(TileData tile)
+    {
+        if (Random.value >= 0.5f) return;
+        var s = tile.transform.localScale;
+        s.x = -s.x;
+        tile.transform.localScale = s;
     }
 
     // IGridService Implementation

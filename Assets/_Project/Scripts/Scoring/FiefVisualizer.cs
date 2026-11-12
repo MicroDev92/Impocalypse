@@ -26,6 +26,10 @@ namespace Scoring
         [Tooltip("Pull the outline slightly inside the tile edge so it reads as a highlight.")]
         [SerializeField] private float inset = 0.05f;
         [SerializeField] private int outlineSortingOrder = 40;
+        [Tooltip("Dark line drawn under the coloured one, so the outline survives on ground of its own hue (teal on the Styx, red on Bloodroot).")]
+        [SerializeField] private Color casingColor = new Color(0.09f, 0.05f, 0.04f, 1f);
+        [Tooltip("Casing width as a multiple of the line width.")]
+        [SerializeField] private float casingScale = 1.5f;
 
         [Header("Score badge (optional)")]
         [Tooltip("Prefab with a TMP_Text somewhere in it. Spawned on each fief that scores > 0. Leave empty for outlines only.")]
@@ -152,7 +156,16 @@ namespace Scoring
 
         private void CreateSegment(Vector3 a, Vector3 b, Color color)
         {
-            var go = new GameObject("FiefEdge");
+            // Dark casing first, colour on top - the map-maker's way of keeping a line
+            // legible on any ground. A player colour alone disappears on terrain of the
+            // same hue, and the playtest complaint was exactly "whose is this".
+            AddLine("FiefEdgeCasing", a, b, casingColor, lineWidth * casingScale, outlineSortingOrder - 1);
+            AddLine("FiefEdge", a, b, color, lineWidth, outlineSortingOrder);
+        }
+
+        private void AddLine(string name, Vector3 a, Vector3 b, Color color, float width, int order)
+        {
+            var go = new GameObject(name);
             go.transform.SetParent(_container, false);
 
             var lr = go.AddComponent<LineRenderer>();
@@ -160,11 +173,11 @@ namespace Scoring
             lr.positionCount = 2;
             lr.SetPosition(0, a);
             lr.SetPosition(1, b);
-            lr.startWidth = lr.endWidth = lineWidth;
+            lr.startWidth = lr.endWidth = width;
             lr.numCapVertices = 2;
             lr.material = _lineMaterial;
             lr.startColor = lr.endColor = color;
-            lr.sortingOrder = outlineSortingOrder;
+            lr.sortingOrder = order;
         }
 
         private void DrawBadge(Fief fief)

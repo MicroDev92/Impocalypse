@@ -32,6 +32,8 @@ namespace Construction
         [SerializeField] private GameObject cityCardButtonPrefab;
         [SerializeField] private Button doneButton;
         [SerializeField] private TextMeshProUGUI instructionText;
+        [Tooltip("Build Phase block in the right sidebar that holds the instruction text. The text used to float over the board, where it hid tiles and swallowed clicks (playtest finding). It is no longer a child of this object, so it is shown and hidden explicitly.")]
+        [SerializeField] private GameObject guidancePanel;
 
         private IConstructionService _constructionService;
         private IGridService _gridService;
@@ -76,6 +78,7 @@ namespace Construction
             _isActive = true;
             _selectedCityCard = null;
             SetChildrenActive(true);
+            if (guidancePanel != null) guidancePanel.SetActive(true);
 
             ClearCityCardButtons();
             ClearHighlights();
@@ -113,6 +116,7 @@ namespace Construction
             ClearCityCardButtons();
             ClearHighlights();
             SetChildrenActive(false);
+            if (guidancePanel != null) guidancePanel.SetActive(false);
         }
 
         private void SetChildrenActive(bool active)

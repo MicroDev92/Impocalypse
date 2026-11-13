@@ -57,15 +57,13 @@ tile, domain, pact, treasure) on 256px transparent canvases; they are saved as
 them as sprites and refills `Resources/UIIconSet`. Judge them on
 `_sheet_icons_28px_x4.png`: they are shown at about 32px.
 
-## Panels and creatures
+## Panels
 
-- `panels.js` draws the 9-sliced chrome (`panel_bg`, `panel_inset`, `button_bg`,
-  `topbar_bg`) at 2x. Copy them to `Assets/Art/UI/Panels/` and run
-  **GameObject > UI > Impocalypse - Apply Panel Frames**, which sets the slice
-  borders and PPU and points the scene's inner panels at them.
-- `creatures.js` draws the four player creatures to the anchoring in
-  `ASSET_BRIEF.md`. Copy `imp_*.png` to `Assets/Art/Imps/Drawn/`.
-  **Impocalypse > Creatures > Use Drawn Set / Use Generated Set** swaps which
-  set the player palette hands out.
-- Any `imp_<colour>.png` placed in `out/ext/` is added to `_sheet_creatures.png`
-  as a second row, for side-by-side comparison at tile size.
+`panels.js` draws the 9-sliced chrome (`panel_bg`, `panel_inset`, `button_bg`,
+`topbar_bg`) at 2x. Copy them to `Assets/Art/UI/Panels/` and run
+**GameObject > UI > Impocalypse - Apply Panel Frames**, which sets the slice
+borders and PPU, points the scene's inner panels at them and centres button
+labels on the button face.
+
+The four player imps are not drawn here: they are the image-model set in
+`Assets/Art/Imps/imp_*.png`.

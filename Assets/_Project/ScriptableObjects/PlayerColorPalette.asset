@@ -15,25 +15,25 @@ MonoBehaviour:
   playerColors:
   - colorId: red
     displayName: Red
-    primaryColor: {r: 1, g: 0, b: 0, a: 1}
+    primaryColor: {r: 0.878, g: 0.29, b: 0.184, a: 1}
     secondaryColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-    impSprite: {fileID: 1704136824156536098, guid: 099a75e0a9928864f87fb7ced78d6ee4, type: 3}
+    impSprite: {fileID: 21300000, guid: 3dfecf0e6fabfe94fac04d9e348b317d, type: 3}
     uiHighlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   - colorId: green
     displayName: Green
-    primaryColor: {r: 0, g: 1, b: 0, a: 1}
+    primaryColor: {r: 0.373, g: 0.788, b: 0.722, a: 1}
     secondaryColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-    impSprite: {fileID: -2399786158000904174, guid: f7c8ab9316e78104f9088bf798fb86ba, type: 3}
+    impSprite: {fileID: 21300000, guid: 73a17c2d55ed7ae4b9c57406184f9bc6, type: 3}
     uiHighlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   - colorId: blue
     displayName: Blue
-    primaryColor: {r: 0, g: 0, b: 1, a: 1}
+    primaryColor: {r: 0.949, g: 0.71, b: 0.235, a: 1}
     secondaryColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-    impSprite: {fileID: 6982323467906882575, guid: f0058ba6bb0204349b03f81a2c6ba8f2, type: 3}
+    impSprite: {fileID: 21300000, guid: 1d92c2493aaff144085bf5b772f5cb68, type: 3}
     uiHighlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   - colorId: purple
     displayName: Purple
-    primaryColor: {r: 0.5, g: 0, b: 0.5, a: 1}
+    primaryColor: {r: 0.545, g: 0.424, b: 0.788, a: 1}
     secondaryColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-    impSprite: {fileID: 7571917166547035350, guid: dad8cfbb5eebccc418aab7dd4d70add4, type: 3}
+    impSprite: {fileID: 21300000, guid: 1821a63730b7cae43b7312876f7515df, type: 3}
     uiHighlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}

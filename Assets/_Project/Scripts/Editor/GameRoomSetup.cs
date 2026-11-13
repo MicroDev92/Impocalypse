@@ -215,10 +215,10 @@ public static class GameRoomSetup
         var lrt = labelObj.GetComponent<RectTransform>();
         lrt.anchorMin = Vector2.zero;
         lrt.anchorMax = Vector2.one;
-        // The button art's horns sit at the top of the sprite, so the visible bar is
-        // the lower part of the rect - centring in the raw rect puts text on the horns.
-        lrt.offsetMin = new Vector2(10, 6);
-        lrt.offsetMax = new Vector2(-10, -18);
+        // The button face is the rect minus its outline and the lip underneath, so the
+        // label is centred on the face rather than on the raw rect.
+        lrt.offsetMin = new Vector2(10, ChromeRestyle.ButtonLipInset);
+        lrt.offsetMax = new Vector2(-10, -ChromeRestyle.ButtonTopInset);
         var lblTmp = labelObj.GetComponent<TMP_Text>();
         lblTmp.alignment = TextAlignmentOptions.Center;
         lblTmp.color = new Color(1f, 0.95f, 0.9f, 1f);

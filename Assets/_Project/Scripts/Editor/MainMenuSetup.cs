@@ -275,10 +275,10 @@ public static class MainMenuSetup
         var label = CreateTextObject(obj.transform, "Label", text, Mathf.RoundToInt(fontSize), FontStyles.Bold);
         var labelRect = label.GetComponent<RectTransform>();
         StretchFull(labelRect);
-        // The button art's horns occupy the top of the sprite, so the visible stone bar
-        // is the lower part of the rect - inset the top or the text sits on the horns.
-        labelRect.offsetMin = new Vector2(10, 6);
-        labelRect.offsetMax = new Vector2(-10, -18);
+        // The button face is the rect minus its outline and the lip underneath, so the
+        // label is centred on the face rather than on the raw rect.
+        labelRect.offsetMin = new Vector2(10, ChromeRestyle.ButtonLipInset);
+        labelRect.offsetMax = new Vector2(-10, -ChromeRestyle.ButtonTopInset);
         label.GetComponent<TMP_Text>().alignment = TextAlignmentOptions.Center;
         label.GetComponent<TMP_Text>().color = new Color(1f, 0.95f, 0.9f, 1f);
 

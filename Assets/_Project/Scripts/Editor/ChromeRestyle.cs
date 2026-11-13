@@ -27,7 +27,7 @@ public static class ChromeRestyle
     {
         // The sidebar frame is shown a little larger than authored, so its band stays chunky.
         Slice("panel_bg", new Vector4(80, 80, 80, 80), 140);
-        Slice("button_bg", new Vector4(48, 48, 48, 48));
+        var button = Slice("button_bg", new Vector4(48, 48, 48, 48));
         var inset = Slice("panel_inset", new Vector4(40, 40, 40, 40));
         var bar = Slice("topbar_bg", new Vector4(8, 30, 8, 0));
 
@@ -36,8 +36,10 @@ public static class ChromeRestyle
         {
             if (rt.name == "LeftSidebar" && rt.gameObject.scene.IsValid()) { canvas = rt.parent; break; }
         }
+        int labels = CentreButtonLabels(button);
         if (canvas == null)
         {
+            if (labels > 0) EditorSceneManager.MarkAllScenesDirty();
             Debug.Log("[ChromeRestyle] Sprites re-imported. No game UI in the open scene, so nothing to re-point.");
             return;
         }
@@ -50,6 +52,40 @@ public static class ChromeRestyle
 
         EditorSceneManager.MarkSceneDirty(canvas.gameObject.scene);
         Debug.Log("[ChromeRestyle] Panel frames applied.");
+    }
+
+    /// <summary>Canvas units from the button rect's bottom edge to its face (outline + lip).</summary>
+    public const float ButtonLipInset = 12f;
+    /// <summary>Canvas units from the button rect's top edge to its face (outline).</summary>
+    public const float ButtonTopInset = 5f;
+
+    /// <summary>
+    /// Centres every button label in the open scenes on the button's face. The
+    /// face is not the middle of the rect: the lip takes the bottom 12 units.
+    /// </summary>
+    private static int CentreButtonLabels(Sprite button)
+    {
+        int count = 0;
+        foreach (var image in Resources.FindObjectsOfTypeAll<Image>())
+        {
+            if (button == null || image.sprite != button || !image.gameObject.scene.IsValid()) continue;
+            foreach (var label in image.GetComponentsInChildren<TMPro.TMP_Text>(true))
+            {
+                var rt = label.rectTransform;
+                Undo.RecordObject(rt, "Apply Panel Frames");
+                Undo.RecordObject(label, "Apply Panel Frames");
+                rt.anchorMin = Vector2.zero;
+                rt.anchorMax = Vector2.one;
+                rt.offsetMin = new Vector2(10, ButtonLipInset);
+                rt.offsetMax = new Vector2(-10, -ButtonTopInset);
+                label.alignment = TMPro.TextAlignmentOptions.Center;
+                label.margin = Vector4.zero;
+                EditorUtility.SetDirty(label);
+                EditorUtility.SetDirty(rt);
+                count++;
+            }
+        }
+        return count;
     }
 
     /// <summary>Border is left, bottom, right, top in source pixels.</summary>

@@ -24,6 +24,7 @@ public static class BoardArtApply
     private const string CardPrefab = "Assets/_Project/Prefabs/Card.prefab";
     private const string Texture = "Assets/Art/UI/Background/bg_texture_tileable.png";
     private const string Glow = "Assets/Art/UI/Background/bg_glow.png";
+    private const float CardContentScale = 1.25f;
 
     [MenuItem("GameObject/UI/Impocalypse - Apply Board Art", false, 34)]
     public static void Apply()
@@ -47,6 +48,14 @@ public static class BoardArtApply
         int inPrefab = 0;
         foreach (var component in prefab.GetComponentsInChildren<MonoBehaviour>(true))
             inPrefab += Repoint(component, art);
+        // The new frame is thinner than the old one, so the parchment is larger:
+        // grow the content with it instead of leaving it marooned in the middle.
+        var content = prefab.transform.Find("Content");
+        if (content != null && !Mathf.Approximately(content.localScale.x, CardContentScale))
+        {
+            content.localScale = Vector3.one * CardContentScale;
+            inPrefab++;
+        }
         if (inPrefab > 0) PrefabUtility.SaveAsPrefabAsset(prefab, CardPrefab);
         PrefabUtility.UnloadPrefabContents(prefab);
 
@@ -156,7 +165,7 @@ public static class BoardArtApply
         halo.sprite = glow;
         halo.drawMode = SpriteDrawMode.Simple;
         halo.sortingOrder = -999;
-        halo.color = new Color(1f, 1f, 1f, 0.8f);
+        halo.color = new Color(1f, 1f, 1f, 0.35f);
         halo.transform.localScale = Vector3.one * 5.4f;   // 5.12 units * 5.4: a soft halo about twice the board
     }
 

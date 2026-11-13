@@ -125,8 +125,27 @@ async function main() {
   show(iconSheet, 'Icons');
   show(iconSheet28, 'Icons at 28px, shown 4x');
 
+  // ---- UI chrome: the 9-slice sources and a sidebar-sized preview ----
+  const chrome = renderChrome();
+  const chromeSheet = chromePreview();
+  show(chromeSheet, 'Panels and buttons (2x)');
+
+  // ---- creatures: ours, and any candidates dropped in out/ext for comparison ----
+  const names = ['red', 'teal', 'yellow', 'purple'];
+  const creatures = names.map(n => ({ name: 'imp_' + n, canvas: renderCreature(n) }));
+  const ext = await Promise.all(names.map(n => loadImage('out/ext/imp_' + n + '.png')));
+  const stand = ['ashlands_a', 'styx_a', 'grove_a', 'field_a'].map(n => tiles.find(t => t.name === n).canvas);
+  const sets = [creatures.map(c => c.canvas)];
+  if (ext.some(Boolean)) sets.push(ext);
+  const creatureReview = creatureSheet(sets, stand);
+  show(creatureReview, 'Creatures: large, on a 61px tile (x3), on a 22px tile (x6)');
+
   let saved = 0;
   if (save) {
+    for (const t of chrome.concat(creatures)) { await saveCanvas(t.canvas, t.name + '.png'); saved++; }
+    await saveCanvas(chromeSheet, '_sheet_chrome.png');
+    await saveCanvas(creatureReview, '_sheet_creatures.png');
+    saved += 2;
     for (const t of icons) { await saveCanvas(t.canvas, t.name + '.png'); saved++; }
     await saveCanvas(iconSheet, '_sheet_icons.png');
     await saveCanvas(iconSheet28, '_sheet_icons_28px_x4.png');

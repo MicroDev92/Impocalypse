@@ -24,8 +24,6 @@ namespace UI
     {
         [Header("UI References")]
         [SerializeField] private Transform listContainer;
-        [Tooltip("Row prefab with a TMP_Text (FiefDetail.prefab works).")]
-        [SerializeField] private GameObject rowPrefab;
         [SerializeField] private TMP_Text headerText;
         [Tooltip("Shown while the player owns no tiles yet.")]
         [SerializeField] private TMP_Text emptyText;
@@ -80,23 +78,28 @@ namespace UI
             int total = domains.Sum(d => d.Score);
             if (headerText != null)
                 headerText.text = domains.Count > 0
-                    ? $"Your {GameLexicon.FiefName}s — {total} {GameLexicon.ScoreName}"
+                    ? $"Your {GameLexicon.FiefName}s: {total}"
                     : $"Your {GameLexicon.FiefName}s";
 
             if (emptyText != null)
                 emptyText.gameObject.SetActive(domains.Count == 0);
 
-            if (domains.Count == 0 || listContainer == null || rowPrefab == null) return;
+            if (domains.Count == 0 || listContainer == null) return;
 
+            var icons = UIIconSet.Instance;
             int shown = Mathf.Min(domains.Count, maxRows);
             for (int i = 0; i < shown; i++)
-                AddRow(DescribeDomain(domains[i]));
+                AddRow(domains[i], icons);
 
             // Summarise the tail rather than letting the list push the sidebar over.
             if (domains.Count > shown)
             {
                 var rest = domains.Skip(shown).ToList();
-                AddRow($"+{rest.Count} smaller ({rest.Sum(d => d.Score)} {GameLexicon.ScoreName})");
+                var row = IconRow.Create(listContainer);
+                IconRow.Word(row, $"+{rest.Count} smaller");
+                IconRow.Icon(row, icons != null ? icons.infamy : null, 24f);
+                IconRow.Number(row, rest.Sum(d => d.Score).ToString(), IconRow.Soft, 18f);
+                _rows.Add(row.gameObject);
             }
         }
 
@@ -111,15 +114,33 @@ namespace UI
             return $"{tiles} · Str {domain.Strength} × Wealth {domain.Wealth} = {domain.Score}";
         }
 
-        private void AddRow(string text)
+        /// <summary>
+        /// "[tiles] 5   [strength] 2 x [wealth] 3 = [infamy] 6" - the same maths as
+        /// the sentence above, in icons. A domain worth nothing keeps its row but
+        /// greys its total, so the missing citadel or resource is the thing noticed.
+        /// </summary>
+        private void AddRow(Fief domain, UIIconSet icons)
         {
-            var row = Instantiate(rowPrefab, listContainer);
-            row.SetActive(true);
+            var row = IconRow.Create(listContainer);
+            _rows.Add(row.gameObject);
 
-            var label = row.GetComponentInChildren<TMP_Text>();
-            if (label != null) label.text = text;
+            if (icons == null)
+            {
+                IconRow.Word(row, DescribeDomain(domain));
+                return;
+            }
 
-            _rows.Add(row);
+            IconRow.Icon(row, icons.tile);
+            IconRow.Number(row, domain.Tiles.Count.ToString(), IconRow.Bright);
+            IconRow.Word(row, "  ");
+            IconRow.Icon(row, icons.strength);
+            IconRow.Number(row, domain.Strength.ToString(), IconRow.Bright);
+            IconRow.Number(row, "x", IconRow.Soft, 20f);
+            IconRow.Icon(row, icons.wealth);
+            IconRow.Number(row, domain.Wealth.ToString(), IconRow.Bright);
+            IconRow.Number(row, "=", IconRow.Soft, 22f);
+            IconRow.Icon(row, icons.infamy);
+            IconRow.Number(row, domain.Score.ToString(), domain.Score > 0 ? IconRow.Accent : IconRow.Soft);
         }
 
         private void ClearRows()

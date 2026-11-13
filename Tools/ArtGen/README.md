@@ -47,3 +47,12 @@ can be a flat smudge at 61.
 - Features are thick and few: one rendered pixel is ~17 source pixels.
 - Variants are seeded. To get a different layout change the seed in `TILESET`;
   to add a variant add a line there and to the matching list on `GridGenerator`.
+
+## UI icons
+
+`icons.js` draws the 14 sidebar icons (resources, strength, wealth, infamy,
+tile, domain, pact, treasure) on 256px transparent canvases; they are saved as
+`out/icon_*.png`. Copy them to `Assets/Art/UI/Icons/`, then run
+**GameObject > UI > Impocalypse - Restyle Left Sidebar** in Unity, which imports
+them as sprites and refills `Resources/UIIconSet`. Judge them on
+`_sheet_icons_28px_x4.png`: they are shown at about 32px.

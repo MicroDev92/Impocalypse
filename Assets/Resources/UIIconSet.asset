@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acb6fdcf60b0c6b44bc5f9ff4ad18aff, type: 3}
+  m_Name: UIIconSet
+  m_EditorClassIdentifier: Assembly-CSharp::UI.UIIconSet
+  charwood: {fileID: 21300000, guid: 3ca69c6eaffa486438ca34f2ca82ed36, type: 3}
+  bloodroot: {fileID: 21300000, guid: fe6ff97f4755fd5439653ca454b6615a, type: 3}
+  souls: {fileID: 21300000, guid: 4dc651a3f01718a46b679317977b46ee, type: 3}
+  demonsilk: {fileID: 21300000, guid: 9cd1eccded12d5d4389db494f202fe80, type: 3}
+  soulwine: {fileID: 21300000, guid: 6b81adcb046e4724581c980ac0caf265, type: 3}
+  ectoplasm: {fileID: 21300000, guid: 8ef99e49cfdbe1047a1f5d532af18ecd, type: 3}
+  anyResource: {fileID: 21300000, guid: d03a44f4431a73b41b5761e994238f78, type: 3}
+  strength: {fileID: 21300000, guid: f41341b03deb23346985f04f977ac6b0, type: 3}
+  wealth: {fileID: 21300000, guid: 98802f546eede804db0827f2b6639db8, type: 3}
+  infamy: {fileID: 21300000, guid: 3f2f149d607e92a4daccf519861921d1, type: 3}
+  tile: {fileID: 21300000, guid: 944081c252af9d2498b7c3ce3d56754b, type: 3}
+  domain: {fileID: 21300000, guid: 533bc30bcc5bea744abef48958ba9175, type: 3}
+  pact: {fileID: 21300000, guid: 3fd66f34a73fca24c82e4a943b65eef7, type: 3}
+  treasure: {fileID: 21300000, guid: 7c3642bde49f1cd4a985368f1dc5ff28, type: 3}
+  displayFont: {fileID: 11400000, guid: f8c1fe1d787b18a43b1cbfe68c177d81, type: 2}

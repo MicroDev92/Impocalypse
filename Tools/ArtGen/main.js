@@ -114,8 +114,23 @@ async function main() {
   show(board22, 'Mock board, 22px tiles (phone)');
   show(sheet61, 'Each tile at 61px, shown 4x');
 
+  // ---- UI icons: full size, and at the 28px the sidebars show them (x4) ----
+  const icons = Object.keys(ICONS).map(name => ({ name: 'icon_' + name, canvas: renderIcon(name) }));
+  const iconSheet = contactSheet(icons, 128, 7, (ctx, t, x, y) => ctx.drawImage(mipDown(t.canvas, 128), x, y));
+  const iconSheet28 = contactSheet(icons, 112, 7, (ctx, t, x, y) => {
+    ctx.fillStyle = '#241812';
+    ctx.fillRect(x, y, 112, 112);
+    ctx.drawImage(upscaleNearest(mipDown(t.canvas, 28), 4), x, y);
+  });
+  show(iconSheet, 'Icons');
+  show(iconSheet28, 'Icons at 28px, shown 4x');
+
   let saved = 0;
   if (save) {
+    for (const t of icons) { await saveCanvas(t.canvas, t.name + '.png'); saved++; }
+    await saveCanvas(iconSheet, '_sheet_icons.png');
+    await saveCanvas(iconSheet28, '_sheet_icons_28px_x4.png');
+    saved += 2;
     for (const t of tiles) { await saveCanvas(t.canvas, t.name + '.png'); saved++; }
     await saveCanvas(sheetFull, '_sheet_tiles.png');
     await saveCanvas(sheet61, '_sheet_61px_x4.png');

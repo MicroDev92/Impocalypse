@@ -130,8 +130,29 @@ async function main() {
   const chromeSheet = chromePreview();
   show(chromeSheet, 'Panels and buttons (2x)');
 
+  // ---- buildings, card art, card frame, background ----
+  const buildings = Object.keys(BUILDINGS).map(n => ({ name: (n === 'pact' || n === 'provisions' ? 'card_' : 'building_') + n, canvas: renderBuilding(n) }));
+  const stand = ['ashlands_a', 'field_a', 'ashlands_b', 'grove_a', 'styx_a', 'peaks_a', 'ashlands_c', 'ashlands_d'].map(n => tiles.find(t => t.name === n).canvas);
+  const buildingReview = buildingSheet(buildings, stand);
+  show(buildingReview, 'Buildings and card art: large, on a 61px tile (x3), on a 22px tile (x6)');
+  const cardFrame = newCanvas(CARD.w, CARD.h);
+  drawCardFrame(cardFrame.getContext('2d'));
+  show(cardFrame, 'Card frame (4x)');
+  const backdrop = renderBackdrop();
+  const glow = renderGlow();
+  const backdropReview = newCanvas(1024, 512);
+  { const c = backdropReview.getContext('2d'); for (let x = 0; x < 4; x++) for (let y = 0; y < 2; y++) c.drawImage(backdrop, x * 256, y * 256, 256, 256); c.drawImage(glow, 256, 0); }
+  show(backdropReview, 'Background, tiled 4x2 at quarter size, with the glow');
+
   let saved = 0;
   if (save) {
+    for (const t of buildings) { await saveCanvas(t.canvas, t.name + '.png'); saved++; }
+    await saveCanvas(buildingReview, '_sheet_buildings.png');
+    await saveCanvas(cardFrame, 'card_frame.png');
+    await saveCanvas(backdrop, 'bg_texture_tileable.png');
+    await saveCanvas(glow, 'bg_glow.png');
+    await saveCanvas(backdropReview, '_sheet_backdrop.png');
+    saved += 5;
     for (const t of chrome) { await saveCanvas(t.canvas, t.name + '.png'); saved++; }
     await saveCanvas(chromeSheet, '_sheet_chrome.png');
     saved += 1;

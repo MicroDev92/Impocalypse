@@ -251,13 +251,13 @@ MonoBehaviour:
   minLabelFontSize: 13
   thumbnail: {fileID: 7331833785801408331}
   cardArt:
-    citadel: {fileID: 8392797238846179811, guid: 59f9bde1e5835a64d8e390fc1ae4dc40, type: 3}
-    farm: {fileID: 8015055741400221070, guid: 59f9bde1e5835a64d8e390fc1ae4dc40, type: 3}
-    bazaar: {fileID: 8581223825504080427, guid: 59f9bde1e5835a64d8e390fc1ae4dc40, type: 3}
-    warcamp: {fileID: -5164255642835302057, guid: 59f9bde1e5835a64d8e390fc1ae4dc40, type: 3}
-    hellgate: {fileID: 5150867506319556125, guid: 59f9bde1e5835a64d8e390fc1ae4dc40, type: 3}
-    pact: {fileID: 0}
-    provisions: {fileID: 0}
+    citadel: {fileID: 21300000, guid: 13bac034a6de10c4cb49030680d2ae57, type: 3}
+    farm: {fileID: 21300000, guid: 3ac82788f3542ca4d8764c102018b16e, type: 3}
+    bazaar: {fileID: 21300000, guid: ada88aa439911204899a3ba3172cf27c, type: 3}
+    warcamp: {fileID: 21300000, guid: 0549ba35c9ae60f4fb806169e33e0077, type: 3}
+    hellgate: {fileID: 21300000, guid: d5b5db00f7cc1d847bc98f029f3634be, type: 3}
+    pact: {fileID: 21300000, guid: c404db8828bd1194999b5aff9fc5ba34, type: 3}
+    provisions: {fileID: 21300000, guid: 4b4d9e9c5aeaa184398da2298534381c, type: 3}
   hoverScale: 1.1
   hoverLift: 20
   hoverLerpSpeed: 10

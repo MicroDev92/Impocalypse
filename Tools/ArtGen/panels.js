@@ -102,3 +102,26 @@ function chromePreview() {
   ctx.fillText('DONE', 400, 806);
   return c;
 }
+
+// ---------- board frame: the slab behind each A-J / 1-10 label ----------
+// The same plate as a terrain tile, in dark stone, with a quiet centre: the
+// label on it is TextMeshPro text, not baked art.
+function renderFrameSlab() {
+  const c = newCanvas(S);
+  const rng = rngFrom(6161);
+  tileFrame(c.getContext('2d'), ctx => {
+    ctx.fillStyle = '#34241F';
+    ctx.fillRect(0, 0, S, S);
+    mottle(ctx, rng, ['#3B2A24', '#2D1F1B', '#38271F'], 14, 120, 260);
+  }, { rimShade: 'rgba(0,0,0,0.30)', rimLight: 'rgba(255,220,180,0.07)' });
+  return c;
+}
+
+// Corner decoration: the infamy skull from the icon set, at tile size.
+function renderFrameSkull() {
+  const c = newCanvas(S);
+  const ctx = c.getContext('2d');
+  ctx.scale(4, 4);
+  ICONS.infamy(ctx);
+  return c;
+}

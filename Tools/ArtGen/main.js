@@ -144,8 +144,15 @@ async function main() {
   { const c = backdropReview.getContext('2d'); for (let x = 0; x < 4; x++) for (let y = 0; y < 2; y++) c.drawImage(backdrop, x * 256, y * 256, 256, 256); c.drawImage(glow, 256, 0); }
   show(backdropReview, 'Background, tiled 4x2 at quarter size, with the glow');
 
+  const frameSlab = renderFrameSlab();
+  const frameSkull = renderFrameSkull();
+  show(mipDown(frameSlab, 256), 'Board frame slab');
+
   let saved = 0;
   if (save) {
+    await saveCanvas(frameSlab, 'frame_slab.png');
+    await saveCanvas(frameSkull, 'frame_skull.png');
+    saved += 2;
     for (const t of buildings) { await saveCanvas(t.canvas, t.name + '.png'); saved++; }
     await saveCanvas(buildingReview, '_sheet_buildings.png');
     await saveCanvas(cardFrame, 'card_frame.png');

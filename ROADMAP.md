@@ -466,15 +466,19 @@ determination all worked. Everything below is on top of a working game.
   6. Protection: a tile that holds a citadel, or is orthogonally next to one, cannot
      be blighted. (Counterplay: build citadels where your resources are.)
   7. A tile cannot be blighted twice in the same round.
-  8. Price: at that scoring the caster loses 1 infamy for each OPPONENT tile
-     blighted (0 to 4). A wasted Blight costs nothing; a full hit costs 4.
+  8. Price: at that scoring the caster loses HALF the infamy lost by the hardest-hit
+     opponent, rounded up, minimum 1 if anyone was hit. (Revised 2026-11-14 from
+     "1 per opponent tile", which was too cheap against strong domains. Aleksa
+     proposed paying the full amount lost, or the highest amount lost; both make
+     the card never worth playing, because the caster then gains on nobody. Half
+     keeps the price tied to the damage and still leaves a reason to play it.)
+     The game must show the price while the block is being placed.
   9. Deck: 2 copies with two or three players, 3 with four.
   - Why this shape: one round caps the damage (it cannot multiply across the game),
     the price scales with how hard it hits, and rule 6 gives the victim an answer.
   - Known weak spots to watch in play: bystanders still profit at three or four
     players; a Blight in the final round cannot be recovered from (option: not
-    playable, or double price, in the last round); rule 8 may be too cheap against
-    a high-strength domain - the knobs are the price per tile and the copy count.
+    playable, or double price, in the last round); the knobs are the price fraction (half) and the copy count.
   - Needs: board focus (step 1) to show the block while placing, a blight marker,
     one line in the info panel, and score data from four-player games to tune.
     So: after steps 0-9, before solo.

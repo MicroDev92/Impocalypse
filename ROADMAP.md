@@ -463,6 +463,9 @@ determination all worked. Everything below is on top of a working game.
      lifts and the tiles are back to normal.
   4. Only resources are affected. Citadel strength, ownership and buildings stay.
   5. It hits every player's tiles in the block, the caster's included.
+     (Confirmed 2026-11-14: friendly fire stays. Your own blighted tiles lose their
+     resource too; that loss is on top of the price in rule 8, which counts only
+     what opponents lose.)
   6. Protection: a tile that holds a citadel, or is orthogonally next to one, cannot
      be blighted. (Counterplay: build citadels where your resources are.)
   7. A tile cannot be blighted twice in the same round.
@@ -472,6 +475,7 @@ determination all worked. Everything below is on top of a working game.
      proposed paying the full amount lost, or the highest amount lost; both make
      the card never worth playing, because the caster then gains on nobody. Half
      keeps the price tied to the damage and still leaves a reason to play it.)
+     Agreed by Aleksa 2026-11-14: the card must let you overtake someone.
      The game must show the price while the block is being placed.
   9. Deck: 2 copies with two or three players, 3 with four.
   - Why this shape: one round caps the damage (it cannot multiply across the game),

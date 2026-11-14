@@ -359,6 +359,72 @@ determination all worked. Everything below is on top of a working game.
 - [ ] 3–4 player games verified
 - [ ] Photon capacity check (free tier = 20 CCU; fine through here)
 
+## Milestone C2 — Readability & Feedback (planned 2026-11-14)
+
+> Agreed in conversation after the 2-player playtest of the redrawn game. Nothing
+> here is started. Order matters: step 1 is the foundation for steps 2, 6 and 7.
+> Solo mode and bots are deliberately LAST, after multiplayer is finished.
+
+- [ ] **0. Four-player game on the current build** (`5eb5bed`). No code. Confirms the
+      pick-timer fix (own selection kept when time runs out) and the scrolling
+      lists with real data. Everything since the redraw has been seen with two
+      players at most.
+
+- [ ] **1. Board focus** — one mechanism: light up a set of tiles, dim the rest.
+      Local to each client, nothing is networked.
+  - A `BoardFocus` service: `Show(tiles)`, `Clear()`. Dimming is one dark overlay
+    per non-focused tile, drawn above imps and buildings so the whole cell recedes.
+  - One focus at a time. Choosing another replaces it; choosing the same one
+    again, clicking empty board, or a phase change clears it.
+  - The active source shows a bright ring, so it is obvious why the board is dim
+    and how to undo it.
+
+- [ ] **2. Player cards drive the focus** — on EVERY player's card, for every viewer.
+  - Portrait + name: that player's whole territory.
+  - Four stat chips (tiles, charwood, bloodroot, souls): each chip is icon + number
+    on a raised pill and the whole pill is the target. Tiles = whole territory;
+    a resource chip = that player's tiles producing it.
+  - The stats row never selects the player, so the two targets do not overlap.
+  - Phones: the card needs to be taller than 64 for the chips to be comfortable.
+
+- [ ] **3. Lists drive the focus too** — a domain row lights up that domain; a pact
+      row lights up what the pact counts (own pacts only, they are secret).
+
+- [ ] **4. Citadel art by strength** — three markers (one, two, three towers) drawn
+      in ArtGen; `BuildingMarkerSpawner` and the citadel cards pick by strength.
+      Open: keep the small number on the marker as well, or let the art carry it.
+
+- [ ] **5. Right sidebar idle state** — the info panel stays exactly as it is. Only
+      its empty state changes: instead of one hint line it shows a short log of
+      public events (tiles claimed, buildings placed, camps evicted). Hovering or
+      clicking a tile or card switches to info as today.
+
+- [ ] **6. Scoring reveal** — at the end of a round, walk the domains: focus each one
+      and show strength x wealth adding to the total. At the end of the game,
+      reveal pacts one by one. Presentation only; the scores are already computed.
+      Open: how long it may take, and whether it can be skipped.
+
+- [ ] **7. Draft score preview** — hovering a territory card shows what it would be
+      worth ("+6", "joins two domains") and focuses the affected domain. Territory
+      cards first; buildings depend on where they are placed.
+
+- [ ] **8. Sound** — pick, imp landing, build, timer warning, score ticking, plus a
+      volume control. Needs sound files: this is the one step that cannot be made
+      in-house with the art generator.
+
+- [ ] **9. How to play** — one screen: domains, strength x wealth, pacts.
+
+- [ ] **Cleanup, alongside any step**
+  - Drop the lair (sprite, the `BoardArtApply` list, the brief). It never had a rule.
+  - One draft prompt, not two: the top bar and the Confirm button both say how
+    many cards to pick.
+  - Remove the old art nothing references any more (`building_markers.png`,
+    `ui_icons.png`, `Imp.png`-`Imp4.png`) after checking references.
+
+- [ ] **Last: solo mode, then bots.** Solo is a Slay-the-Spire-style run built on the
+      existing cards. Prototype one solo board (draft alone, the board erodes each
+      round, hit a score target) before building any run structure around it.
+
 ## Milestone D — Board Depth & Life
 
 *Was Milestone A3/A4. Moved here on purpose. Two reasons, and the second is

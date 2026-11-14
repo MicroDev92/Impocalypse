@@ -478,6 +478,20 @@ determination all worked. Everything below is on top of a working game.
      Agreed by Aleksa 2026-11-14: the card must let you overtake someone.
      The game must show the price while the block is being placed.
   9. Deck: 2 copies with two or three players, 3 with four.
+  - Look, per caster (Aleksa, 2026-11-14): each imp has its own blight animation
+    and theme. The RULE is identical for all four; only the dressing changes, and
+    every version keeps one shared element so a blighted tile is always
+    recognisable as blighted. First ideas:
+    red troublemaker - scorch: the tiles catch fire and smoulder;
+    teal sleepyhead - slumber: a fog rolls in and the tiles doze off;
+    yellow maniac - static: lightning crackles and the tiles short out;
+    purple royalty - decree: a wax seal stamps the tiles as confiscated.
+  - Deck size: adding Blight does NOT require cutting pacts. The deck is 188 and
+    hands are derived from it (10 / 12 / 12 cards for 4 / 3 / 2 players), so only
+    160 / 144 / 96 cards are dealt in a game; three more cards change no hand
+    size. The reverse matters more: the deck must stay at 160 or above, or
+    four-player hands drop from 10 to 8. Side effect to accept or fix: a given
+    Blight is dealt in about 5 of 6 four-player games and half of two-player ones.
   - Why this shape: one round caps the damage (it cannot multiply across the game),
     the price scales with how hard it hits, and rule 6 gives the victim an answer.
   - Known weak spots to watch in play: bystanders still profit at three or four
@@ -486,6 +500,14 @@ determination all worked. Everything below is on top of a working game.
   - Needs: board focus (step 1) to show the block while placing, a blight marker,
     one line in the info panel, and score data from four-player games to tune.
     So: after steps 0-9, before solo.
+
+- [ ] **12. Pact review** (Aleksa, 2026-11-14) - go over the 37 pacts and decide which
+      make sense, which to revise, and whether there are too many. Today: flat
+      Treasure, per common resource, three luxury gambles, per domain, largest
+      domain, per citadel. Do it with evidence from real games (which pacts scored
+      nothing, which decided the winner), not by feel - so after several
+      four-player games. If pacts are cut, replace them with other cards or keep
+      the deck at 160+ (see the deck note under step 11).
 
 - [ ] **Last: solo mode, then bots.** Solo is a Slay-the-Spire-style run built on the
       existing cards. Prototype one solo board (draft alone, the board erodes each

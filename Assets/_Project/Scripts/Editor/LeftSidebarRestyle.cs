@@ -49,6 +49,7 @@ public static class LeftSidebarRestyle
         if (pactsPanel != null)
         {
             var rows = RowContainer(pactsPanel, "PactsRows");
+            Scrollable(pactsPanel, rows);
             var pacts = pactsPanel.GetComponent<ParchmentHandUI>();
             if (pacts != null)
             {
@@ -63,12 +64,30 @@ public static class LeftSidebarRestyle
         // ---- Domains ----
         Header(sidebar, "DomainsPanel/DomainsHeader", display);
         Body(sidebar, "DomainsPanel/DomainsEmpty");
-        var list = sidebar.Find("DomainsPanel/DomainsList") as RectTransform;
-        if (list != null)
+        var domainsPanel = sidebar.Find("DomainsPanel");
+        if (domainsPanel != null)
         {
-            Undo.RecordObject(list, "Restyle Left Sidebar");
-            list.offsetMax = new Vector2(list.offsetMax.x, -ListTop);
-            ConfigureRows(list.gameObject);
+            // The original DomainsList belongs to the sidebar prefab, and a prefab
+            // child cannot be moved under a new parent in the scene. So the rows get
+            // a fresh container inside the scroll viewport, and the old one is retired.
+            var rows = RowContainer(domainsPanel, "DomainsRows");
+            Scrollable(domainsPanel, rows);
+
+            var old = domainsPanel.Find("DomainsList");
+            if (old != null)
+            {
+                Undo.RecordObject(old.gameObject, "Restyle Left Sidebar");
+                old.gameObject.SetActive(false);
+            }
+
+            var domains = domainsPanel.GetComponent<DomainListUI>();
+            if (domains != null)
+            {
+                var so = new SerializedObject(domains);
+                so.FindProperty("listContainer").objectReferenceValue = rows;
+                so.ApplyModifiedProperties();
+                EditorUtility.SetDirty(domains);
+            }
         }
 
         EditorSceneManager.MarkSceneDirty(sidebar.gameObject.scene);
@@ -125,7 +144,10 @@ public static class LeftSidebarRestyle
         if (listElement != null)
         {
             Undo.RecordObject(listElement, "Restyle Left Sidebar");
-            listElement.minHeight = 0f;         // the list is exactly as tall as its cards
+            // -1 on both: the list is exactly as tall as its cards, and - because the
+            // cards' own minimum then counts - it is never squeezed when the pact and
+            // domain lists below it run long. Those scroll; the players do not.
+            listElement.minHeight = -1f;
             listElement.preferredHeight = -1f;
             EditorUtility.SetDirty(listElement);
         }
@@ -246,9 +268,61 @@ public static class LeftSidebarRestyle
         return tmp;
     }
 
+    /// <summary>
+    /// Puts a row container inside a masked, vertically scrolling viewport that
+    /// fills the panel under its header. The rows keep their identity, so the list
+    /// scripts' references stay valid; a long list scrolls (wheel or drag) instead
+    /// of running out of the panel.
+    /// </summary>
+    private static void Scrollable(Transform panel, Transform rows)
+    {
+        var viewport = panel.Find("Viewport") as RectTransform;
+        if (viewport == null)
+        {
+            var go = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D), typeof(ScrollRect));
+            Undo.RegisterCreatedObjectUndo(go, "Restyle Left Sidebar");
+            viewport = (RectTransform)go.transform;
+            viewport.SetParent(panel, false);
+        }
+        viewport.anchorMin = Vector2.zero;
+        viewport.anchorMax = Vector2.one;
+        viewport.offsetMin = new Vector2(8, 8);
+        viewport.offsetMax = new Vector2(-8, -ListTop);
+
+        // Invisible, but it has to be a raycast target or a drag has nothing to land on.
+        var hit = viewport.GetComponent<Image>();
+        hit.color = Color.clear;
+        hit.raycastTarget = true;
+
+        var content = (RectTransform)rows;
+        if (content.parent != viewport) Undo.SetTransformParent(content, viewport, "Restyle Left Sidebar");
+        content.anchorMin = new Vector2(0f, 1f);
+        content.anchorMax = new Vector2(1f, 1f);
+        content.pivot = new Vector2(0.5f, 1f);
+        content.offsetMin = new Vector2(0f, content.offsetMin.y);
+        content.offsetMax = new Vector2(0f, 0f);
+        content.anchoredPosition = Vector2.zero;
+        content.localScale = Vector3.one;
+
+        var fitter = content.GetComponent<ContentSizeFitter>();
+        if (fitter == null) fitter = Undo.AddComponent<ContentSizeFitter>(content.gameObject);
+        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        var scroll = viewport.GetComponent<ScrollRect>();
+        scroll.viewport = viewport;
+        scroll.content = content;
+        scroll.horizontal = false;
+        scroll.vertical = true;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 30f;
+        scroll.inertia = true;
+        EditorUtility.SetDirty(scroll);
+    }
+
     private static Transform RowContainer(Transform panel, string name)
     {
-        var rt = panel.Find(name) as RectTransform;
+        var rt = (panel.Find(name) ?? panel.Find("Viewport/" + name)) as RectTransform;
         if (rt == null)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(VerticalLayoutGroup));

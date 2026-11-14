@@ -22,4 +22,5 @@ public static class NetworkEventCodes
     public const byte DraftPhaseEnd = 12;         // Master -> All: draft over, advance to Build
     public const byte GrantCards = 13;            // Master -> Player: your drafted buildables/parchments (incl. Provisions draws)
     public const byte RevealParchments = 14;      // Master -> All: everyone's parchments for final scoring
+    public const byte PickTimeUp = 15;            // Master -> All: pick timer expired, submit what you have selected now
 }

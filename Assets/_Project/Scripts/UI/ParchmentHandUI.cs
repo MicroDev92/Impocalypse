@@ -98,7 +98,10 @@ namespace UI
             if (TryGetComponent<LayoutElement>(out var element))
             {
                 float height = baseHeight + groups.Count * (IconRow.Height + rowSpacing);
-                element.minHeight = element.preferredHeight = Mathf.Max(minHeight, height);
+                // Preferred, not minimum: when the sidebar is short of room the panel
+                // is given less than this and its rows scroll.
+                element.minHeight = minHeight;
+                element.preferredHeight = Mathf.Max(minHeight, height);
             }
         }
 

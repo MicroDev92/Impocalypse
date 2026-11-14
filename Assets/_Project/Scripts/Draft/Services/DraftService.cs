@@ -302,20 +302,59 @@ namespace Draft.Services
         // PICK TIMER (master-authoritative)
         // ==========================================
 
-        private float _pickTimer;
+        // Deadlines are wall-clock times, not counters fed by Time.deltaTime. A
+        // browser tab that loses focus, or a slow frame, stretches deltaTime-based
+        // timers (Unity also clamps deltaTime), so the client's own deadline could
+        // slip behind the master's and the master would pick at random for a player
+        // who had already chosen.
+        private double _pickDeadline;
         private bool _pickTimerActive;
+
+        /// <summary>
+        /// How long the master waits, after telling everyone time is up, for their
+        /// own selections to arrive before it picks at random for whoever is left.
+        /// </summary>
+        private const float PickTimeUpGraceSeconds = 3f;
+
+        private double _graceDeadline;
+        private bool _graceActive;
+
+        private static double Now => Time.realtimeSinceStartupAsDouble;
 
         private void Update()
         {
             TickLocalAutoSubmit();
 
-            if (!_pickTimerActive || !IsMasterClient) return;
+            if (!IsMasterClient) return;
 
-            _pickTimer -= Time.deltaTime;
-            if (_pickTimer > 0f) return;
+            if (_pickTimerActive && Now >= _pickDeadline)
+            {
+                // Time is up. Do not pick for anyone yet: ask every client to submit
+                // what it has selected, and only fill in for those who stay silent.
+                _pickTimerActive = false;
+                _graceDeadline = Now + PickTimeUpGraceSeconds;
+                _graceActive = true;
+                _networkService?.SendToAll(NetworkEventCodes.PickTimeUp, _currentPass);
+            }
 
-            _pickTimerActive = false;
-            AutoPickForMissingPlayers();
+            if (_graceActive && Now >= _graceDeadline)
+            {
+                _graceActive = false;
+                AutoPickForMissingPlayers();
+            }
+        }
+
+        /// <summary>
+        /// The master says time is up: commit this player's own selection right now,
+        /// topping up at random only the picks they never made.
+        /// </summary>
+        private void HandlePickTimeUp()
+        {
+            _localSubmitTimerActive = false;
+            if (_hasSubmittedPicks) return;
+
+            Debug.Log("[DraftService] Master called time - committing this player's own selection");
+            _selectionHandler?.ForceSubmitCurrentSelection();
         }
 
         // ==========================================
@@ -329,12 +368,12 @@ namespace Draft.Services
         /// </summary>
         private const float LocalAutoSubmitMargin = 2f;
 
-        private float _localSubmitTimer;
+        private double _localSubmitDeadline;
         private bool _localSubmitTimerActive;
 
         private void StartLocalSubmitTimer()
         {
-            _localSubmitTimer = Mathf.Max(1f, GameTiming.DraftPickSeconds - LocalAutoSubmitMargin);
+            _localSubmitDeadline = Now + Mathf.Max(1f, GameTiming.DraftPickSeconds - LocalAutoSubmitMargin);
             _localSubmitTimerActive = true;
         }
 
@@ -357,8 +396,7 @@ namespace Draft.Services
                 return;
             }
 
-            _localSubmitTimer -= Time.deltaTime;
-            if (_localSubmitTimer > 0f) return;
+            if (Now < _localSubmitDeadline) return;
 
             _localSubmitTimerActive = false;
 
@@ -369,11 +407,16 @@ namespace Draft.Services
         private void StartPickTimer()
         {
             if (!IsMasterClient) return;
-            _pickTimer = GameTiming.DraftPickSeconds;
+            _pickDeadline = Now + GameTiming.DraftPickSeconds;
             _pickTimerActive = true;
+            _graceActive = false;
         }
 
-        private void StopPickTimer() => _pickTimerActive = false;
+        private void StopPickTimer()
+        {
+            _pickTimerActive = false;
+            _graceActive = false;
+        }
 
         /// <summary>
         /// Pick timer expired: submit random picks on behalf of every player who
@@ -585,6 +628,10 @@ namespace Draft.Services
                     {
                         HandlePicksReceived(data, senderActorId);
                     }
+                    break;
+
+                case NetworkEventCodes.PickTimeUp:
+                    HandlePickTimeUp();
                     break;
 
                 case NetworkEventCodes.SpawnImps:

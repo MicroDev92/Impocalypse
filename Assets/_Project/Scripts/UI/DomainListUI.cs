@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using _Project.Scripts.Utility;
 using Core.Events;
 using Scoring;
@@ -28,9 +29,11 @@ namespace UI
         [Tooltip("Shown while the player owns no tiles yet.")]
         [SerializeField] private TMP_Text emptyText;
 
-        [Header("Display")]
-        [Tooltip("Longest list shown; beyond this the smallest domains are summarised on one line.")]
-        [SerializeField] private int maxRows = 5;
+        [Header("Layout")]
+        [Tooltip("Panel height with no rows; each row adds its own height on top. The sidebar may give the panel less than it asks for, in which case the list scrolls.")]
+        [SerializeField] private float baseHeight = 56f;
+        [SerializeField] private float minHeight = 120f;
+        [SerializeField] private float rowSpacing = 4f;
 
         private IEventBus _eventBus;
         private readonly List<GameObject> _rows = new();
@@ -84,23 +87,21 @@ namespace UI
             if (emptyText != null)
                 emptyText.gameObject.SetActive(domains.Count == 0);
 
+            // Ask for the height the rows need. Every domain gets its own row: when
+            // the sidebar cannot give that much, the list scrolls instead of being
+            // summarised or spilling out of the panel.
+            if (TryGetComponent<LayoutElement>(out var element))
+            {
+                float height = baseHeight + domains.Count * (IconRow.Height + rowSpacing);
+                element.minHeight = minHeight;
+                element.preferredHeight = Mathf.Max(minHeight, height);
+            }
+
             if (domains.Count == 0 || listContainer == null) return;
 
             var icons = UIIconSet.Instance;
-            int shown = Mathf.Min(domains.Count, maxRows);
-            for (int i = 0; i < shown; i++)
-                AddRow(domains[i], icons);
-
-            // Summarise the tail rather than letting the list push the sidebar over.
-            if (domains.Count > shown)
-            {
-                var rest = domains.Skip(shown).ToList();
-                var row = IconRow.Create(listContainer);
-                IconRow.Word(row, $"+{rest.Count} smaller");
-                IconRow.Icon(row, icons != null ? icons.infamy : null, 24f);
-                IconRow.Number(row, rest.Sum(d => d.Score).ToString(), IconRow.Soft, 18f);
-                _rows.Add(row.gameObject);
-            }
+            foreach (var domain in domains)
+                AddRow(domain, icons);
         }
 
         /// <summary>

@@ -413,10 +413,11 @@ determination all worked. Everything below is on top of a working game.
       cards first; buildings depend on where they are placed.
 
 - [ ] **8. Sound** — pick, imp landing, build, timer warning, score ticking, plus a
-      volume control. Decided 2026-11-14: sounds come from an AI generator, chosen
-      and prompted by Aleksa; licence terms of the chosen tool must allow use in a
-      published game. Fallback that needs no outside tool: synthesise simple
-      effects with Web Audio in `Tools/ArtGen`, the same way the art is drawn.
+      volume control. Decided 2026-11-14 (supersedes the AI-generator idea): arcade-style
+      effects synthesised in-house, the same way the art is drawn. They must be
+      crisp and satisfying - sound matters to this game, so expect several rounds of
+      tuning by ear with Aleksa, since the synthesis cannot be judged without
+      listening. AI-generated sounds stay an option if these fall short.
 
 - [ ] **9. How to play** — one screen: domains, strength x wealth, pacts.
 

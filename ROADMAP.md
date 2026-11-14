@@ -385,7 +385,7 @@ determination all worked. Everything below is on top of a working game.
     on a raised pill and the whole pill is the target. Tiles = whole territory;
     a resource chip = that player's tiles producing it.
   - The stats row never selects the player, so the two targets do not overlap.
-  - Phones: the card needs to be taller than 64 for the chips to be comfortable.
+  - Phones: the card needs to be taller than 64 for the chips to be comfortable (96 in the mock). Decided 2026-11-14: accept the extra height for now and let playtesters judge.
   - Mock of both sizes and the two active states: `Docs/mock_player_card_chips.png`.
 
 - [ ] **3. Lists drive the focus too** — a domain row lights up that domain; a pact

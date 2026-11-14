@@ -453,19 +453,31 @@ determination all worked. Everything below is on top of a working game.
     given in conversation); Claude imports and wires the files. Do after step 8,
     so the sound plumbing already exists.
 
-- [ ] **11. "Take-that" cards** (idea, 2026-11-14) - a card that hurts opponents at a
-      price. Starting point from Aleksa: lose 10 infamy at game end; in a 2x2 or
-      3x3 area, deny opponents one resource. Not designed yet. To settle first:
-  - Damage scales with the victim's strength and with the rounds left, while a
-    flat cost does not - so either limit it to one scoring round or tie the cost
-    to when it is played.
-  - With three or four players the bystanders profit from every attack; it will
-    feel fine at two players and may feel bad at four. Test at four.
-  - It needs counterplay (for example: tiles next to a citadel are protected).
-  - Leaning: 2x2, one round, hits everyone in the area, two or three in the deck.
-  - Open question for Aleksa: a brief setback, or a lasting scar on the board?
-  - Depends on board focus (step 1) to show the affected tiles, and on score data
-    from real four-player games to price it. So: after steps 0-9, before solo.
+- [ ] **11. Blight - the "take-that" card** (rules drafted 2026-11-14; Aleksa chose
+      "a brief setback", not a lasting scar). Original idea: lose 10 infamy at game
+      end to deny opponents a resource in a 2x2 or 3x3 area. Draft ruleset v1:
+  1. Blight is drafted like any other card and kept until played. It may be held
+     across rounds; an unplayed Blight is worth nothing.
+  2. It is played in the build phase onto any 2x2 block of tiles.
+  3. Blighted tiles produce no resource at the NEXT scoring only. Then the blight
+     lifts and the tiles are back to normal.
+  4. Only resources are affected. Citadel strength, ownership and buildings stay.
+  5. It hits every player's tiles in the block, the caster's included.
+  6. Protection: a tile that holds a citadel, or is orthogonally next to one, cannot
+     be blighted. (Counterplay: build citadels where your resources are.)
+  7. A tile cannot be blighted twice in the same round.
+  8. Price: at that scoring the caster loses 1 infamy for each OPPONENT tile
+     blighted (0 to 4). A wasted Blight costs nothing; a full hit costs 4.
+  9. Deck: 2 copies with two or three players, 3 with four.
+  - Why this shape: one round caps the damage (it cannot multiply across the game),
+    the price scales with how hard it hits, and rule 6 gives the victim an answer.
+  - Known weak spots to watch in play: bystanders still profit at three or four
+    players; a Blight in the final round cannot be recovered from (option: not
+    playable, or double price, in the last round); rule 8 may be too cheap against
+    a high-strength domain - the knobs are the price per tile and the copy count.
+  - Needs: board focus (step 1) to show the block while placing, a blight marker,
+    one line in the info panel, and score data from four-player games to tune.
+    So: after steps 0-9, before solo.
 
 - [ ] **Last: solo mode, then bots.** Solo is a Slay-the-Spire-style run built on the
       existing cards. Prototype one solo board (draft alone, the board erodes each

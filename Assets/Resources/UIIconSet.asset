@@ -26,4 +26,5 @@ MonoBehaviour:
   domain: {fileID: 21300000, guid: 533bc30bcc5bea744abef48958ba9175, type: 3}
   pact: {fileID: 21300000, guid: 3fd66f34a73fca24c82e4a943b65eef7, type: 3}
   treasure: {fileID: 21300000, guid: 7c3642bde49f1cd4a985368f1dc5ff28, type: 3}
+  panelInset: {fileID: 21300000, guid: 440678df11d893c43b44771c9d309963, type: 3}
   displayFont: {fileID: 11400000, guid: f8c1fe1d787b18a43b1cbfe68c177d81, type: 2}

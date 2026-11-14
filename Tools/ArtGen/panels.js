@@ -125,3 +125,40 @@ function renderFrameSkull() {
   ICONS.infamy(ctx);
   return c;
 }
+
+// ---------- player portraits ----------
+// A round badge per player: the imp's head, cropped from the shipped imp art
+// (read from out/ext/imp_<colour>.png), inside a ring in the player's colour.
+// The ring is what identifies the player at 48px; the face is the bonus.
+const PORTRAITS = {
+  red:    { ring: '#E04A2F', crop: [512, 400, 640] },
+  teal:   { ring: '#5FC9B8', crop: [512, 410, 730] },
+  yellow: { ring: '#F2B53C', crop: [512, 420, 730] },
+  purple: { ring: '#8B6CC9', crop: [512, 400, 640] },
+};
+function loadCanvas(src) {
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = src;
+  });
+}
+async function renderPortrait(name) {
+  const n = 512, c = newCanvas(n), ctx = c.getContext('2d');
+  const p = PORTRAITS[name];
+  const img = await loadCanvas('out/ext/imp_' + name + '.png');
+  ink(ctx, circle(n / 2, n / 2, 226), PC.fillLo, 0);
+  if (img) {
+    const [cx, cy, size] = p.crop;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(n / 2, n / 2, 226, 0, Math.PI * 2); ctx.clip();
+    ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size, n / 2 - 226, n / 2 - 226, 452, 452);
+    ctx.restore();
+  }
+  ctx.beginPath(); ctx.arc(n / 2, n / 2, 226, 0, Math.PI * 2);
+  ctx.lineWidth = 44; ctx.strokeStyle = INK; ctx.stroke();
+  ctx.beginPath(); ctx.arc(n / 2, n / 2, 226, 0, Math.PI * 2);
+  ctx.lineWidth = 24; ctx.strokeStyle = p.ring; ctx.stroke();
+  return c;
+}

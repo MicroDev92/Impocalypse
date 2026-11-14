@@ -18,22 +18,26 @@ MonoBehaviour:
     primaryColor: {r: 0.878, g: 0.29, b: 0.184, a: 1}
     secondaryColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
     impSprite: {fileID: 21300000, guid: 3dfecf0e6fabfe94fac04d9e348b317d, type: 3}
+    portrait: {fileID: 21300000, guid: 707848a6971b6124f9f645121aed33e1, type: 3}
     uiHighlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   - colorId: green
     displayName: Green
     primaryColor: {r: 0.373, g: 0.788, b: 0.722, a: 1}
     secondaryColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
     impSprite: {fileID: 21300000, guid: 73a17c2d55ed7ae4b9c57406184f9bc6, type: 3}
+    portrait: {fileID: 21300000, guid: cdc6f08b1acba3c42adce6aa6f4bd110, type: 3}
     uiHighlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   - colorId: blue
     displayName: Blue
     primaryColor: {r: 0.949, g: 0.71, b: 0.235, a: 1}
     secondaryColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
     impSprite: {fileID: 21300000, guid: 1d92c2493aaff144085bf5b772f5cb68, type: 3}
+    portrait: {fileID: 21300000, guid: 21a5da2319dd7464abfd33bf7d24ed06, type: 3}
     uiHighlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   - colorId: purple
     displayName: Purple
     primaryColor: {r: 0.545, g: 0.424, b: 0.788, a: 1}
     secondaryColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
     impSprite: {fileID: 21300000, guid: 1821a63730b7cae43b7312876f7515df, type: 3}
+    portrait: {fileID: 21300000, guid: e872eec709e98af44b245c75a1eeb433, type: 3}
     uiHighlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}

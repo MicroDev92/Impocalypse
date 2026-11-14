@@ -39,6 +39,10 @@ namespace UI
         public Sprite pact;
         public Sprite treasure;
 
+        [Header("Chrome")]
+        [Tooltip("9-sliced recess used behind rows built in code (player cards).")]
+        public Sprite panelInset;
+
         [Header("Lettering")]
         public TMP_FontAsset displayFont;
 

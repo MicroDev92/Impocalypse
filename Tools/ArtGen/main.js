@@ -148,8 +148,19 @@ async function main() {
   const frameSkull = renderFrameSkull();
   show(mipDown(frameSlab, 256), 'Board frame slab');
 
+  const portraits = [];
+  for (const n of Object.keys(PORTRAITS)) portraits.push({ name: 'portrait_' + n, canvas: await renderPortrait(n) });
+  const portraitSheet = contactSheet(portraits, 192, 4, (ctx, t, x, y) => {
+    ctx.drawImage(mipDown(t.canvas, 128), x, y);
+    ctx.drawImage(mipDown(t.canvas, 48), x + 136, y + 40);
+  });
+  show(portraitSheet, 'Portraits: 128px and the 48px the player list shows');
+
   let saved = 0;
   if (save) {
+    for (const t of portraits) { await saveCanvas(t.canvas, t.name + '.png'); saved++; }
+    await saveCanvas(portraitSheet, '_sheet_portraits.png');
+    saved += 1;
     await saveCanvas(frameSlab, 'frame_slab.png');
     await saveCanvas(frameSkull, 'frame_skull.png');
     saved += 2;

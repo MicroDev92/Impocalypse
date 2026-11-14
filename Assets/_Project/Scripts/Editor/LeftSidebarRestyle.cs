@@ -40,6 +40,8 @@ public static class LeftSidebarRestyle
             return;
         }
 
+        PlayerList(sidebar);
+
         // ---- Pacts ----
         Header(sidebar, "PactsPanel/PactsHeader", display);
         var pactsEmpty = Body(sidebar, "PactsPanel/PactsList");
@@ -73,6 +75,82 @@ public static class LeftSidebarRestyle
         Debug.Log("[LeftSidebarRestyle] Left sidebar restyled.");
     }
 
+    private const string PlayerCardPrefab = "Assets/_Project/Prefabs/PlayerCard.prefab";
+    private static readonly string[] PortraitSlots = { "red", "teal", "yellow", "purple" };
+
+    /// <summary>
+    /// Player list: portraits into the palette, the card prefab stripped to its
+    /// root (PlayerCardUI builds the rest), and the list sized by its cards.
+    /// </summary>
+    private static void PlayerList(Transform sidebar)
+    {
+        var portraits = new Sprite[PortraitSlots.Length];
+        for (int i = 0; i < PortraitSlots.Length; i++)
+            portraits[i] = Portrait("Assets/Art/Imps/portrait_" + PortraitSlots[i] + ".png");
+
+        foreach (var guid in AssetDatabase.FindAssets("t:PlayerColorPalette"))
+        {
+            var palette = AssetDatabase.LoadAssetAtPath<Config.PlayerColorPalette>(AssetDatabase.GUIDToAssetPath(guid));
+            var so = new SerializedObject(palette);
+            var list = so.FindProperty("playerColors");
+            for (int i = 0; i < Mathf.Min(list.arraySize, portraits.Length); i++)
+                list.GetArrayElementAtIndex(i).FindPropertyRelative("portrait").objectReferenceValue = portraits[i];
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(palette);
+        }
+
+        var prefab = PrefabUtility.LoadPrefabContents(PlayerCardPrefab);
+        for (int i = prefab.transform.childCount - 1; i >= 0; i--)
+            Object.DestroyImmediate(prefab.transform.GetChild(i).gameObject);
+        var layoutGroup = prefab.GetComponent<LayoutGroup>();
+        if (layoutGroup != null) Object.DestroyImmediate(layoutGroup);
+        var element = prefab.GetComponent<LayoutElement>();
+        if (element == null) element = prefab.AddComponent<LayoutElement>();
+        element.minHeight = element.preferredHeight = PlayerCardUI.Height;
+        element.flexibleWidth = 1f;
+        var background = prefab.GetComponent<Image>();
+        if (background != null)
+        {
+            background.sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/Panels/panel_inset.png");
+            background.type = Image.Type.Sliced;
+            background.color = Color.white;
+        }
+        PrefabUtility.SaveAsPrefabAsset(prefab, PlayerCardPrefab);
+        PrefabUtility.UnloadPrefabContents(prefab);
+
+        var container = sidebar.Find("PlayerListContainer");
+        if (container == null) return;
+        ConfigureRows(container.gameObject);
+        var listElement = container.GetComponent<LayoutElement>();
+        if (listElement != null)
+        {
+            Undo.RecordObject(listElement, "Restyle Left Sidebar");
+            listElement.minHeight = 0f;         // the list is exactly as tall as its cards
+            listElement.preferredHeight = -1f;
+            EditorUtility.SetDirty(listElement);
+        }
+    }
+
+    private static Sprite Portrait(string path)
+    {
+        var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (importer == null)
+        {
+            Debug.LogWarning($"[LeftSidebarRestyle] Missing portrait: {path}");
+            return null;
+        }
+        if (importer.textureType != TextureImporterType.Sprite || !importer.mipmapEnabled)
+        {
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.mipmapEnabled = true;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.alphaIsTransparency = true;
+            importer.SaveAndReimport();
+        }
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
     private static void BuildIconSet(TMP_FontAsset display)
     {
         var set = AssetDatabase.LoadAssetAtPath<UIIconSet>(IconSetPath);
@@ -97,6 +175,7 @@ public static class LeftSidebarRestyle
         set.pact = Icon("pact");
         set.treasure = Icon("treasure");
         set.displayFont = display;
+        set.panelInset = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/Panels/panel_inset.png");
 
         EditorUtility.SetDirty(set);
         AssetDatabase.SaveAssets();

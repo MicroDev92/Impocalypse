@@ -10,8 +10,9 @@ using Players;
 
 /// <summary>
 /// Left sidebar panel showing the player score cards.
-/// Each player card displays: name, score, territory count, and per-resource counts.
-/// The local player's card is suffixed "(you)".
+/// Each player card displays: portrait, name, score, territory count, and
+/// per-resource counts. The local player's card is suffixed "(you)".
+/// The cards build their own contents - see PlayerCardUI.
 ///
 /// There used to be a CurrentTurnPanel above the list. It was removed: it read
 /// "Current Turn" but always showed the LOCAL player, because a simultaneous draft
@@ -147,15 +148,17 @@ public class PlayerSidebar : MonoBehaviour
         }
 
         Color playerColor = Color.white;
+        Sprite portrait = null;
         if (colorPalette != null && !string.IsNullOrEmpty(player.ImpColor))
         {
             playerColor = colorPalette.GetPrimaryColor(player.ImpColor);
+            portrait = colorPalette.GetPortrait(player.ImpColor);
         }
 
         var network = ServiceLocator.GetService<INetworkService>();
         bool isLocal = network != null && player.ActorNumber == network.LocalPlayerId;
 
-        cardUI.Initialize(player, playerColor, theme, isLocal);
+        cardUI.Initialize(player, playerColor, portrait, isLocal);
         _playerCards[player.ActorNumber] = cardUI;
 
         RefreshPlayerStats(player.ActorNumber);

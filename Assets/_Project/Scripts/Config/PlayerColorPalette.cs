@@ -28,6 +28,9 @@ namespace Config
             [Tooltip("Imp sprite for this color")]
             public Sprite impSprite;
 
+            [Tooltip("Round portrait shown in the player list")]
+            public Sprite portrait;
+
             [Tooltip("UI highlight color")]
             public Color uiHighlightColor = Color.yellow;
         }
@@ -85,6 +88,12 @@ namespace Config
         public Sprite GetImpSprite(string colorId)
         {
             return GetColorById(colorId)?.impSprite;
+        }
+
+        /// <summary>Round portrait for a color ID, or null if none is assigned.</summary>
+        public Sprite GetPortrait(string colorId)
+        {
+            return GetColorById(colorId)?.portrait;
         }
 
         /// <summary>

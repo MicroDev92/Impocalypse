@@ -386,6 +386,7 @@ determination all worked. Everything below is on top of a working game.
     a resource chip = that player's tiles producing it.
   - The stats row never selects the player, so the two targets do not overlap.
   - Phones: the card needs to be taller than 64 for the chips to be comfortable.
+  - Mock of both sizes and the two active states: `Docs/mock_player_card_chips.png`.
 
 - [ ] **3. Lists drive the focus too** — a domain row lights up that domain; a pact
       row lights up what the pact counts (own pacts only, they are secret).
@@ -403,15 +404,19 @@ determination all worked. Everything below is on top of a working game.
 - [ ] **6. Scoring reveal** — at the end of a round, walk the domains: focus each one
       and show strength x wealth adding to the total. At the end of the game,
       reveal pacts one by one. Presentation only; the scores are already computed.
-      Open: how long it may take, and whether it can be skipped.
+      Decided 2026-11-14: about 5 seconds per player (20 s with four), skippable
+      once every player has agreed to skip. A later settings screen gets an
+      "always skip" tick for experienced players.
 
 - [ ] **7. Draft score preview** — hovering a territory card shows what it would be
       worth ("+6", "joins two domains") and focuses the affected domain. Territory
       cards first; buildings depend on where they are placed.
 
 - [ ] **8. Sound** — pick, imp landing, build, timer warning, score ticking, plus a
-      volume control. Needs sound files: this is the one step that cannot be made
-      in-house with the art generator.
+      volume control. Decided 2026-11-14: sounds come from an AI generator, chosen
+      and prompted by Aleksa; licence terms of the chosen tool must allow use in a
+      published game. Fallback that needs no outside tool: synthesise simple
+      effects with Web Audio in `Tools/ArtGen`, the same way the art is drawn.
 
 - [ ] **9. How to play** — one screen: domains, strength x wealth, pacts.
 

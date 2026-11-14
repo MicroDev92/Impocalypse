@@ -432,6 +432,41 @@ determination all worked. Everything below is on top of a working game.
   - Remove the old art nothing references any more (`building_markers.png`,
     `ui_icons.png`, `Imp.png`-`Imp4.png`) after checking references.
 
+- [ ] **10. Building placement animations** (idea from friends, 2026-11-14). Each
+      building arrives with about a second of character, paired with its own sound:
+  - Citadel: ground shakes and cracks, the keep pushes up through dust, overshoots,
+    settles, one tower wobbles. Sound: rumble, chunky impact, a pebble falling.
+  - Bazaar: counter drops, poles pop up, canopy unfurls, the sign swings too hard.
+    Sound: wooden clacks, fabric flap, small bell.
+  - Farm: a mound bulges, then crops burst out in quick succession. Sound: earthy
+    puff, rubbery pops; a bubbling accent for ectoplasm.
+  - Warcamp: tent springs open, stakes slam down, flag whips into place. Sound:
+    canvas snap, wooden knocks, a comically short horn.
+  - Hellgate: frame rises, a glowing slit opens and stretches into the portal,
+    sputters, stabilises. Sound: magical intake, rising swirl, an ignition cough.
+  - How: movement is procedural, like the imp drop-in. Anything where one PART
+    moves (tower, canopy, sign, flag, portal) needs that building exported from
+    ArtGen as two to four layers instead of one flat sprite.
+  - Must never block play, and the big motions are what survive at phone size
+    (a building is about 12 px there); the small touches are for desktop.
+  - Sounds for these five come from an AI generator run by Aleksa (prompts were
+    given in conversation); Claude imports and wires the files. Do after step 8,
+    so the sound plumbing already exists.
+
+- [ ] **11. "Take-that" cards** (idea, 2026-11-14) - a card that hurts opponents at a
+      price. Starting point from Aleksa: lose 10 infamy at game end; in a 2x2 or
+      3x3 area, deny opponents one resource. Not designed yet. To settle first:
+  - Damage scales with the victim's strength and with the rounds left, while a
+    flat cost does not - so either limit it to one scoring round or tie the cost
+    to when it is played.
+  - With three or four players the bystanders profit from every attack; it will
+    feel fine at two players and may feel bad at four. Test at four.
+  - It needs counterplay (for example: tiles next to a citadel are protected).
+  - Leaning: 2x2, one round, hits everyone in the area, two or three in the deck.
+  - Open question for Aleksa: a brief setback, or a lasting scar on the board?
+  - Depends on board focus (step 1) to show the affected tiles, and on score data
+    from real four-player games to price it. So: after steps 0-9, before solo.
+
 - [ ] **Last: solo mode, then bots.** Solo is a Slay-the-Spire-style run built on the
       existing cards. Prototype one solo board (draft alone, the board erodes each
       round, hit a score target) before building any run structure around it.

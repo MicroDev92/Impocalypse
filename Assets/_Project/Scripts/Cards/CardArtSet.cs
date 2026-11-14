@@ -14,7 +14,12 @@ namespace Cards
     [System.Serializable]
     public class CardArtSet
     {
+        [Tooltip("Strength 3: the full keep. Also the fallback for the two below.")]
         public Sprite citadel;
+        [Tooltip("Strength 1: a lone tower.")]
+        public Sprite citadel1;
+        [Tooltip("Strength 2: two towers.")]
+        public Sprite citadel2;
         public Sprite farm;
         public Sprite bazaar;
         public Sprite warcamp;
@@ -26,7 +31,12 @@ namespace Cards
         public Sprite SpriteFor(CardData card)
         {
             if (card == null) return null;
-            if (card.IsCity) return citadel;
+            if (card.IsCity)
+            {
+                // Same rule as the board marker: one tower per point of strength.
+                Sprite byStrength = (int)card.Strength switch { 1 => citadel1, 2 => citadel2, _ => citadel };
+                return byStrength != null ? byStrength : citadel;
+            }
             if (card.IsFarm) return card.Farm == FarmKind.Market ? bazaar : farm;
             if (card.IsCamp) return warcamp;
             if (card.IsSkyTower) return hellgate;

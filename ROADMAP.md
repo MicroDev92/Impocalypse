@@ -390,9 +390,10 @@ determination all worked. Everything below is on top of a working game.
 - [ ] **3. Lists drive the focus too** — a domain row lights up that domain; a pact
       row lights up what the pact counts (own pacts only, they are secret).
 
-- [ ] **4. Citadel art by strength** — three markers (one, two, three towers) drawn
+- [x] **4. Citadel art by strength** — three markers (one, two, three towers) drawn
       in ArtGen; `BuildingMarkerSpawner` and the citadel cards pick by strength.
-      Open: keep the small number on the marker as well, or let the art carry it.
+      Decided 2026-11-14: no number on the marker, art only, and watch how players
+      react. Known risk: two and three towers are hard to tell apart at phone size.
 
 - [ ] **5. Right sidebar idle state** — the info panel stays exactly as it is. Only
       its empty state changes: instead of one hint line it shows a short log of
@@ -415,7 +416,7 @@ determination all worked. Everything below is on top of a working game.
 - [ ] **9. How to play** — one screen: domains, strength x wealth, pacts.
 
 - [ ] **Cleanup, alongside any step**
-  - Drop the lair (sprite, the `BoardArtApply` list, the brief). It never had a rule.
+  - ~~Drop the lair~~ — done with step 4.
   - One draft prompt, not two: the top bar and the Confirm button both say how
     many cards to pick.
   - Remove the old art nothing references any more (`building_markers.png`,

@@ -1,16 +1,10 @@
 fileFormatVersion: 2
-guid: d13214cf15f4d8d4a8aa456c87206f9b
+guid: dfe3b9066f4dd574bb829058f949ef50
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 8739067850397586561
-    second: building_lair_0
-  - first:
-      213: 6822122889675367057
-    second: building_lair_1
-  - first:
-      213: 5467163775651898256
-    second: building_lair_2
+      213: -3640130266397701482
+    second: building_citadel1_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -158,13 +152,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: building_lair_0
+      name: building_citadel1_0
       rect:
         serializedVersion: 2
-        x: 86
-        y: 122
-        width: 852
-        height: 482
+        x: 304
+        y: 116
+        width: 416
+        height: 785
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -173,52 +167,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 1841cfa88e7674970800000000000000
-      internalID: 8739067850397586561
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: building_lair_1
-      rect:
-        serializedVersion: 2
-        x: 168
-        y: 536
-        width: 192
-        height: 216
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 192692d7f9c0dae50800000000000000
-      internalID: 6822122889675367057
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: building_lair_2
-      rect:
-        serializedVersion: 2
-        x: 664
-        y: 536
-        width: 192
-        height: 216
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 0936d98dc744fdb40800000000000000
-      internalID: 5467163775651898256
+      spriteID: 69a87371fc8ab7dc0800000000000000
+      internalID: -3640130266397701482
       vertices: []
       indices: 
       edges: []
@@ -237,9 +187,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      building_lair_0: 8739067850397586561
-      building_lair_1: 6822122889675367057
-      building_lair_2: 5467163775651898256
+      building_citadel1_0: -3640130266397701482
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

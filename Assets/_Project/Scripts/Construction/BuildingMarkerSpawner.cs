@@ -1,3 +1,4 @@
+using Cards;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -39,7 +40,12 @@ public class BuildingMarkerSpawner : MonoBehaviour
     [SerializeField] private float gateCellFraction = 0.38f;
 
     [Header("Building Sprites")]
+    [Tooltip("Strength 3: the full keep.")]
     [SerializeField] private Sprite citadelSprite;
+    [Tooltip("Strength 1: a lone tower. Falls back to the keep if empty.")]
+    [SerializeField] private Sprite citadelStrength1Sprite;
+    [Tooltip("Strength 2: two towers. Falls back to the keep if empty.")]
+    [SerializeField] private Sprite citadelStrength2Sprite;
     [SerializeField] private Sprite farmSprite;
     [SerializeField] private Sprite bazaarSprite;
     [SerializeField] private Sprite warcampSprite;
@@ -106,7 +112,7 @@ public class BuildingMarkerSpawner : MonoBehaviour
 
         if (current.go != null) Destroy(current.go);
 
-        var sprite = SpriteForBuilding(tile.Building);
+        var sprite = SpriteForBuilding(tile);
         if (markerPrefab == null || sprite == null)
         {
             Debug.LogWarning($"[BuildingMarkerSpawner] Missing prefab or sprite for {tile.Building}.");
@@ -116,19 +122,28 @@ public class BuildingMarkerSpawner : MonoBehaviour
         var marker = SpawnMarker(tile, sprite, tileOffset, cellFraction);
         marker.name = $"Marker_{tile.coord}_{tile.Building}";
 
-        // Strength number is citadel-only; other buildings blank the label.
+        // No number on the marker: a citadel's strength is its tower count.
         var label = marker.GetComponentInChildren<TMP_Text>();
-        if (label != null)
-            label.text = tile.Building == BuildingKind.City
-                ? ((int)tile.BuildingStrength).ToString()
-                : string.Empty;
+        if (label != null) label.text = string.Empty;
 
         _buildingMarkers[tile.coord] = (marker, tile.Building);
     }
 
-    private Sprite SpriteForBuilding(BuildingKind kind) => kind switch
+    /// <summary>One tower per point of strength, so the art alone says what a citadel is worth.</summary>
+    private Sprite CitadelSprite(CityStrength strength)
     {
-        BuildingKind.City => citadelSprite,
+        Sprite sprite = (int)strength switch
+        {
+            1 => citadelStrength1Sprite,
+            2 => citadelStrength2Sprite,
+            _ => citadelSprite
+        };
+        return sprite != null ? sprite : citadelSprite;
+    }
+
+    private Sprite SpriteForBuilding(TileData tile) => tile.Building switch
+    {
+        BuildingKind.City => CitadelSprite(tile.BuildingStrength),
         BuildingKind.CommonFarm => farmSprite,
         BuildingKind.SpecialFarm => farmSprite,
         BuildingKind.Market => bazaarSprite,

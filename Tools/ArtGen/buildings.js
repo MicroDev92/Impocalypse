@@ -1,7 +1,7 @@
 'use strict';
 // Building markers and card art. A marker is drawn over a terrain tile at 0.55
 // of the cell: ~34px on desktop, ~12px on a phone. So each building is one
-// blunt silhouette (keep / barn / awning / tent / ring / mound) with a single
+// blunt silhouette (keep / barn / awning / tent / ring) with a single
 // bright accent, and nothing thinner than the outline.
 
 const BS = 1024;
@@ -30,7 +30,50 @@ function post(ctx, pts, color, w) {
 }
 const shape = build => ctx => build(ctx);
 
+// Citadel parts. Strength is the number of towers: one, two, or the full keep
+// with a tower either side.
+function citadelTower(ctx, x, w, top, slit) {
+  ink(ctx, poly([[x - 10, 890], [x + 10, top + 110], [x + w - 10, top + 110], [x + w + 10, 890]]), BC.stone, BO);
+  const m = w / 5, l = x - 30, r = x + w + 30, n = top + 56;
+  ink(ctx, poly([[l, top + 126], [l, top], [l + m + 20, top], [l + m + 20, n], [l + 2 * m + 20, n], [l + 2 * m + 20, top], [r - 2 * m - 20, top], [r - 2 * m - 20, n], [r - m - 20, n], [r - m - 20, top], [r, top], [r, top + 126]]), BC.stoneHi, BO);
+  if (slit) ink(ctx, rrect(x + w / 2 - 28, top + 200, 56, 110, 24), BC.ember, 20);
+}
+function citadelGate(ctx, cx, w, top) {
+  ink(ctx, shape(c => {
+    c.moveTo(cx - w / 2, 890);
+    c.lineTo(cx - w / 2, top + w / 2);
+    c.bezierCurveTo(cx - w / 2, top - 40, cx + w / 2, top - 40, cx + w / 2, top + w / 2);
+    c.lineTo(cx + w / 2, 890);
+    c.closePath();
+  }), BC.ember, 28);
+  const v = w / 2 - 50;
+  ink(ctx, shape(c => {
+    c.moveTo(cx - v, 876);
+    c.lineTo(cx - v, top + w / 2 + 30);
+    c.bezierCurveTo(cx - v, top + 50, cx + v, top + 50, cx + v, top + w / 2 + 30);
+    c.lineTo(cx + v, 876);
+    c.closePath();
+  }), BC.emberHi, 0);
+}
+function citadelFlag(ctx, x, y) {
+  post(ctx, [[x, y + 130], [x, y]], BC.woodLo, 8);
+  ink(ctx, poly([[x, y - 10], [x + 150, y + 34], [x, y + 80]]), BC.red, 26);
+}
+
 const BUILDINGS = {
+  citadel1(ctx) {                       // strength 1: a lone tower
+    citadelFlag(ctx, 512, 150);
+    citadelTower(ctx, 352, 320, 290, false);
+    citadelGate(ctx, 512, 180, 600);
+  },
+  citadel2(ctx) {                       // strength 2: two towers and a gatehouse
+    citadelFlag(ctx, 290, 190);
+    citadelFlag(ctx, 734, 190);
+    ink(ctx, poly([[380, 890], [380, 560], [644, 560], [644, 890]]), BC.stoneLo, BO);
+    bothSides(ctx, () => citadelTower(ctx, 160, 260, 330, true));
+    citadelGate(ctx, 512, 170, 640);
+  },
+  // strength 3: the full keep
   citadel(ctx) {
     post(ctx, [[512, 200], [512, 70]], BC.woodLo, 8);
     ink(ctx, poly([[512, 60], [668, 104], [512, 150]]), BC.red, 26);
@@ -122,23 +165,6 @@ const BUILDINGS = {
     ctx.lineWidth = 34;
     ctx.strokeStyle = BC.portalHi;
     ctx.stroke();
-  },
-
-  lair(ctx) {
-    bothSides(ctx, () => ink(ctx, poly([[262, 470], [186, 290], [342, 404]]), BC.bone, BO));
-    ink(ctx, shape(c => {
-      c.moveTo(104, 884);
-      c.bezierCurveTo(104, 290, 920, 290, 920, 884);
-      c.closePath();
-    }), BC.stoneLo, BO);
-    line(ctx, [[220, 640], [300, 520], [420, 450]], BC.stone, 26);
-    line(ctx, [[720, 480], [800, 590]], BC.stone, 26);
-    ink(ctx, shape(c => {
-      c.moveTo(330, 884);
-      c.bezierCurveTo(330, 510, 694, 510, 694, 884);
-      c.closePath();
-    }), BC.dark, 26);
-    bothSides(ctx, () => ink(ctx, poly([[410, 716], [492, 744], [424, 778]]), BC.ember, 0));
   },
 
   // ---------- card art for the two cards that are not buildings ----------

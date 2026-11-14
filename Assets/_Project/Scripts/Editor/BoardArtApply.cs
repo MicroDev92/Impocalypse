@@ -10,6 +10,7 @@ using UnityEngine;
 ///  - Buildings: every reference to a sub-sprite of the old building_markers
 ///    sheet (in the open scene and in Card.prefab) is re-pointed at the new
 ///    single sprite of the same name, so nothing has to be re-wired by hand.
+///    Citadels have one sprite per strength (one, two, three towers).
 ///  - Card art: the empty pact / provisions slots of every CardArtSet are filled.
 ///  - Card frame and background textures were replaced in place; this only fixes
 ///    their import settings.
@@ -26,11 +27,22 @@ public static class BoardArtApply
     private const string Glow = "Assets/Art/UI/Background/bg_glow.png";
     private const float CardContentScale = 1.25f;
 
+    /// <summary>Sprite fields that start empty and are filled by name: field -> art key.</summary>
+    private static readonly Dictionary<string, string> EmptySlots = new()
+    {
+        { "pact", "pact" },
+        { "provisions", "provisions" },
+        { "citadel1", "citadel1" },
+        { "citadel2", "citadel2" },
+        { "citadelStrength1Sprite", "citadel1" },
+        { "citadelStrength2Sprite", "citadel2" },
+    };
+
     [MenuItem("GameObject/UI/Impocalypse - Apply Board Art", false, 34)]
     public static void Apply()
     {
         var art = new Dictionary<string, Sprite>();
-        foreach (var name in new[] { "citadel", "farm", "bazaar", "warcamp", "hellgate", "lair" })
+        foreach (var name in new[] { "citadel", "citadel1", "citadel2", "farm", "bazaar", "warcamp", "hellgate" })
             art[name] = Import(Buildings + "building_" + name + ".png", 1024, true);
         art["pact"] = Import(Cards + "card_pact.png", 1024, true);
         art["provisions"] = Import(Cards + "card_provisions.png", 1024, true);
@@ -110,8 +122,8 @@ public static class BoardArtApply
             Sprite replacement = null;
             if (current != null && AssetDatabase.GetAssetPath(current) == OldSheet)
                 art.TryGetValue(current.name, out replacement);
-            else if (prop.objectReferenceValue == null && (prop.name == "pact" || prop.name == "provisions") && prop.type.Contains("Sprite"))
-                art.TryGetValue(prop.name, out replacement);
+            else if (prop.objectReferenceValue == null && prop.type.Contains("Sprite") && EmptySlots.TryGetValue(prop.name, out var key))
+                art.TryGetValue(key, out replacement);
 
             if (replacement == null || replacement == current) continue;
             prop.objectReferenceValue = replacement;

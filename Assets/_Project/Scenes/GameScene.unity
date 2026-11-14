@@ -3006,6 +3006,8 @@ MonoBehaviour:
   minButtonScale: 0.55
   cardArt:
     citadel: {fileID: 21300000, guid: 13bac034a6de10c4cb49030680d2ae57, type: 3}
+    citadel1: {fileID: 21300000, guid: dfe3b9066f4dd574bb829058f949ef50, type: 3}
+    citadel2: {fileID: 21300000, guid: efb8cdcc02f179242a63a1a37cac578d, type: 3}
     farm: {fileID: 21300000, guid: 3ac82788f3542ca4d8764c102018b16e, type: 3}
     bazaar: {fileID: 21300000, guid: ada88aa439911204899a3ba3172cf27c, type: 3}
     warcamp: {fileID: 21300000, guid: 0549ba35c9ae60f4fb806169e33e0077, type: 3}
@@ -4114,6 +4116,8 @@ MonoBehaviour:
   cellFraction: 0.8
   gateCellFraction: 0.38
   citadelSprite: {fileID: 21300000, guid: 13bac034a6de10c4cb49030680d2ae57, type: 3}
+  citadelStrength1Sprite: {fileID: 21300000, guid: dfe3b9066f4dd574bb829058f949ef50, type: 3}
+  citadelStrength2Sprite: {fileID: 21300000, guid: efb8cdcc02f179242a63a1a37cac578d, type: 3}
   farmSprite: {fileID: 21300000, guid: 3ac82788f3542ca4d8764c102018b16e, type: 3}
   bazaarSprite: {fileID: 21300000, guid: ada88aa439911204899a3ba3172cf27c, type: 3}
   warcampSprite: {fileID: 21300000, guid: 0549ba35c9ae60f4fb806169e33e0077, type: 3}

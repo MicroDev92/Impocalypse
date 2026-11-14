@@ -243,7 +243,7 @@ there for why.*
   Linux, so those land as flat files literally named `Build\...`, `index.html`
   finds nothing, and you get a blank page indistinguishable from a broken game.
 
-## Milestone C — Hardening & Balance (playtest-driven) ← **YOU ARE HERE**
+## Milestone C — Hardening & Balance (playtest-driven)
 
 > **Next action: send the itch link to 3 friends and watch a 4-player game.**
 > Everything else here is downstream of what that session shows.
@@ -359,8 +359,12 @@ determination all worked. Everything below is on top of a working game.
 - [ ] 3–4 player games verified
 - [ ] Photon capacity check (free tier = 20 CCU; fine through here)
 
-## Milestone C2 — Readability & Feedback (planned 2026-11-14)
+## Milestone C2 — Readability & Feedback (planned 2026-11-14) ← **YOU ARE HERE**
 
+> **Bookmark 2026-11-14:** step 4 is done; every open question below is decided.
+> Next: make a WebGL build (citadel art is not in one yet), run step 0, then
+> start step 1.
+>
 > Agreed in conversation after the 2-player playtest of the redrawn game. Nothing
 > here is started. Order matters: step 1 is the foundation for steps 2, 6 and 7.
 > Solo mode and bots are deliberately LAST, after multiplayer is finished.

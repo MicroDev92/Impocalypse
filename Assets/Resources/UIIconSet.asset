@@ -27,4 +27,7 @@ MonoBehaviour:
   pact: {fileID: 21300000, guid: 3fd66f34a73fca24c82e4a943b65eef7, type: 3}
   treasure: {fileID: 21300000, guid: 7c3642bde49f1cd4a985368f1dc5ff28, type: 3}
   panelInset: {fileID: 21300000, guid: 440678df11d893c43b44771c9d309963, type: 3}
+  chip: {fileID: 21300000, guid: af79be7e4cc3b2a4da2ccab86aa103ce, type: 3}
+  chipRing: {fileID: 21300000, guid: 68cf8a98ad7d31245949c8bda15449f5, type: 3}
+  portraitRing: {fileID: 21300000, guid: 82da1d54282455c49b96de29361f880f, type: 3}
   displayFont: {fileID: 11400000, guid: f8c1fe1d787b18a43b1cbfe68c177d81, type: 2}

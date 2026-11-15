@@ -361,7 +361,11 @@ determination all worked. Everything below is on top of a working game.
 
 ## Milestone C2 — Readability & Feedback (planned 2026-11-14) ← **YOU ARE HERE**
 
-> **Bookmark 2026-11-14:** step 4 is done; every open question below is decided.
+> **Bookmark 2026-11-15:** steps 1-4 are done in code. Steps 1-3 (board focus) were
+> checked in the Editor only, with sample players - not in a build, not on a phone,
+> not by touch. Next: WebGL build, step 0 with the new build, then step 5.
+>
+> Earlier: step 4 is done; every open question below is decided.
 > Next: make a WebGL build (citadel art is not in one yet), run step 0, then
 > start step 1.
 >
@@ -374,7 +378,7 @@ determination all worked. Everything below is on top of a working game.
       lists with real data. Everything since the redraw has been seen with two
       players at most.
 
-- [ ] **1. Board focus** — one mechanism: light up a set of tiles, dim the rest.
+- [x] **1. Board focus** — one mechanism: light up a set of tiles, dim the rest.
       Local to each client, nothing is networked.
   - A `BoardFocus` service: `Show(tiles)`, `Clear()`. Dimming is one dark overlay
     per non-focused tile, drawn above imps and buildings so the whole cell recedes.
@@ -383,7 +387,7 @@ determination all worked. Everything below is on top of a working game.
   - The active source shows a bright ring, so it is obvious why the board is dim
     and how to undo it.
 
-- [ ] **2. Player cards drive the focus** — on EVERY player's card, for every viewer.
+- [x] **2. Player cards drive the focus** — on EVERY player's card, for every viewer.
   - Portrait + name: that player's whole territory.
   - Four stat chips (tiles, charwood, bloodroot, souls): each chip is icon + number
     on a raised pill and the whole pill is the target. Tiles = whole territory;
@@ -392,7 +396,7 @@ determination all worked. Everything below is on top of a working game.
   - Phones: the card needs to be taller than 64 for the chips to be comfortable (96 in the mock). Decided 2026-11-14: accept the extra height for now and let playtesters judge.
   - Mock of both sizes and the two active states: `Docs/mock_player_card_chips.png`.
 
-- [ ] **3. Lists drive the focus too** — a domain row lights up that domain; a pact
+- [x] **3. Lists drive the focus too** — a domain row lights up that domain; a pact
       row lights up what the pact counts (own pacts only, they are secret).
 
 - [x] **4. Citadel art by strength** — three markers (one, two, three towers) drawn

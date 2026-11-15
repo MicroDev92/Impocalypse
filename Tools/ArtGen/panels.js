@@ -80,6 +80,10 @@ function renderChrome() {
     { name: 'panel_inset', canvas: make(INSET.size, INSET.size, drawInset) },
     { name: 'button_bg', canvas: make(BUTTON.w, BUTTON.h, drawButton) },
     { name: 'topbar_bg', canvas: make(TOPBAR.w, TOPBAR.h, drawTopBar) },
+    // Tintable shapes for the player-card chips: white, so the game colours them.
+    { name: 'chip', canvas: make(64, 64, ctx => ink(ctx, rrect(3, 3, 58, 58, 29), '#FFFFFF', 5)) },
+    { name: 'chip_ring', canvas: make(64, 64, ctx => { ctx.beginPath(); rrect(3.5, 3.5, 57, 57, 28.5)(ctx); ctx.lineWidth = 6; ctx.strokeStyle = '#FFFFFF'; ctx.stroke(); }) },
+    { name: 'portrait_ring', canvas: make(128, 128, ctx => { ctx.beginPath(); ctx.arc(64, 64, 58, 0, Math.PI * 2); ctx.lineWidth = 9; ctx.strokeStyle = '#FFFFFF'; ctx.stroke(); }) },
   ];
 }
 

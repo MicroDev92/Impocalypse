@@ -217,6 +217,26 @@ public class TileData : MonoBehaviour
         _highlightOverlay.enabled = on;
     }
 
+    private SpriteRenderer _dimOverlay;
+
+    /// <summary>True while a board focus (UI.BoardFocus) is showing and this tile is not part of it.</summary>
+    public bool IsDimmed => _dimOverlay != null && _dimOverlay.enabled;
+
+    /// <summary>
+    /// Darkens the whole cell: drawn above imps (10) and building markers (100),
+    /// so everything standing on a tile outside the focus recedes with it.
+    /// </summary>
+    public void SetDimmed(bool on)
+    {
+        if (_dimOverlay == null)
+        {
+            if (!on) return;
+            _dimOverlay = CreateTileOverlay("Dim", GetUnitWhiteSprite(), 150);
+            _dimOverlay.color = new Color(0.05f, 0.03f, 0.03f, 0.80f);
+        }
+        _dimOverlay.enabled = on;
+    }
+
     private void CreateHighlightOverlay()
     {
         var go = new GameObject("Highlight");
@@ -295,6 +315,7 @@ public class TileData : MonoBehaviour
         SkyLinkCoord = null;
 
         if (_highlightOverlay != null) _highlightOverlay.enabled = false;
+        if (_dimOverlay != null) _dimOverlay.enabled = false;
         if (_ownerWash != null) _ownerWash.enabled = false;
 
         var sr = backgroundRenderer != null ? backgroundRenderer : GetComponent<SpriteRenderer>();

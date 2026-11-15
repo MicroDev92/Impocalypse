@@ -42,6 +42,12 @@ namespace UI
         [Header("Chrome")]
         [Tooltip("9-sliced recess used behind rows built in code (player cards).")]
         public Sprite panelInset;
+        [Tooltip("White pill, 9-sliced, tinted in code: the body of a tappable stat chip.")]
+        public Sprite chip;
+        [Tooltip("Outline of the same pill, shown around the chip that is the active board focus.")]
+        public Sprite chipRing;
+        [Tooltip("Circle outline shown around the portrait of the focused player.")]
+        public Sprite portraitRing;
 
         [Header("Lettering")]
         public TMP_FontAsset displayFont;

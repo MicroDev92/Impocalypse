@@ -120,10 +120,28 @@ namespace UI
         /// the sentence above, in icons. A domain worth nothing keeps its row but
         /// greys its total, so the missing citadel or resource is the thing noticed.
         /// </summary>
+        private static IEnumerable<TileData> DomainContaining(TileData anchor)
+        {
+            var grid = ServiceLocator.GetService<IGridService>();
+            var network = ServiceLocator.GetService<INetworkService>();
+            if (grid == null || network == null) return Enumerable.Empty<TileData>();
+
+            var domain = FiefCalculator.CalculateFiefs(network.LocalPlayerId, grid)
+                                       .FirstOrDefault(f => f.Tiles.Contains(anchor));
+            return domain != null ? domain.Tiles : Enumerable.Empty<TileData>();
+        }
+
         private void AddRow(Fief domain, UIIconSet icons)
         {
             var row = IconRow.Create(listContainer);
             _rows.Add(row.gameObject);
+
+            // Tapping the row lights up this domain on the board. The domain is
+            // remembered by one of its tiles and looked up again each time, so the
+            // focus follows the domain as it grows.
+            var anchor = domain.Tiles.OrderBy(t => t.coord, System.StringComparer.Ordinal).FirstOrDefault();
+            if (anchor != null)
+                FocusRow.Attach(row, "domain:" + anchor.coord, () => DomainContaining(anchor));
 
             if (icons == null)
             {

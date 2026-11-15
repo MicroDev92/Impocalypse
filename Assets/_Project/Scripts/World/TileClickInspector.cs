@@ -57,6 +57,15 @@ public class TileClickInspector : MonoBehaviour
         // GetTileByPosition only returns playable tiles (border/coordinate tiles are excluded),
         // so a click on the frame or off the board simply does nothing.
         var tile = _gridService.GetTileByPosition(gridPos);
+
+        // A tap off the board, or on a tile the current board focus has dimmed,
+        // means "stop showing me that" - it ends the focus instead of inspecting.
+        if (UI.BoardFocus.HasFocus && (tile == null || tile.IsDimmed))
+        {
+            UI.BoardFocus.Clear();
+            return;
+        }
+
         if (tile == null || string.IsNullOrEmpty(tile.coord)) return;
 
         _eventBus?.Publish(new TileHighlightedEvent(tile.coord, true));

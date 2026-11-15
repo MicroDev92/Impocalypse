@@ -109,10 +109,43 @@ namespace UI
         /// "[what it counts] +N [infamy] each". The leading icon is the thing the
         /// player should go and collect, so it is the first thing the eye lands on.
         /// </summary>
+        /// <summary>The local player's tiles a pact of this kind is scoring right now.</summary>
+        private static IEnumerable<TileData> TilesCounted(ParchmentRule rule, ResourceType resource)
+        {
+            var grid = ServiceLocator.GetService<IGridService>();
+            var network = ServiceLocator.GetService<INetworkService>();
+            if (grid == null || network == null) return Enumerable.Empty<TileData>();
+
+            int me = network.LocalPlayerId;
+            var owned = grid.GetOwnedTiles(me);
+            switch (rule)
+            {
+                case ParchmentRule.PerResource:
+                    return owned.Where(t => t.BaseResource == resource || t.AddedResource == resource);
+                case ParchmentRule.PerCity:
+                    return owned.Where(t => t.Building == BuildingKind.City);
+                case ParchmentRule.LargestFief:
+                    var largest = Scoring.FiefCalculator.CalculateFiefs(me, grid)
+                                         .OrderByDescending(f => f.Tiles.Count).FirstOrDefault();
+                    return largest != null ? largest.Tiles : Enumerable.Empty<TileData>();
+                default: // PerFief: every domain counts, so all of the player's land
+                    return owned;
+            }
+        }
+
         private GameObject BuildRow(CardData pact, int copies)
         {
             var icons = UIIconSet.Instance;
             var row = IconRow.Create(rowContainer);
+
+            // Tapping the row lights up what this pact counts. Treasure counts
+            // nothing on the board, so it is not a target.
+            if (pact.Rule != ParchmentRule.Treasure)
+            {
+                var rule = pact.Rule;
+                var resource = pact.Resource;
+                FocusRow.Attach(row, $"pact:{(int)rule}:{(int)resource}", () => TilesCounted(rule, resource));
+            }
 
             if (copies > 1)
                 IconRow.Number(row, $"{copies}x", IconRow.Soft, 18f);

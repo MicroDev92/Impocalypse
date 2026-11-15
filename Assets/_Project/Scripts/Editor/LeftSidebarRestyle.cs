@@ -153,6 +153,31 @@ public static class LeftSidebarRestyle
         }
     }
 
+    /// <summary>A tintable UI shape from ArtGen: authored at 2x, optionally 9-sliced.</summary>
+    private static Sprite Chrome(string name, int border)
+    {
+        string path = "Assets/Art/UI/Panels/" + name + ".png";
+        var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (importer == null)
+        {
+            Debug.LogWarning($"[LeftSidebarRestyle] Missing sprite: {path}");
+            return null;
+        }
+        importer.textureType = TextureImporterType.Sprite;
+        importer.spriteImportMode = SpriteImportMode.Single;
+        importer.spritePixelsPerUnit = 200;
+        importer.spriteBorder = new Vector4(border, border, border, border);
+        importer.mipmapEnabled = true;
+        importer.filterMode = FilterMode.Bilinear;
+        importer.alphaIsTransparency = true;
+        var settings = new TextureImporterSettings();
+        importer.ReadTextureSettings(settings);
+        settings.spriteMeshType = SpriteMeshType.FullRect;
+        importer.SetTextureSettings(settings);
+        importer.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
     private static Sprite Portrait(string path)
     {
         var importer = AssetImporter.GetAtPath(path) as TextureImporter;
@@ -198,6 +223,9 @@ public static class LeftSidebarRestyle
         set.treasure = Icon("treasure");
         set.displayFont = display;
         set.panelInset = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/Panels/panel_inset.png");
+        set.chip = Chrome("chip", 31);
+        set.chipRing = Chrome("chip_ring", 31);
+        set.portraitRing = Chrome("portrait_ring", 0);
 
         EditorUtility.SetDirty(set);
         AssetDatabase.SaveAssets();
